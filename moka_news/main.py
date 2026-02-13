@@ -23,7 +23,6 @@ from moka_news.config import load_config, create_sample_config
 from moka_news.opml_manager import OPMLManager
 from moka_news.first_run_setup import is_first_run, run_first_run_setup
 from datetime import datetime, time
-import threading
 
 
 def fetch_and_brew(feed_urls, config, ai_provider):
@@ -143,42 +142,6 @@ def fetch_and_brew(feed_urls, config, ai_provider):
     print(f"✓ Brewed {len(processed_articles)} articles")
     
     return processed_articles, last_update
-
-
-def schedule_daily_refresh(target_hour, target_minute, refresh_callback):
-    """
-    Schedule a daily refresh at a specific time.
-    
-    Args:
-        target_hour: Hour to refresh (0-23)
-        target_minute: Minute to refresh (0-59)
-        refresh_callback: Function to call when refresh is needed
-    """
-    def check_and_refresh():
-        while True:
-            now = datetime.now()
-            target = now.replace(hour=target_hour, minute=target_minute, second=0, microsecond=0)
-            
-            # If target time has passed today, schedule for tomorrow
-            if now >= target:
-                from datetime import timedelta
-                target = target + timedelta(days=1)
-            
-            # Calculate seconds until target time
-            seconds_until_target = (target - now).total_seconds()
-            
-            # Sleep until target time
-            threading.Event().wait(seconds_until_target)
-            
-            # Trigger refresh
-            try:
-                refresh_callback()
-            except Exception as e:
-                print(f"Error during scheduled refresh: {e}")
-    
-    # Start the scheduler in a daemon thread
-    scheduler_thread = threading.Thread(target=check_and_refresh, daemon=True)
-    scheduler_thread.start()
 
 
 def main():
