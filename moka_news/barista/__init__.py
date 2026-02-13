@@ -143,8 +143,8 @@ class SimpleBarista(AIProvider):
     def generate_summary(self, article: Dict[str, Any]) -> Dict[str, str]:
         """Generate a simple summary by truncating the content"""
         return {
-            'title': article['title'][:80],
-            'summary': article['summary'][:200] if article['summary'] else 'No summary available.'
+            'title': article.get('title', 'No Title')[:80],
+            'summary': article.get('summary', 'No summary available.')[:200] if article.get('summary') else 'No summary available.'
         }
 
 
