@@ -20,6 +20,7 @@ from moka_news.barista import (
 )
 from moka_news.cup import serve
 from moka_news.config import load_config, create_sample_config
+from moka_news.opml_manager import OPMLManager
 
 
 def main():
@@ -44,6 +45,11 @@ Examples:
   moka-news --feeds feed1.xml feed2.xml  # Use custom feeds
   moka-news --config myconfig.yaml   # Use custom config file
   moka-news --create-config          # Create a sample config file
+
+Feed Management:
+  moka-news --add-feed URL           # Add RSS feed to OPML storage
+  moka-news --remove-feed URL        # Remove RSS feed from OPML storage
+  moka-news --list-feeds             # List all configured feeds
         """,
     )
 
@@ -84,7 +90,60 @@ Examples:
         "--no-tui", action="store_true", help="Print articles to console instead of TUI"
     )
 
+    parser.add_argument(
+        "--add-feed", metavar="URL", help="Add a new RSS feed URL to OPML storage"
+    )
+
+    parser.add_argument(
+        "--remove-feed", metavar="URL", help="Remove an RSS feed URL from OPML storage"
+    )
+
+    parser.add_argument(
+        "--list-feeds", action="store_true", help="List all configured RSS feeds"
+    )
+
+    parser.add_argument(
+        "--opml",
+        metavar="PATH",
+        help="Path to OPML file (default: ~/.config/moka-news/feeds.opml)",
+    )
+
     args = parser.parse_args()
+
+    # Initialize OPML manager
+    opml_manager = OPMLManager(args.opml)
+
+    # Handle feed management commands
+    if args.add_feed:
+        if opml_manager.add_feed(args.add_feed):
+            print(f"✓ Added feed: {args.add_feed}")
+            print(f"  Saved to: {opml_manager.opml_path}")
+        else:
+            print(f"⚠️  Feed already exists: {args.add_feed}")
+        return
+
+    if args.remove_feed:
+        if opml_manager.remove_feed(args.remove_feed):
+            print(f"✓ Removed feed: {args.remove_feed}")
+            print(f"  Updated: {opml_manager.opml_path}")
+        else:
+            print(f"⚠️  Feed not found: {args.remove_feed}")
+        return
+
+    if args.list_feeds:
+        feeds = opml_manager.list_feeds()
+        if feeds:
+            print(f"📋 Configured RSS Feeds ({len(feeds)}):")
+            print(f"   OPML file: {opml_manager.opml_path}\n")
+            for i, feed in enumerate(feeds, 1):
+                print(f"   [{i}] {feed['title']}")
+                print(f"       {feed['url']}")
+                if i < len(feeds):
+                    print()
+        else:
+            print("No feeds configured.")
+            print("Add feeds with: moka-news --add-feed URL")
+        return
 
     # Handle --create-config
     if args.create_config:
@@ -96,7 +155,17 @@ Examples:
 
     # CLI arguments override config file
     ai_provider = args.ai if args.ai else config["ai"]["provider"]
-    feed_urls = args.feeds if args.feeds else config["feeds"]["urls"]
+    
+    # Get feeds from: CLI args > OPML manager > config file
+    if args.feeds:
+        feed_urls = args.feeds
+    else:
+        opml_feeds = opml_manager.list_feeds()
+        if opml_feeds:
+            feed_urls = [feed["url"] for feed in opml_feeds]
+        else:
+            feed_urls = config["feeds"]["urls"]
+    
     use_tui = not args.no_tui if args.no_tui else config["ui"]["use_tui"]
 
     print("☕ Brewing your morning news...")

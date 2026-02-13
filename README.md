@@ -34,6 +34,7 @@ A beautiful Textual-based TUI that displays your personalized news digest in the
 - ⌨️  Keyboard shortcuts for navigation
 - 🔗 Click to open articles in browser
 - 🚀 Fast and lightweight
+- 💾 RSS feed management with OPML storage
 
 ## Installation
 
@@ -189,11 +190,43 @@ moka-news --ai mistral-cli
 
 ### Custom RSS Feeds
 
-Specify your own RSS feeds:
+Specify your own RSS feeds on the command line:
 
 ```bash
 moka-news --feeds https://example.com/feed.xml https://another.com/rss
 ```
+
+### Feed Management
+
+MoKa News stores your RSS feeds in OPML format for easy management and portability.
+
+#### Add a feed
+
+```bash
+moka-news --add-feed https://example.com/feed.xml
+```
+
+#### Remove a feed
+
+```bash
+moka-news --remove-feed https://example.com/feed.xml
+```
+
+#### List configured feeds
+
+```bash
+moka-news --list-feeds
+```
+
+#### Custom OPML file location
+
+By default, feeds are stored in `~/.config/moka-news/feeds.opml`. You can specify a custom location:
+
+```bash
+moka-news --opml /path/to/custom/feeds.opml
+```
+
+The OPML file is stored in standard OPML 2.0 format, making it compatible with other RSS readers and aggregators.
 
 ### Console Output
 
@@ -244,12 +277,12 @@ ruff check moka_news/
 
 ## Default RSS Feeds
 
-MoKa News comes with these default feeds:
+MoKa News comes with these default feeds when no OPML file is configured:
 - Hacker News
 - Reddit Programming
 - GitHub Blog
 
-You can easily customize this list by providing your own feeds.
+You can easily customize this list using the feed management commands (`--add-feed`, `--remove-feed`) or by providing your own feeds on the command line.
 
 ## Project Structure
 
@@ -258,6 +291,7 @@ moka-news/
 ├── moka_news/
 │   ├── __init__.py
 │   ├── main.py           # Main entry point
+│   ├── opml_manager.py   # OPML feed management
 │   ├── grinder/          # RSS feed parser
 │   │   └── __init__.py
 │   ├── barista/          # AI processing
