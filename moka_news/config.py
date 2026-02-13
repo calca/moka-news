@@ -10,7 +10,7 @@ from pathlib import Path
 
 DEFAULT_CONFIG = {
     "ai": {
-        "provider": "simple",
+        "provider": "openai",  # Changed from "simple" - AI is now default, simple is demo only
         "api_keys": {
             "openai": None,
             "anthropic": None,
@@ -127,7 +127,8 @@ def create_sample_config(path: str = "moka-news.yaml"):
 
 # AI Provider Configuration
 ai:
-  provider: simple  # Options: simple, openai, anthropic, gemini, mistral, copilot-cli, gemini-cli, mistral-cli
+  provider: openai  # Options: openai, anthropic, gemini, mistral, copilot-cli, gemini-cli, mistral-cli
+                     # Note: 'simple' mode is for demo/testing only (no AI summaries)
   
   # API Keys (can also be set via environment variables)
   # Only needed for API-based providers (not CLI providers)

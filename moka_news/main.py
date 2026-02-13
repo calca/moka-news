@@ -21,6 +21,7 @@ from moka_news.barista import (
 from moka_news.cup import serve
 from moka_news.config import load_config, create_sample_config
 from moka_news.opml_manager import OPMLManager
+from moka_news.first_run_setup import is_first_run, run_first_run_setup
 
 
 def main():
@@ -34,7 +35,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  moka-news                          # Use default feeds with simple processing
+  moka-news                          # Use default feeds with AI processing (OpenAI)
   moka-news --ai openai              # Use OpenAI API for summaries
   moka-news --ai anthropic           # Use Anthropic API for summaries
   moka-news --ai gemini              # Use Google Gemini API for summaries
@@ -42,6 +43,7 @@ Examples:
   moka-news --ai copilot-cli         # Use GitHub Copilot CLI for summaries
   moka-news --ai gemini-cli          # Use Gemini CLI (gcloud) for summaries
   moka-news --ai mistral-cli         # Use Mistral CLI for summaries
+  moka-news --ai simple              # Use simple mode (demo/testing, no AI)
   moka-news --feeds feed1.xml feed2.xml  # Use custom feeds
   moka-news --config myconfig.yaml   # Use custom config file
   moka-news --create-config          # Create a sample config file
@@ -83,7 +85,7 @@ Feed Management:
             "mistral-cli",
         ],
         default=None,
-        help="AI provider for generating summaries (default: from config or simple)",
+        help="AI provider for generating summaries (default: from config or openai; 'simple' is demo/testing only)",
     )
 
     parser.add_argument(
@@ -112,6 +114,20 @@ Feed Management:
 
     # Initialize OPML manager
     opml_manager = OPMLManager(args.opml)
+
+    # Check for first run and run setup wizard if needed
+    # Skip setup wizard for specific commands that don't need it
+    skip_setup = (
+        args.create_config or 
+        args.add_feed or 
+        args.remove_feed or 
+        args.list_feeds
+    )
+    
+    if is_first_run() and not skip_setup:
+        run_first_run_setup(opml_manager)
+        # After setup, user needs to run moka-news again
+        return
 
     # Handle feed management commands
     if args.add_feed:

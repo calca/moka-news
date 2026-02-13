@@ -23,8 +23,8 @@ def test_load_config_without_file():
     """Test loading config when no config file exists"""
     config = load_config("/nonexistent/path/config.yaml")
 
-    # Should return default config
-    assert config["ai"]["provider"] == "simple"
+    # Should return default config (now openai instead of simple)
+    assert config["ai"]["provider"] == "openai"
     assert "urls" in config["feeds"]
     assert config["ui"]["use_tui"] is True
 
