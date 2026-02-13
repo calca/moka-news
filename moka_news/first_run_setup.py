@@ -8,7 +8,7 @@ import sys
 import shutil
 import yaml
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 from moka_news.opml_manager import OPMLManager
 
 
@@ -185,7 +185,7 @@ def prompt_ai_provider() -> Dict[str, Any]:
                         result["api_key"] = existing_key
                     else:
                         print(f"\n⚠️  {env_var} not found in environment variables.")
-                        print(f"   Please set it before running moka-news:")
+                        print("   Please set it before running moka-news:")
                         print(f"   export {env_var}='your-api-key-here'")
                         result["api_key"] = None
                 

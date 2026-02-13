@@ -125,7 +125,7 @@ Feed Management:
     )
     
     if is_first_run() and not skip_setup:
-        setup_result = run_first_run_setup(opml_manager)
+        run_first_run_setup(opml_manager)
         # After setup, user needs to run moka-news again
         return
 
