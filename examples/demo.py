@@ -2,7 +2,6 @@
 Example script demonstrating MoKa News with mock data
 """
 
-from moka_news.grinder import Grinder
 from moka_news.barista import Barista, SimpleBarista
 from moka_news.cup import serve
 
