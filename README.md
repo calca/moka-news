@@ -29,6 +29,7 @@ A beautiful Textual-based TUI that displays your personalized news digest in the
 
 - 📰 Parse multiple RSS feeds simultaneously
 - 🤖 AI-powered article summarization with multiple providers (OpenAI, Anthropic, Gemini, Mistral)
+- 🎯 **Smart first-run setup** - Interactive wizard to configure AI provider and feeds
 - ⚙️  Configuration file support (YAML)
 - 🎨 Beautiful terminal user interface
 - ⌨️  Keyboard shortcuts for navigation
@@ -41,6 +42,7 @@ A beautiful Textual-based TUI that displays your personalized news digest in the
 ### Prerequisites
 - Python 3.8 or higher
 - pip
+- (Optional) AI provider CLI tools: `gh` for GitHub Copilot, `gcloud` for Gemini, `mistral` for Mistral
 
 ### Install from source
 
@@ -61,13 +63,42 @@ pip install -e ".[mistral]"   # For Mistral AI support
 pip install -e ".[all]"       # Install all AI providers
 ```
 
+### First Run
+
+On your first run, MoKa News will launch an interactive setup wizard that will:
+
+1. **Select your AI provider** - Choose from OpenAI, Anthropic, Gemini, Mistral, or CLI-based providers
+2. **Configure RSS feeds** - Accept our curated list of 5 tech feeds or configure your own later
+
+Simply run:
+
+```bash
+moka-news
+```
+
+The wizard will guide you through the setup and create:
+- Configuration file at `~/.config/moka-news/config.yaml`
+- OPML feeds file at `~/.config/moka-news/feeds.opml`
+
+**Note:** AI providers require API keys (set via environment variables) or CLI tools installed and configured.
+
 ## Configuration
 
 MoKa News can be configured in multiple ways:
 
-### 1. Configuration File (Recommended)
+### 1. First-Run Setup Wizard (Recommended)
 
-Create a configuration file for persistent settings:
+On first launch, MoKa News will automatically run an interactive setup wizard to help you:
+- Choose your preferred AI provider
+- Configure your RSS feeds with our curated tech feed suggestions
+
+Simply run `moka-news` and follow the prompts!
+
+### 2. Configuration File
+
+After the first-run setup, your configuration is saved to `~/.config/moka-news/config.yaml`.
+
+You can also create a configuration file manually:
 
 ```bash
 # Create a sample configuration file
@@ -81,20 +112,14 @@ Edit the `moka-news.yaml` file:
 ```yaml
 # AI Provider Configuration
 ai:
-  provider: simple  # Options: simple, openai, anthropic, gemini, mistral
+  provider: openai  # Options: openai, anthropic, gemini, mistral, copilot-cli, gemini-cli, mistral-cli
+                     # Note: 'simple' mode is for demo/testing only
   
   api_keys:
     openai: your-key-here
     anthropic: your-key-here
     gemini: your-key-here
     mistral: your-key-here
-
-# RSS Feed Configuration
-feeds:
-  urls:
-    - https://news.ycombinator.com/rss
-    - https://www.reddit.com/r/programming/.rss
-    - https://github.blog/feed/
 
 # UI Configuration
 ui:
@@ -106,9 +131,9 @@ You can place the config file in:
 - User config: `~/.config/moka-news/config.yaml`
 - Home directory: `~/.moka-news.yaml`
 
-### 2. Environment Variables
+### 3. Environment Variables
 
-For AI-powered summaries, you can set environment variables:
+For API-based AI providers, you can set environment variables:
 
 ```bash
 # For OpenAI
@@ -126,21 +151,33 @@ export MISTRAL_API_KEY=your-mistral-api-key-here
 
 Or create a `.env` file in the project root with the same variables.
 
-### 3. Command Line Arguments
+### 4. Command Line Arguments
 
 CLI arguments override both config file and environment variables.
 
 ## Usage
 
-### Basic Usage
+### Quick Start
 
-Run with default feeds and simple (non-AI) processing:
+Simply run:
 
 ```bash
 moka-news
 ```
 
-### With AI Processing
+On first run, this will launch the setup wizard. On subsequent runs, it will use your saved configuration to fetch and display news with AI-powered summaries.
+
+### Basic Usage
+
+Run with default settings (uses your configured AI provider):
+
+```bash
+moka-news
+```
+
+### With Specific AI Provider
+
+Override your configured provider:
 
 **API-based providers:**
 
@@ -188,6 +225,16 @@ Use Mistral CLI (requires `mistral` CLI):
 moka-news --ai mistral-cli
 ```
 
+### Demo Mode (No AI)
+
+For testing without AI:
+
+```bash
+moka-news --ai simple
+```
+
+**Note:** Simple mode is for demo/testing only and does not generate AI summaries.
+
 ### Custom RSS Feeds
 
 Specify your own RSS feeds on the command line:
@@ -198,7 +245,13 @@ moka-news --feeds https://example.com/feed.xml https://another.com/rss
 
 ### Feed Management
 
-MoKa News stores your RSS feeds in OPML format for easy management and portability.
+MoKa News stores your RSS feeds in OPML format for easy management and portability. The first-run wizard will suggest 5 curated tech feeds:
+
+1. **Hacker News** - https://news.ycombinator.com/rss
+2. **GitHub Blog** - https://github.blog/feed/
+3. **The Verge - Tech** - https://www.theverge.com/rss/index.xml
+4. **TechCrunch** - https://techcrunch.com/feed/
+5. **Ars Technica** - https://feeds.arstechnica.com/arstechnica/index
 
 #### Add a feed
 
@@ -226,7 +279,7 @@ By default, feeds are stored in `~/.config/moka-news/feeds.opml`. You can specif
 moka-news --opml /path/to/custom/feeds.opml
 ```
 
-The OPML file is stored in standard OPML 2.0 format, making it compatible with other RSS readers and aggregators.
+The OPML file is stored in standard OPML 2.0 format at `~/.config/moka-news/feeds.opml`, making it compatible with other RSS readers and aggregators.
 
 ### Console Output
 
@@ -275,14 +328,15 @@ black moka_news/
 ruff check moka_news/
 ```
 
-## Default RSS Feeds
+## Default Configuration
 
-MoKa News comes with these default feeds when no OPML file is configured:
-- Hacker News
-- Reddit Programming
-- GitHub Blog
+After the first-run setup, MoKa News uses:
+- **AI Mode:** AI-powered summaries are enabled by default (OpenAI or your chosen provider)
+- **Simple Mode:** Available as `--ai simple` for demo/testing only (no AI summaries)
+- **RSS Feeds:** Stored in `~/.config/moka-news/feeds.opml`
+- **Config File:** Located at `~/.config/moka-news/config.yaml`
 
-You can easily customize this list using the feed management commands (`--add-feed`, `--remove-feed`) or by providing your own feeds on the command line.
+The first-run wizard makes it easy to get started with intelligent news summaries!
 
 ## Project Structure
 
