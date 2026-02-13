@@ -4,7 +4,7 @@ Displays the news digest in a beautiful terminal interface
 """
 
 from textual.app import App, ComposeResult
-from textual.containers import Container, Vertical, Scrollable
+from textual.containers import ScrollableContainer
 from textual.widgets import Header, Footer, Static, Button, Label
 from textual.binding import Binding
 from typing import List, Dict, Any
@@ -91,7 +91,7 @@ class Cup(App):
         """Create the application layout"""
         yield Header(show_clock=True)
         
-        with Scrollable(id="articles-container"):
+        with ScrollableContainer(id="articles-container"):
             if self.articles:
                 for article in self.articles:
                     yield ArticleCard(article)
