@@ -11,10 +11,15 @@ A Python module using `feedparser` to extract data from RSS feeds. It gathers ar
 
 ### 🤖 The Barista (L'Agente AI)
 An AI agent that takes raw article text and generates engaging titles and concise summaries using:
-- OpenAI (GPT models)
-- Anthropic (Claude models)
-- Google Gemini (Gemini Pro)
-- Mistral AI (Mistral models)
+- **API-based providers:**
+  - OpenAI (GPT models)
+  - Anthropic (Claude models)
+  - Google Gemini (Gemini Pro)
+  - Mistral AI (Mistral models)
+- **CLI-based providers:**
+  - GitHub Copilot CLI (gh copilot)
+  - Gemini CLI (gcloud)
+  - Mistral CLI
 - Simple mode (no AI, for testing)
 
 ### ☕ The Cup (La Tazzina)
@@ -136,6 +141,8 @@ moka-news
 
 ### With AI Processing
 
+**API-based providers:**
+
 Use OpenAI for intelligent summaries:
 
 ```bash
@@ -158,6 +165,26 @@ Use Mistral AI for summaries:
 
 ```bash
 moka-news --ai mistral
+```
+
+**CLI-based providers:**
+
+Use GitHub Copilot CLI (requires `gh` CLI):
+
+```bash
+moka-news --ai copilot-cli
+```
+
+Use Gemini CLI via gcloud (requires `gcloud` CLI):
+
+```bash
+moka-news --ai gemini-cli
+```
+
+Use Mistral CLI (requires `mistral` CLI):
+
+```bash
+moka-news --ai mistral-cli
 ```
 
 ### Custom RSS Feeds

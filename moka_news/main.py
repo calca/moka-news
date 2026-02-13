@@ -14,6 +14,9 @@ from moka_news.barista import (
     SimpleBarista,
     GeminiBarista,
     MistralBarista,
+    GitHubCopilotCLIBarista,
+    GeminiCLIBarista,
+    MistralCLIBarista,
 )
 from moka_news.cup import serve
 from moka_news.config import load_config, create_sample_config
@@ -31,10 +34,13 @@ def main():
         epilog="""
 Examples:
   moka-news                          # Use default feeds with simple processing
-  moka-news --ai openai              # Use OpenAI for summaries
-  moka-news --ai anthropic           # Use Anthropic for summaries
-  moka-news --ai gemini              # Use Google Gemini for summaries
-  moka-news --ai mistral             # Use Mistral AI for summaries
+  moka-news --ai openai              # Use OpenAI API for summaries
+  moka-news --ai anthropic           # Use Anthropic API for summaries
+  moka-news --ai gemini              # Use Google Gemini API for summaries
+  moka-news --ai mistral             # Use Mistral AI API for summaries
+  moka-news --ai copilot-cli         # Use GitHub Copilot CLI for summaries
+  moka-news --ai gemini-cli          # Use Gemini CLI (gcloud) for summaries
+  moka-news --ai mistral-cli         # Use Mistral CLI for summaries
   moka-news --feeds feed1.xml feed2.xml  # Use custom feeds
   moka-news --config myconfig.yaml   # Use custom config file
   moka-news --create-config          # Create a sample config file
@@ -60,7 +66,16 @@ Examples:
 
     parser.add_argument(
         "--ai",
-        choices=["openai", "anthropic", "gemini", "mistral", "simple"],
+        choices=[
+            "openai",
+            "anthropic",
+            "gemini",
+            "mistral",
+            "simple",
+            "copilot-cli",
+            "gemini-cli",
+            "mistral-cli",
+        ],
         default=None,
         help="AI provider for generating summaries (default: from config or simple)",
     )
@@ -164,6 +179,30 @@ Examples:
             except ImportError as e:
                 print(f"⚠️  Error: {e}")
                 barista = Barista(SimpleBarista())
+    elif ai_provider == "copilot-cli":
+        print("ℹ️  Using GitHub Copilot CLI (requires 'gh' CLI installed)")
+        try:
+            barista = Barista(GitHubCopilotCLIBarista())
+        except RuntimeError as e:
+            print(f"⚠️  Error: {e}")
+            print("   Falling back to simple mode.")
+            barista = Barista(SimpleBarista())
+    elif ai_provider == "gemini-cli":
+        print("ℹ️  Using Gemini CLI (requires 'gcloud' CLI installed)")
+        try:
+            barista = Barista(GeminiCLIBarista())
+        except RuntimeError as e:
+            print(f"⚠️  Error: {e}")
+            print("   Falling back to simple mode.")
+            barista = Barista(SimpleBarista())
+    elif ai_provider == "mistral-cli":
+        print("ℹ️  Using Mistral CLI (requires 'mistral' CLI installed)")
+        try:
+            barista = Barista(MistralCLIBarista())
+        except RuntimeError as e:
+            print(f"⚠️  Error: {e}")
+            print("   Falling back to simple mode.")
+            barista = Barista(SimpleBarista())
     else:
         barista = Barista(SimpleBarista())
 

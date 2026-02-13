@@ -4,6 +4,7 @@ Generates titles and summaries using AI APIs (OpenAI/Anthropic)
 """
 
 import os
+import subprocess
 from typing import Dict, Any, Optional
 from abc import ABC, abstractmethod
 
@@ -268,6 +269,230 @@ class SimpleBarista(AIProvider):
                 else "No summary available."
             ),
         }
+
+
+class GitHubCopilotCLIBarista(AIProvider):
+    """GitHub Copilot CLI-based content processor"""
+
+    def __init__(self):
+        """Initialize GitHub Copilot CLI provider"""
+        # Check if gh CLI is available
+        try:
+            result = subprocess.run(
+                ["gh", "--version"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            if result.returncode != 0:
+                raise RuntimeError("GitHub CLI (gh) is not available")
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            raise RuntimeError(
+                "GitHub CLI (gh) is not installed. Install from: https://cli.github.com/"
+            )
+
+    def generate_summary(self, article: Dict[str, Any]) -> Dict[str, str]:
+        """Generate summary using GitHub Copilot CLI"""
+        try:
+            prompt = f"""Given this article:
+Title: {article['title']}
+Content: {article['summary'][:500]}
+
+Generate:
+1. A concise, engaging title (max 80 characters)
+2. A brief summary (max 200 characters)
+
+Format your response EXACTLY as:
+TITLE: <title>
+SUMMARY: <summary>"""
+
+            # Run gh copilot with the prompt
+            result = subprocess.run(
+                [
+                    "gh",
+                    "copilot",
+                    "-p",
+                    prompt,
+                    "--allow-all-tools",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode != 0:
+                raise RuntimeError(f"GitHub Copilot CLI error: {result.stderr}")
+
+            content = result.stdout
+            lines = content.strip().split("\n")
+
+            result_dict = {
+                "title": article["title"],
+                "summary": article["summary"][:200],
+            }
+            for line in lines:
+                if line.startswith("TITLE:"):
+                    result_dict["title"] = line.replace("TITLE:", "").strip()
+                elif line.startswith("SUMMARY:"):
+                    result_dict["summary"] = line.replace("SUMMARY:", "").strip()
+
+            return result_dict
+        except subprocess.TimeoutExpired:
+            print("GitHub Copilot CLI timeout")
+            return {"title": article["title"], "summary": article["summary"][:200]}
+        except Exception as e:
+            print(f"Error generating summary with GitHub Copilot CLI: {e}")
+            return {"title": article["title"], "summary": article["summary"][:200]}
+
+
+class GeminiCLIBarista(AIProvider):
+    """Gemini CLI-based content processor using gcloud"""
+
+    def __init__(self):
+        """Initialize Gemini CLI provider"""
+        # Check if gcloud CLI is available
+        try:
+            result = subprocess.run(
+                ["gcloud", "--version"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            if result.returncode != 0:
+                raise RuntimeError("gcloud CLI is not available")
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            raise RuntimeError(
+                "gcloud CLI is not installed. Install from: https://cloud.google.com/sdk/docs/install"
+            )
+
+    def generate_summary(self, article: Dict[str, Any]) -> Dict[str, str]:
+        """Generate summary using gcloud CLI with Gemini"""
+        try:
+            prompt = f"""Given this article:
+Title: {article['title']}
+Content: {article['summary'][:500]}
+
+Generate:
+1. A concise, engaging title (max 80 characters)
+2. A brief summary (max 200 characters)
+
+Format as:
+TITLE: <title>
+SUMMARY: <summary>"""
+
+            # Run gcloud with Gemini
+            result = subprocess.run(
+                [
+                    "gcloud",
+                    "ai",
+                    "models",
+                    "generate-content",
+                    "--model=gemini-pro",
+                    f"--prompt={prompt}",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode != 0:
+                raise RuntimeError(f"Gemini CLI error: {result.stderr}")
+
+            content = result.stdout
+            lines = content.strip().split("\n")
+
+            result_dict = {
+                "title": article["title"],
+                "summary": article["summary"][:200],
+            }
+            for line in lines:
+                if line.startswith("TITLE:"):
+                    result_dict["title"] = line.replace("TITLE:", "").strip()
+                elif line.startswith("SUMMARY:"):
+                    result_dict["summary"] = line.replace("SUMMARY:", "").strip()
+
+            return result_dict
+        except subprocess.TimeoutExpired:
+            print("Gemini CLI timeout")
+            return {"title": article["title"], "summary": article["summary"][:200]}
+        except Exception as e:
+            print(f"Error generating summary with Gemini CLI: {e}")
+            return {"title": article["title"], "summary": article["summary"][:200]}
+
+
+class MistralCLIBarista(AIProvider):
+    """Mistral CLI-based content processor"""
+
+    def __init__(self):
+        """Initialize Mistral CLI provider"""
+        # Check if mistral CLI is available
+        try:
+            result = subprocess.run(
+                ["mistral", "--version"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            if result.returncode != 0:
+                raise RuntimeError("Mistral CLI is not available")
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            raise RuntimeError(
+                "Mistral CLI is not installed. Install with: pip install mistralai-cli or from: https://docs.mistral.ai/cli/"
+            )
+
+    def generate_summary(self, article: Dict[str, Any]) -> Dict[str, str]:
+        """Generate summary using Mistral CLI"""
+        try:
+            prompt = f"""Given this article:
+Title: {article['title']}
+Content: {article['summary'][:500]}
+
+Generate:
+1. A concise, engaging title (max 80 characters)
+2. A brief summary (max 200 characters)
+
+Format as:
+TITLE: <title>
+SUMMARY: <summary>"""
+
+            # Run mistral CLI
+            result = subprocess.run(
+                [
+                    "mistral",
+                    "chat",
+                    "--model",
+                    "mistral-tiny",
+                    "--message",
+                    prompt,
+                ],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode != 0:
+                raise RuntimeError(f"Mistral CLI error: {result.stderr}")
+
+            content = result.stdout
+            lines = content.strip().split("\n")
+
+            result_dict = {
+                "title": article["title"],
+                "summary": article["summary"][:200],
+            }
+            for line in lines:
+                if line.startswith("TITLE:"):
+                    result_dict["title"] = line.replace("TITLE:", "").strip()
+                elif line.startswith("SUMMARY:"):
+                    result_dict["summary"] = line.replace("SUMMARY:", "").strip()
+
+            return result_dict
+        except subprocess.TimeoutExpired:
+            print("Mistral CLI timeout")
+            return {"title": article["title"], "summary": article["summary"][:200]}
+        except Exception as e:
+            print(f"Error generating summary with Mistral CLI: {e}")
+            return {"title": article["title"], "summary": article["summary"][:200]}
 
 
 class Barista:

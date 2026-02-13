@@ -127,9 +127,10 @@ def create_sample_config(path: str = "moka-news.yaml"):
 
 # AI Provider Configuration
 ai:
-  provider: simple  # Options: simple, openai, anthropic, gemini, mistral
+  provider: simple  # Options: simple, openai, anthropic, gemini, mistral, copilot-cli, gemini-cli, mistral-cli
   
   # API Keys (can also be set via environment variables)
+  # Only needed for API-based providers (not CLI providers)
   api_keys:
     openai: null      # or set OPENAI_API_KEY env var
     anthropic: null   # or set ANTHROPIC_API_KEY env var
