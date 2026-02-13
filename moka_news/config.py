@@ -8,118 +8,117 @@ import yaml
 from typing import Dict, Any, Optional
 from pathlib import Path
 
-
 DEFAULT_CONFIG = {
-    'ai': {
-        'provider': 'simple',
-        'api_keys': {
-            'openai': None,
-            'anthropic': None,
-            'gemini': None,
-            'mistral': None,
-        }
+    "ai": {
+        "provider": "simple",
+        "api_keys": {
+            "openai": None,
+            "anthropic": None,
+            "gemini": None,
+            "mistral": None,
+        },
     },
-    'feeds': {
-        'urls': [
-            'https://news.ycombinator.com/rss',
-            'https://www.reddit.com/r/programming/.rss',
-            'https://github.blog/feed/',
+    "feeds": {
+        "urls": [
+            "https://news.ycombinator.com/rss",
+            "https://www.reddit.com/r/programming/.rss",
+            "https://github.blog/feed/",
         ]
     },
-    'ui': {
-        'use_tui': True,
-    }
+    "ui": {
+        "use_tui": True,
+    },
 }
 
 
 def get_config_path() -> Path:
     """
     Get the path to the configuration file
-    
+
     Returns:
         Path to config file (checks multiple locations)
     """
     # Check in order: current directory, user home, package directory
     config_locations = [
-        Path.cwd() / 'moka-news.yaml',
-        Path.cwd() / '.moka-news.yaml',
-        Path.home() / '.config' / 'moka-news' / 'config.yaml',
-        Path.home() / '.moka-news.yaml',
+        Path.cwd() / "moka-news.yaml",
+        Path.cwd() / ".moka-news.yaml",
+        Path.home() / ".config" / "moka-news" / "config.yaml",
+        Path.home() / ".moka-news.yaml",
     ]
-    
+
     for location in config_locations:
         if location.exists():
             return location
-    
+
     return None
 
 
 def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
     """
     Load configuration from YAML file
-    
+
     Args:
         config_path: Optional path to config file. If not provided, searches default locations
-        
+
     Returns:
         Configuration dictionary
     """
     config = DEFAULT_CONFIG.copy()
-    
+
     if config_path:
         config_file = Path(config_path)
     else:
         config_file = get_config_path()
-    
+
     if config_file and config_file.exists():
         try:
-            with open(config_file, 'r') as f:
+            with open(config_file, "r") as f:
                 user_config = yaml.safe_load(f)
                 if user_config:
                     # Deep merge user config with defaults
                     config = merge_configs(config, user_config)
         except Exception as e:
             print(f"⚠️  Warning: Could not load config file: {e}")
-    
+
     # Override with environment variables
-    if os.getenv('OPENAI_API_KEY'):
-        config['ai']['api_keys']['openai'] = os.getenv('OPENAI_API_KEY')
-    if os.getenv('ANTHROPIC_API_KEY'):
-        config['ai']['api_keys']['anthropic'] = os.getenv('ANTHROPIC_API_KEY')
-    if os.getenv('GEMINI_API_KEY'):
-        config['ai']['api_keys']['gemini'] = os.getenv('GEMINI_API_KEY')
-    if os.getenv('MISTRAL_API_KEY'):
-        config['ai']['api_keys']['mistral'] = os.getenv('MISTRAL_API_KEY')
-    
+    if os.getenv("OPENAI_API_KEY"):
+        config["ai"]["api_keys"]["openai"] = os.getenv("OPENAI_API_KEY")
+    if os.getenv("ANTHROPIC_API_KEY"):
+        config["ai"]["api_keys"]["anthropic"] = os.getenv("ANTHROPIC_API_KEY")
+    if os.getenv("GEMINI_API_KEY"):
+        config["ai"]["api_keys"]["gemini"] = os.getenv("GEMINI_API_KEY")
+    if os.getenv("MISTRAL_API_KEY"):
+        config["ai"]["api_keys"]["mistral"] = os.getenv("MISTRAL_API_KEY")
+
     return config
 
 
 def merge_configs(default: Dict[str, Any], user: Dict[str, Any]) -> Dict[str, Any]:
     """
     Deep merge user configuration with default configuration
-    
+
     Args:
         default: Default configuration dictionary
         user: User configuration dictionary
-        
+
     Returns:
         Merged configuration dictionary
     """
     result = default.copy()
-    
+
     for key, value in user.items():
         if key in result and isinstance(result[key], dict) and isinstance(value, dict):
             result[key] = merge_configs(result[key], value)
         else:
             result[key] = value
-    
+
     return result
 
 
-def create_sample_config(path: str = 'moka-news.yaml'):
+def create_sample_config(path: str = "moka-news.yaml"):
     """
     Create a sample configuration file
-    
+
     Args:
         path: Path where to create the sample config file
     """
@@ -148,8 +147,8 @@ feeds:
 ui:
   use_tui: true  # Set to false to use console output instead of TUI
 """
-    
-    with open(path, 'w') as f:
+
+    with open(path, "w") as f:
         f.write(sample_config)
-    
+
     print(f"✓ Sample configuration created at: {path}")

@@ -5,7 +5,7 @@ Displays the news digest in a beautiful terminal interface
 
 from textual.app import App, ComposeResult
 from textual.containers import ScrollableContainer
-from textual.widgets import Header, Footer, Static, Button, Label
+from textual.widgets import Header, Footer, Static, Label
 from textual.binding import Binding
 from typing import List, Dict, Any
 import webbrowser
@@ -13,29 +13,31 @@ import webbrowser
 
 class ArticleCard(Static):
     """Widget to display a single article"""
-    
+
     def __init__(self, article: Dict[str, Any], *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.article = article
-        self.border_title = article.get('source', 'Unknown Source')
-    
+        self.border_title = article.get("source", "Unknown Source")
+
     def compose(self) -> ComposeResult:
         """Create the article card layout"""
-        title = self.article.get('ai_title', self.article.get('title', 'No Title'))
-        summary = self.article.get('ai_summary', self.article.get('summary', 'No summary available.'))
-        link = self.article.get('link', '')
-        published = self.article.get('published', '')
-        
+        title = self.article.get("ai_title", self.article.get("title", "No Title"))
+        summary = self.article.get(
+            "ai_summary", self.article.get("summary", "No summary available.")
+        )
+        link = self.article.get("link", "")
+        published = self.article.get("published", "")
+
         yield Label(f"[bold cyan]{title}[/bold cyan]")
         yield Label(f"\n{summary}")
         if published:
             yield Label(f"\n[dim]{published}[/dim]")
         if link:
             yield Label(f"[dim][link={link}]{link}[/link][/dim]")
-    
+
     def on_click(self) -> None:
         """Open article link in browser when clicked"""
-        link = self.article.get('link')
+        link = self.article.get("link")
         if link:
             try:
                 webbrowser.open(link)
@@ -45,7 +47,7 @@ class ArticleCard(Static):
 
 class Cup(App):
     """MoKa News TUI Application"""
-    
+
     CSS = """
     Screen {
         background: $surface;
@@ -74,23 +76,23 @@ class Cup(App):
         color: $text-muted;
     }
     """
-    
+
     BINDINGS = [
         Binding("q", "quit", "Quit", priority=True),
         Binding("r", "refresh", "Refresh"),
         ("ctrl+c", "quit", "Quit"),
     ]
-    
+
     def __init__(self, articles: List[Dict[str, Any]] = None):
         super().__init__()
         self.articles = articles or []
         self.title = "☕ MoKa News"
         self.sub_title = "Your Morning Persona News"
-    
+
     def compose(self) -> ComposeResult:
         """Create the application layout"""
         yield Header(show_clock=True)
-        
+
         with ScrollableContainer(id="articles-container"):
             if self.articles:
                 for article in self.articles:
@@ -99,15 +101,15 @@ class Cup(App):
                 yield Static(
                     "[bold]No articles available[/bold]\n\n"
                     "Run with RSS feeds to see news articles here.",
-                    id="empty-state"
+                    id="empty-state",
                 )
-        
+
         yield Footer()
-    
+
     def action_refresh(self) -> None:
         """Refresh the news feed"""
         self.notify("Refresh functionality coming soon!", severity="information")
-    
+
     def action_quit(self) -> None:
         """Quit the application"""
         self.exit()
@@ -116,7 +118,7 @@ class Cup(App):
 def serve(articles: List[Dict[str, Any]]):
     """
     Display articles in the TUI
-    
+
     Args:
         articles: List of article dictionaries to display
     """

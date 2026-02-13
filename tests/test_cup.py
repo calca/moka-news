@@ -2,7 +2,6 @@
 Tests for The Cup component
 """
 
-import pytest
 from moka_news.cup import Cup, ArticleCard
 
 
@@ -10,13 +9,13 @@ def test_cup_initialization():
     """Test that Cup can be initialized"""
     articles = [
         {
-            'title': 'Test Article',
-            'summary': 'Test summary',
-            'link': 'https://example.com',
-            'published': '2026-01-01',
-            'source': 'Test Source',
-            'ai_title': 'AI Test Article',
-            'ai_summary': 'AI test summary',
+            "title": "Test Article",
+            "summary": "Test summary",
+            "link": "https://example.com",
+            "published": "2026-01-01",
+            "source": "Test Source",
+            "ai_title": "AI Test Article",
+            "ai_summary": "AI test summary",
         }
     ]
     app = Cup(articles)
@@ -39,10 +38,10 @@ def test_cup_initialization_without_articles():
 def test_article_card_initialization():
     """Test that ArticleCard can be initialized"""
     article = {
-        'title': 'Test',
-        'summary': 'Test summary',
-        'link': 'https://example.com',
-        'source': 'Test Source',
+        "title": "Test",
+        "summary": "Test summary",
+        "link": "https://example.com",
+        "source": "Test Source",
     }
     card = ArticleCard(article)
     assert card.article == article
