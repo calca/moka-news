@@ -5,6 +5,8 @@ Handles AI provider selection and OPML feed initialization
 
 import os
 import sys
+import shutil
+import yaml
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 from moka_news.opml_manager import OPMLManager
@@ -117,7 +119,6 @@ def check_cli_available(command: str) -> bool:
     Returns:
         True if available, False otherwise
     """
-    import shutil
     return shutil.which(command) is not None
 
 
@@ -248,8 +249,6 @@ def save_config(config_data: Dict[str, Any], config_path: Optional[Path] = None)
     Returns:
         Path where config was saved
     """
-    import yaml
-    
     if config_path is None:
         config_path = Path.home() / ".config" / "moka-news" / "config.yaml"
     

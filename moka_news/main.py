@@ -116,7 +116,15 @@ Feed Management:
     opml_manager = OPMLManager(args.opml)
 
     # Check for first run and run setup wizard if needed
-    if is_first_run() and not args.create_config and not args.add_feed and not args.remove_feed and not args.list_feeds:
+    # Skip setup wizard for specific commands that don't need it
+    skip_setup = (
+        args.create_config or 
+        args.add_feed or 
+        args.remove_feed or 
+        args.list_feeds
+    )
+    
+    if is_first_run() and not skip_setup:
         setup_result = run_first_run_setup(opml_manager)
         # After setup, user needs to run moka-news again
         return
