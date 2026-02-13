@@ -9,16 +9,51 @@ from typing import Dict, Any, Optional
 from abc import ABC, abstractmethod
 
 
+def _build_prompt(article: Dict[str, Any], keywords: list = None) -> str:
+    """
+    Build a prompt for summary generation with optional keywords
+    
+    Args:
+        article: Article dictionary with title and summary
+        keywords: Optional list of keywords to focus on
+        
+    Returns:
+        Formatted prompt string
+    """
+    base_prompt = f"""Given this article:
+Title: {article['title']}
+Content: {article['summary'][:500]}
+
+Generate:
+1. A concise, engaging title (max 80 characters)
+2. A brief summary (max 200 characters)"""
+    
+    if keywords and len(keywords) > 0:
+        keywords_str = ", ".join(keywords)
+        base_prompt += f"""
+
+Focus on these keywords/topics if relevant: {keywords_str}"""
+    
+    base_prompt += """
+
+Format as:
+TITLE: <title>
+SUMMARY: <summary>"""
+    
+    return base_prompt
+
+
 class AIProvider(ABC):
     """Abstract base class for AI providers"""
 
     @abstractmethod
-    def generate_summary(self, article: Dict[str, Any]) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], keywords: list = None) -> Dict[str, str]:
         """
         Generate a summary and improved title for an article
 
         Args:
             article: Article dictionary with title, link, summary
+            keywords: Optional list of keywords to focus the summary on
 
         Returns:
             Dictionary with 'title' and 'summary' keys
@@ -45,20 +80,10 @@ class OpenAIBarista(AIProvider):
                 "openai package is required. Install with: pip install openai"
             )
 
-    def generate_summary(self, article: Dict[str, Any]) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], keywords: list = None) -> Dict[str, str]:
         """Generate summary using OpenAI"""
         try:
-            prompt = f"""Given this article:
-Title: {article['title']}
-Content: {article['summary'][:500]}
-
-Generate:
-1. A concise, engaging title (max 80 characters)
-2. A brief summary (max 200 characters)
-
-Format as:
-TITLE: <title>
-SUMMARY: <summary>"""
+            prompt = _build_prompt(article, keywords)
 
             response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
@@ -110,20 +135,10 @@ class AnthropicBarista(AIProvider):
                 "anthropic package is required. Install with: pip install anthropic"
             )
 
-    def generate_summary(self, article: Dict[str, Any]) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], keywords: list = None) -> Dict[str, str]:
         """Generate summary using Anthropic"""
         try:
-            prompt = f"""Given this article:
-Title: {article['title']}
-Content: {article['summary'][:500]}
-
-Generate:
-1. A concise, engaging title (max 80 characters)
-2. A brief summary (max 200 characters)
-
-Format as:
-TITLE: <title>
-SUMMARY: <summary>"""
+            prompt = _build_prompt(article, keywords)
 
             response = self.client.messages.create(
                 model="claude-3-haiku-20240307",
@@ -167,20 +182,10 @@ class GeminiBarista(AIProvider):
                 "google-generativeai package is required. Install with: pip install google-generativeai"
             )
 
-    def generate_summary(self, article: Dict[str, Any]) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], keywords: list = None) -> Dict[str, str]:
         """Generate summary using Google Gemini"""
         try:
-            prompt = f"""Given this article:
-Title: {article['title']}
-Content: {article['summary'][:500]}
-
-Generate:
-1. A concise, engaging title (max 80 characters)
-2. A brief summary (max 200 characters)
-
-Format as:
-TITLE: <title>
-SUMMARY: <summary>"""
+            prompt = _build_prompt(article, keywords)
 
             response = self.model.generate_content(prompt)
             content = response.text
@@ -218,20 +223,10 @@ class MistralBarista(AIProvider):
                 "mistralai package is required. Install with: pip install mistralai"
             )
 
-    def generate_summary(self, article: Dict[str, Any]) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], keywords: list = None) -> Dict[str, str]:
         """Generate summary using Mistral AI"""
         try:
-            prompt = f"""Given this article:
-Title: {article['title']}
-Content: {article['summary'][:500]}
-
-Generate:
-1. A concise, engaging title (max 80 characters)
-2. A brief summary (max 200 characters)
-
-Format as:
-TITLE: <title>
-SUMMARY: <summary>"""
+            prompt = _build_prompt(article, keywords)
 
             response = self.client.chat(
                 model="mistral-tiny",
@@ -259,7 +254,7 @@ SUMMARY: <summary>"""
 class SimpleBarista(AIProvider):
     """Simple non-AI processor for testing without API keys"""
 
-    def generate_summary(self, article: Dict[str, Any]) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], keywords: list = None) -> Dict[str, str]:
         """Generate a simple summary by truncating the content"""
         return {
             "title": article.get("title", "No Title")[:80],
@@ -291,20 +286,10 @@ class GitHubCopilotCLIBarista(AIProvider):
                 "GitHub CLI (gh) is not installed. Install from: https://cli.github.com/"
             )
 
-    def generate_summary(self, article: Dict[str, Any]) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], keywords: list = None) -> Dict[str, str]:
         """Generate summary using GitHub Copilot CLI"""
         try:
-            prompt = f"""Given this article:
-Title: {article['title']}
-Content: {article['summary'][:500]}
-
-Generate:
-1. A concise, engaging title (max 80 characters)
-2. A brief summary (max 200 characters)
-
-Format your response EXACTLY as:
-TITLE: <title>
-SUMMARY: <summary>"""
+            prompt = _build_prompt(article, keywords)
 
             # Run gh copilot with the prompt
             # Note: --allow-all-tools is required for non-interactive mode.
@@ -368,20 +353,10 @@ class GeminiCLIBarista(AIProvider):
                 "gcloud CLI is not installed. Install from: https://cloud.google.com/sdk/docs/install"
             )
 
-    def generate_summary(self, article: Dict[str, Any]) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], keywords: list = None) -> Dict[str, str]:
         """Generate summary using gcloud CLI with Gemini"""
         try:
-            prompt = f"""Given this article:
-Title: {article['title']}
-Content: {article['summary'][:500]}
-
-Generate:
-1. A concise, engaging title (max 80 characters)
-2. A brief summary (max 200 characters)
-
-Format as:
-TITLE: <title>
-SUMMARY: <summary>"""
+            prompt = _build_prompt(article, keywords)
 
             # Run gcloud with Gemini
             result = subprocess.run(
@@ -443,20 +418,10 @@ class MistralCLIBarista(AIProvider):
                 "Mistral CLI is not installed. Install with: pip install mistralai-cli or from: https://docs.mistral.ai/cli/"
             )
 
-    def generate_summary(self, article: Dict[str, Any]) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], keywords: list = None) -> Dict[str, str]:
         """Generate summary using Mistral CLI"""
         try:
-            prompt = f"""Given this article:
-Title: {article['title']}
-Content: {article['summary'][:500]}
-
-Generate:
-1. A concise, engaging title (max 80 characters)
-2. A brief summary (max 200 characters)
-
-Format as:
-TITLE: <title>
-SUMMARY: <summary>"""
+            prompt = _build_prompt(article, keywords)
 
             # Run mistral CLI
             result = subprocess.run(
@@ -501,14 +466,16 @@ SUMMARY: <summary>"""
 class Barista:
     """Main Barista class that coordinates AI processing"""
 
-    def __init__(self, provider: Optional[AIProvider] = None):
+    def __init__(self, provider: Optional[AIProvider] = None, keywords: list = None):
         """
         Initialize the Barista with an AI provider
 
         Args:
             provider: AI provider instance (defaults to SimpleBarista)
+            keywords: Optional list of keywords for summary generation
         """
         self.provider = provider or SimpleBarista()
+        self.keywords = keywords or []
 
     def brew(self, articles: list) -> list:
         """
@@ -524,7 +491,7 @@ class Barista:
 
         for article in articles:
             try:
-                enhanced = self.provider.generate_summary(article)
+                enhanced = self.provider.generate_summary(article, self.keywords)
                 processed_article = article.copy()
                 processed_article["ai_title"] = enhanced["title"]
                 processed_article["ai_summary"] = enhanced["summary"]

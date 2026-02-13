@@ -17,6 +17,7 @@ DEFAULT_CONFIG = {
             "gemini": None,
             "mistral": None,
         },
+        "keywords": [],  # Optional keywords for summary generation
     },
     "feeds": {
         "urls": [
@@ -137,6 +138,14 @@ ai:
     anthropic: null   # or set ANTHROPIC_API_KEY env var
     gemini: null      # or set GEMINI_API_KEY env var
     mistral: null     # or set MISTRAL_API_KEY env var
+  
+  # Keywords for summary generation (optional)
+  # These keywords help focus the AI on specific topics or aspects
+  keywords: []
+    # Example:
+    # - technology
+    # - artificial intelligence
+    # - programming
 
 # RSS Feed Configuration
 feeds:

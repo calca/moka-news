@@ -62,6 +62,28 @@ def test_barista_brew_processes_articles():
     assert all("ai_summary" in article for article in processed)
 
 
+def test_barista_brew_with_keywords():
+    """Test that Barista processes articles with keywords"""
+    keywords = ["technology", "AI", "programming"]
+    barista = Barista(SimpleBarista(), keywords)
+    articles = [
+        {
+            "title": "Article 1",
+            "summary": "Summary about technology",
+            "link": "https://example.com/1",
+            "published": "2026-01-01",
+            "source": "Test Source",
+        },
+    ]
+
+    processed = barista.brew(articles)
+
+    assert len(processed) == 1
+    assert "ai_title" in processed[0]
+    assert "ai_summary" in processed[0]
+    assert barista.keywords == keywords
+
+
 def test_barista_handles_empty_list():
     """Test that Barista handles empty article list"""
     barista = Barista(SimpleBarista())

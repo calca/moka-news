@@ -71,3 +71,36 @@ def test_config_respects_env_vars(monkeypatch):
     config = load_config()
 
     assert config["ai"]["api_keys"]["openai"] == "test-key-123"
+
+
+def test_default_config_includes_keywords():
+    """Test that default config includes keywords field"""
+    assert "keywords" in DEFAULT_CONFIG["ai"]
+    assert isinstance(DEFAULT_CONFIG["ai"]["keywords"], list)
+    assert len(DEFAULT_CONFIG["ai"]["keywords"]) == 0
+
+
+def test_merge_configs_preserves_keywords():
+    """Test merging configurations preserves keywords"""
+    default = {
+        "ai": {
+            "provider": "simple",
+            "api_keys": {"openai": None},
+            "keywords": [],
+        },
+        "feeds": {"urls": ["feed1"]},
+    }
+
+    user = {
+        "ai": {
+            "provider": "openai",
+            "keywords": ["technology", "AI"],
+        },
+        "feeds": {"urls": ["feed2"]},
+    }
+
+    result = merge_configs(default, user)
+
+    assert result["ai"]["provider"] == "openai"
+    assert result["ai"]["keywords"] == ["technology", "AI"]
+    assert result["ai"]["api_keys"]["openai"] is None  # Preserved from default
