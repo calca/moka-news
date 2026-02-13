@@ -137,6 +137,111 @@ SUMMARY: <summary>"""
             return {'title': article['title'], 'summary': article['summary'][:200]}
 
 
+class GeminiBarista(AIProvider):
+    """Google Gemini-based content processor"""
+    
+    def __init__(self, api_key: Optional[str] = None):
+        """
+        Initialize Gemini provider
+        
+        Args:
+            api_key: Google API key (defaults to GEMINI_API_KEY env var)
+        """
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=api_key or os.getenv('GEMINI_API_KEY'))
+            self.model = genai.GenerativeModel('gemini-pro')
+        except ImportError:
+            raise ImportError("google-generativeai package is required. Install with: pip install google-generativeai")
+    
+    def generate_summary(self, article: Dict[str, Any]) -> Dict[str, str]:
+        """Generate summary using Google Gemini"""
+        try:
+            prompt = f"""Given this article:
+Title: {article['title']}
+Content: {article['summary'][:500]}
+
+Generate:
+1. A concise, engaging title (max 80 characters)
+2. A brief summary (max 200 characters)
+
+Format as:
+TITLE: <title>
+SUMMARY: <summary>"""
+
+            response = self.model.generate_content(prompt)
+            content = response.text
+            lines = content.strip().split('\n')
+            
+            result = {'title': article['title'], 'summary': article['summary'][:200]}
+            for line in lines:
+                if line.startswith('TITLE:'):
+                    result['title'] = line.replace('TITLE:', '').strip()
+                elif line.startswith('SUMMARY:'):
+                    result['summary'] = line.replace('SUMMARY:', '').strip()
+            
+            return result
+        except Exception as e:
+            print(f"Error generating summary: {e}")
+            return {'title': article['title'], 'summary': article['summary'][:200]}
+
+
+class MistralBarista(AIProvider):
+    """Mistral AI-based content processor"""
+    
+    def __init__(self, api_key: Optional[str] = None):
+        """
+        Initialize Mistral provider
+        
+        Args:
+            api_key: Mistral API key (defaults to MISTRAL_API_KEY env var)
+        """
+        try:
+            from mistralai.client import MistralClient
+            self.client = MistralClient(api_key=api_key or os.getenv('MISTRAL_API_KEY'))
+        except ImportError:
+            raise ImportError("mistralai package is required. Install with: pip install mistralai")
+    
+    def generate_summary(self, article: Dict[str, Any]) -> Dict[str, str]:
+        """Generate summary using Mistral AI"""
+        try:
+            prompt = f"""Given this article:
+Title: {article['title']}
+Content: {article['summary'][:500]}
+
+Generate:
+1. A concise, engaging title (max 80 characters)
+2. A brief summary (max 200 characters)
+
+Format as:
+TITLE: <title>
+SUMMARY: <summary>"""
+
+            response = self.client.chat(
+                model="mistral-tiny",
+                messages=[
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=150,
+                temperature=0.7
+            )
+            
+            content = response.choices[0].message.content
+            lines = content.strip().split('\n')
+            
+            result = {'title': article['title'], 'summary': article['summary'][:200]}
+            for line in lines:
+                if line.startswith('TITLE:'):
+                    result['title'] = line.replace('TITLE:', '').strip()
+                elif line.startswith('SUMMARY:'):
+                    result['summary'] = line.replace('SUMMARY:', '').strip()
+            
+            return result
+        except Exception as e:
+            print(f"Error generating summary: {e}")
+            return {'title': article['title'], 'summary': article['summary'][:200]}
+
+
 class SimpleBarista(AIProvider):
     """Simple non-AI processor for testing without API keys"""
     
