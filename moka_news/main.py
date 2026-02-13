@@ -22,6 +22,126 @@ from moka_news.cup import serve
 from moka_news.config import load_config, create_sample_config
 from moka_news.opml_manager import OPMLManager
 from moka_news.first_run_setup import is_first_run, run_first_run_setup
+from datetime import datetime, time
+
+
+def fetch_and_brew(feed_urls, config, ai_provider):
+    """
+    Fetch RSS feeds and brew articles with AI summaries.
+    
+    Returns:
+        Tuple of (processed_articles, last_update_time)
+    """
+    print(f"📡 Grinding {len(feed_urls)} feeds...")
+    
+    # Step 1: The Grinder - Extract articles from RSS feeds
+    grinder = Grinder(feed_urls)
+    articles, last_update = grinder.grind()
+    
+    print(f"✓ Ground {len(articles)} articles")
+    
+    if not articles:
+        print("No articles found. Please check your RSS feeds.")
+        return [], last_update
+    
+    # Step 2: The Barista - Process articles with AI
+    print(f"🤖 Brewing summaries with {ai_provider}...")
+    
+    if ai_provider == "openai":
+        api_key = config["ai"]["api_keys"].get("openai") or os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            print("⚠️  Warning: OPENAI_API_KEY not found. Falling back to simple mode.")
+            print(
+                "   Set your API key in config file or: export OPENAI_API_KEY='your-key'"
+            )
+            barista = Barista(SimpleBarista())
+        else:
+            try:
+                barista = Barista(OpenAIBarista(api_key=api_key))
+            except ImportError as e:
+                print(f"⚠️  Error: {e}")
+                barista = Barista(SimpleBarista())
+    elif ai_provider == "anthropic":
+        api_key = config["ai"]["api_keys"].get("anthropic") or os.getenv(
+            "ANTHROPIC_API_KEY"
+        )
+        if not api_key:
+            print(
+                "⚠️  Warning: ANTHROPIC_API_KEY not found. Falling back to simple mode."
+            )
+            print(
+                "   Set your API key in config file or: export ANTHROPIC_API_KEY='your-key'"
+            )
+            barista = Barista(SimpleBarista())
+        else:
+            try:
+                barista = Barista(AnthropicBarista(api_key=api_key))
+            except ImportError as e:
+                print(f"⚠️  Error: {e}")
+                barista = Barista(SimpleBarista())
+    elif ai_provider == "gemini":
+        api_key = config["ai"]["api_keys"].get("gemini") or os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            print("⚠️  Warning: GEMINI_API_KEY not found. Falling back to simple mode.")
+            print(
+                "   Set your API key in config file or: export GEMINI_API_KEY='your-key'"
+            )
+            barista = Barista(SimpleBarista())
+        else:
+            try:
+                barista = Barista(GeminiBarista(api_key=api_key))
+            except ImportError as e:
+                print(f"⚠️  Error: {e}")
+                barista = Barista(SimpleBarista())
+    elif ai_provider == "mistral":
+        api_key = config["ai"]["api_keys"].get("mistral") or os.getenv(
+            "MISTRAL_API_KEY"
+        )
+        if not api_key:
+            print(
+                "⚠️  Warning: MISTRAL_API_KEY not found. Falling back to simple mode."
+            )
+            print(
+                "   Set your API key in config file or: export MISTRAL_API_KEY='your-key'"
+            )
+            barista = Barista(SimpleBarista())
+        else:
+            try:
+                barista = Barista(MistralBarista(api_key=api_key))
+            except ImportError as e:
+                print(f"⚠️  Error: {e}")
+                barista = Barista(SimpleBarista())
+    elif ai_provider == "copilot-cli":
+        print("ℹ️  Using GitHub Copilot CLI (requires 'gh' CLI installed)")
+        try:
+            barista = Barista(GitHubCopilotCLIBarista())
+        except RuntimeError as e:
+            print(f"⚠️  Error: {e}")
+            print("   Falling back to simple mode.")
+            barista = Barista(SimpleBarista())
+    elif ai_provider == "gemini-cli":
+        print("ℹ️  Using Gemini CLI (requires 'gcloud' CLI installed)")
+        try:
+            barista = Barista(GeminiCLIBarista())
+        except RuntimeError as e:
+            print(f"⚠️  Error: {e}")
+            print("   Falling back to simple mode.")
+            barista = Barista(SimpleBarista())
+    elif ai_provider == "mistral-cli":
+        print("ℹ️  Using Mistral CLI (requires 'mistral' CLI installed)")
+        try:
+            barista = Barista(MistralCLIBarista())
+        except RuntimeError as e:
+            print(f"⚠️  Error: {e}")
+            print("   Falling back to simple mode.")
+            barista = Barista(SimpleBarista())
+    else:
+        barista = Barista(SimpleBarista())
+    
+    processed_articles = barista.brew(articles)
+    print(f"✓ Brewed {len(processed_articles)} articles")
+    
+    return processed_articles, last_update
 
 
 def main():
@@ -185,114 +305,13 @@ Feed Management:
     use_tui = not args.no_tui if args.no_tui else config["ui"]["use_tui"]
 
     print("☕ Brewing your morning news...")
-    print(f"📡 Grinding {len(feed_urls)} feeds...")
-
-    # Step 1: The Grinder - Extract articles from RSS feeds
-    grinder = Grinder(feed_urls)
-    articles = grinder.grind()
-
-    print(f"✓ Ground {len(articles)} articles")
-
-    if not articles:
-        print("No articles found. Please check your RSS feeds.")
+    
+    # Fetch and brew articles
+    processed_articles, last_update = fetch_and_brew(feed_urls, config, ai_provider)
+    
+    if not processed_articles:
+        print("No articles to display.")
         return
-
-    # Step 2: The Barista - Process articles with AI
-    print(f"🤖 Brewing summaries with {ai_provider}...")
-
-    if ai_provider == "openai":
-        api_key = config["ai"]["api_keys"].get("openai") or os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            print("⚠️  Warning: OPENAI_API_KEY not found. Falling back to simple mode.")
-            print(
-                "   Set your API key in config file or: export OPENAI_API_KEY='your-key'"
-            )
-            barista = Barista(SimpleBarista())
-        else:
-            try:
-                barista = Barista(OpenAIBarista(api_key=api_key))
-            except ImportError as e:
-                print(f"⚠️  Error: {e}")
-                barista = Barista(SimpleBarista())
-    elif ai_provider == "anthropic":
-        api_key = config["ai"]["api_keys"].get("anthropic") or os.getenv(
-            "ANTHROPIC_API_KEY"
-        )
-        if not api_key:
-            print(
-                "⚠️  Warning: ANTHROPIC_API_KEY not found. Falling back to simple mode."
-            )
-            print(
-                "   Set your API key in config file or: export ANTHROPIC_API_KEY='your-key'"
-            )
-            barista = Barista(SimpleBarista())
-        else:
-            try:
-                barista = Barista(AnthropicBarista(api_key=api_key))
-            except ImportError as e:
-                print(f"⚠️  Error: {e}")
-                barista = Barista(SimpleBarista())
-    elif ai_provider == "gemini":
-        api_key = config["ai"]["api_keys"].get("gemini") or os.getenv("GEMINI_API_KEY")
-        if not api_key:
-            print("⚠️  Warning: GEMINI_API_KEY not found. Falling back to simple mode.")
-            print(
-                "   Set your API key in config file or: export GEMINI_API_KEY='your-key'"
-            )
-            barista = Barista(SimpleBarista())
-        else:
-            try:
-                barista = Barista(GeminiBarista(api_key=api_key))
-            except ImportError as e:
-                print(f"⚠️  Error: {e}")
-                barista = Barista(SimpleBarista())
-    elif ai_provider == "mistral":
-        api_key = config["ai"]["api_keys"].get("mistral") or os.getenv(
-            "MISTRAL_API_KEY"
-        )
-        if not api_key:
-            print(
-                "⚠️  Warning: MISTRAL_API_KEY not found. Falling back to simple mode."
-            )
-            print(
-                "   Set your API key in config file or: export MISTRAL_API_KEY='your-key'"
-            )
-            barista = Barista(SimpleBarista())
-        else:
-            try:
-                barista = Barista(MistralBarista(api_key=api_key))
-            except ImportError as e:
-                print(f"⚠️  Error: {e}")
-                barista = Barista(SimpleBarista())
-    elif ai_provider == "copilot-cli":
-        print("ℹ️  Using GitHub Copilot CLI (requires 'gh' CLI installed)")
-        try:
-            barista = Barista(GitHubCopilotCLIBarista())
-        except RuntimeError as e:
-            print(f"⚠️  Error: {e}")
-            print("   Falling back to simple mode.")
-            barista = Barista(SimpleBarista())
-    elif ai_provider == "gemini-cli":
-        print("ℹ️  Using Gemini CLI (requires 'gcloud' CLI installed)")
-        try:
-            barista = Barista(GeminiCLIBarista())
-        except RuntimeError as e:
-            print(f"⚠️  Error: {e}")
-            print("   Falling back to simple mode.")
-            barista = Barista(SimpleBarista())
-    elif ai_provider == "mistral-cli":
-        print("ℹ️  Using Mistral CLI (requires 'mistral' CLI installed)")
-        try:
-            barista = Barista(MistralCLIBarista())
-        except RuntimeError as e:
-            print(f"⚠️  Error: {e}")
-            print("   Falling back to simple mode.")
-            barista = Barista(SimpleBarista())
-    else:
-        barista = Barista(SimpleBarista())
-
-    processed_articles = barista.brew(articles)
-    print(f"✓ Brewed {len(processed_articles)} articles")
 
     # Step 3: The Cup - Display in TUI
     if not use_tui:
@@ -305,7 +324,12 @@ Feed Management:
         print("\n" + "=" * 80)
     else:
         print("☕ Serving your news...\n")
-        serve(processed_articles)
+        
+        # Create refresh callback for the TUI
+        def refresh_callback():
+            return fetch_and_brew(feed_urls, config, ai_provider)
+        
+        serve(processed_articles, last_update, refresh_callback)
 
 
 if __name__ == "__main__":

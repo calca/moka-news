@@ -5,6 +5,7 @@ Extracts data from RSS feeds using feedparser
 
 import feedparser
 from typing import List, Dict, Any
+from datetime import datetime
 
 
 class Grinder:
@@ -19,14 +20,17 @@ class Grinder:
         """
         self.feed_urls = feed_urls
 
-    def grind(self) -> List[Dict[str, Any]]:
+    def grind(self) -> tuple[List[Dict[str, Any]], datetime]:
         """
         Parse all RSS feeds and extract articles
 
         Returns:
-            List of article dictionaries with title, link, summary, and published date
+            Tuple of (articles, last_update_time)
+            - articles: List of article dictionaries with title, link, summary, and published date
+            - last_update_time: Timestamp when feeds were fetched
         """
         articles = []
+        last_update = datetime.now()
 
         for feed_url in self.feed_urls:
             try:
@@ -44,7 +48,7 @@ class Grinder:
             except Exception as e:
                 print(f"Error parsing feed {feed_url}: {e}")
 
-        return articles
+        return articles, last_update
 
 
 def get_default_feeds() -> List[str]:

@@ -33,6 +33,9 @@ A beautiful Textual-based TUI that displays your personalized news digest in the
 - ⚙️  Configuration file support (YAML)
 - 🎨 Beautiful terminal user interface
 - ⌨️  Keyboard shortcuts for navigation
+- 🔄 **Manual refresh** - Press 'r' to fetch latest articles
+- ⏰ **Auto-refresh at 8:00 AM** - Wake up to fresh news with your morning coffee! ☕
+- 📅 **Last update display** - Always know when your feed was refreshed
 - 🔗 Click to open articles in browser
 - 🚀 Fast and lightweight
 - 💾 RSS feed management with OPML storage
@@ -307,8 +310,10 @@ moka-news --no-tui
 While in the TUI:
 
 - `q` or `Ctrl+C` - Quit the application
-- `r` - Refresh feed (coming soon)
+- `r` - Refresh feed (fetch latest articles)
 - Mouse click on article - Open in browser
+
+The TUI also displays the last update time in the header and automatically refreshes at 8:00 AM daily for your morning coffee! ☕
 
 ## Development
 

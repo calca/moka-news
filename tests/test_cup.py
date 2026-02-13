@@ -3,6 +3,7 @@ Tests for The Cup component
 """
 
 from moka_news.cup import Cup, ArticleCard
+from datetime import datetime
 
 
 def test_cup_initialization():
@@ -18,9 +19,11 @@ def test_cup_initialization():
             "ai_summary": "AI test summary",
         }
     ]
-    app = Cup(articles)
+    last_update = datetime(2026, 1, 1, 12, 0, 0)
+    app = Cup(articles, last_update)
     assert app.articles == articles
     assert app.title == "☕ MoKa News"
+    assert app.last_update == last_update
 
 
 def test_cup_with_empty_articles():
@@ -33,6 +36,7 @@ def test_cup_initialization_without_articles():
     """Test that Cup can be initialized without articles"""
     app = Cup()
     assert app.articles == []
+    assert isinstance(app.last_update, datetime)
 
 
 def test_article_card_initialization():
