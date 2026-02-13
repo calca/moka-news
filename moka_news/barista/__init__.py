@@ -307,6 +307,9 @@ TITLE: <title>
 SUMMARY: <summary>"""
 
             # Run gh copilot with the prompt
+            # Note: --allow-all-tools is required for non-interactive mode.
+            # This allows the CLI to run without prompting for tool permissions.
+            # The prompt is read-only (text analysis) so this is safe.
             result = subprocess.run(
                 [
                     "gh",
