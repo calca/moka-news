@@ -3,6 +3,7 @@ Tests for The Grinder component
 """
 
 from moka_news.grinder import Grinder, get_default_feeds
+from datetime import datetime
 
 
 def test_grinder_initialization():
@@ -15,8 +16,9 @@ def test_grinder_initialization():
 def test_grinder_with_empty_list():
     """Test that Grinder handles empty feed list"""
     grinder = Grinder([])
-    articles = grinder.grind()
+    articles, last_update = grinder.grind()
     assert articles == []
+    assert isinstance(last_update, datetime)
 
 
 def test_get_default_feeds():
@@ -27,8 +29,12 @@ def test_get_default_feeds():
     assert all(isinstance(url, str) for url in feeds)
 
 
-def test_grinder_grind_returns_list():
-    """Test that grind() returns a list"""
+def test_grinder_grind_returns_tuple():
+    """Test that grind() returns a tuple of (articles, datetime)"""
     grinder = Grinder(["https://example.com/feed.xml"])
     result = grinder.grind()
-    assert isinstance(result, list)
+    assert isinstance(result, tuple)
+    assert len(result) == 2
+    articles, last_update = result
+    assert isinstance(articles, list)
+    assert isinstance(last_update, datetime)
