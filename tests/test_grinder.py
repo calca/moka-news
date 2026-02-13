@@ -2,13 +2,12 @@
 Tests for The Grinder component
 """
 
-import pytest
 from moka_news.grinder import Grinder, get_default_feeds
 
 
 def test_grinder_initialization():
     """Test that Grinder can be initialized with feed URLs"""
-    feeds = ['https://example.com/feed.xml']
+    feeds = ["https://example.com/feed.xml"]
     grinder = Grinder(feeds)
     assert grinder.feed_urls == feeds
 
@@ -30,6 +29,6 @@ def test_get_default_feeds():
 
 def test_grinder_grind_returns_list():
     """Test that grind() returns a list"""
-    grinder = Grinder(['https://example.com/feed.xml'])
+    grinder = Grinder(["https://example.com/feed.xml"])
     result = grinder.grind()
     assert isinstance(result, list)

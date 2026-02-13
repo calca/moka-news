@@ -11,8 +11,15 @@ A Python module using `feedparser` to extract data from RSS feeds. It gathers ar
 
 ### 🤖 The Barista (L'Agente AI)
 An AI agent that takes raw article text and generates engaging titles and concise summaries using:
-- OpenAI (GPT models)
-- Anthropic (Claude models)
+- **API-based providers:**
+  - OpenAI (GPT models)
+  - Anthropic (Claude models)
+  - Google Gemini (Gemini Pro)
+  - Mistral AI (Mistral models)
+- **CLI-based providers:**
+  - GitHub Copilot CLI (gh copilot)
+  - Gemini CLI (gcloud)
+  - Mistral CLI
 - Simple mode (no AI, for testing)
 
 ### ☕ The Cup (La Tazzina)
@@ -21,7 +28,8 @@ A beautiful Textual-based TUI that displays your personalized news digest in the
 ## Features
 
 - 📰 Parse multiple RSS feeds simultaneously
-- 🤖 AI-powered article summarization (optional)
+- 🤖 AI-powered article summarization with multiple providers (OpenAI, Anthropic, Gemini, Mistral)
+- ⚙️  Configuration file support (YAML)
 - 🎨 Beautiful terminal user interface
 - ⌨️  Keyboard shortcuts for navigation
 - 🔗 Click to open articles in browser
@@ -46,21 +54,81 @@ pip install -e .
 
 # Or install with development dependencies
 pip install -e ".[dev]"
+
+# Optional: Install additional AI providers
+pip install -e ".[gemini]"    # For Google Gemini support
+pip install -e ".[mistral]"   # For Mistral AI support
+pip install -e ".[all]"       # Install all AI providers
 ```
 
 ## Configuration
 
-### API Keys (Optional)
+MoKa News can be configured in multiple ways:
 
-For AI-powered summaries, create a `.env` file in the project root:
+### 1. Configuration File (Recommended)
+
+Create a configuration file for persistent settings:
+
+```bash
+# Create a sample configuration file
+moka-news --create-config
+
+# This creates 'moka-news.yaml' in your current directory
+```
+
+Edit the `moka-news.yaml` file:
+
+```yaml
+# AI Provider Configuration
+ai:
+  provider: simple  # Options: simple, openai, anthropic, gemini, mistral
+  
+  api_keys:
+    openai: your-key-here
+    anthropic: your-key-here
+    gemini: your-key-here
+    mistral: your-key-here
+
+# RSS Feed Configuration
+feeds:
+  urls:
+    - https://news.ycombinator.com/rss
+    - https://www.reddit.com/r/programming/.rss
+    - https://github.blog/feed/
+
+# UI Configuration
+ui:
+  use_tui: true  # Set to false to use console output
+```
+
+You can place the config file in:
+- Current directory: `./moka-news.yaml` or `./.moka-news.yaml`
+- User config: `~/.config/moka-news/config.yaml`
+- Home directory: `~/.moka-news.yaml`
+
+### 2. Environment Variables
+
+For AI-powered summaries, you can set environment variables:
 
 ```bash
 # For OpenAI
-OPENAI_API_KEY=your-openai-api-key-here
+export OPENAI_API_KEY=your-openai-api-key-here
 
 # For Anthropic
-ANTHROPIC_API_KEY=your-anthropic-api-key-here
+export ANTHROPIC_API_KEY=your-anthropic-api-key-here
+
+# For Google Gemini
+export GEMINI_API_KEY=your-gemini-api-key-here
+
+# For Mistral AI
+export MISTRAL_API_KEY=your-mistral-api-key-here
 ```
+
+Or create a `.env` file in the project root with the same variables.
+
+### 3. Command Line Arguments
+
+CLI arguments override both config file and environment variables.
 
 ## Usage
 
@@ -74,6 +142,8 @@ moka-news
 
 ### With AI Processing
 
+**API-based providers:**
+
 Use OpenAI for intelligent summaries:
 
 ```bash
@@ -84,6 +154,38 @@ Use Anthropic Claude for summaries:
 
 ```bash
 moka-news --ai anthropic
+```
+
+Use Google Gemini for summaries:
+
+```bash
+moka-news --ai gemini
+```
+
+Use Mistral AI for summaries:
+
+```bash
+moka-news --ai mistral
+```
+
+**CLI-based providers:**
+
+Use GitHub Copilot CLI (requires `gh` CLI):
+
+```bash
+moka-news --ai copilot-cli
+```
+
+Use Gemini CLI via gcloud (requires `gcloud` CLI):
+
+```bash
+moka-news --ai gemini-cli
+```
+
+Use Mistral CLI (requires `mistral` CLI):
+
+```bash
+moka-news --ai mistral-cli
 ```
 
 ### Custom RSS Feeds
@@ -137,7 +239,14 @@ moka-news --no-tui
 ### Combined Options
 
 ```bash
+# Use custom config file
+moka-news --config myconfig.yaml
+
+# Use OpenAI with custom feeds
 moka-news --ai openai --feeds https://news.ycombinator.com/rss
+
+# Console output instead of TUI
+moka-news --no-tui
 ```
 
 ## Keyboard Shortcuts
