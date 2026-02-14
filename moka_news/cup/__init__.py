@@ -191,6 +191,7 @@ class Cup(App):
         Binding("e", "toggle_editorial", "Editorial"),
         Binding("a", "show_articles", "Articles"),
         Binding("h", "show_history", "History"),
+        Binding("t", "toggle_theme", "Toggle Theme"),
         ("ctrl+c", "quit", "Quit"),
     ]
 
@@ -202,6 +203,9 @@ class Cup(App):
         auto_refresh_time: Optional[time] = time(8, 0),  # Default 8:00 AM
         editorial_content: Optional[str] = None,
         editorial_generator: Optional[Any] = None,
+        theme: str = "rose-pine",
+        theme_light: str = "rose-pine-dawn",
+        theme_dark: str = "rose-pine",
     ):
         super().__init__()
         self.articles = articles or []
@@ -214,6 +218,9 @@ class Cup(App):
         self.title = "☕ MoKa News"
         self.sub_title = self._format_subtitle()
         self._auto_refresh_task = None
+        self.theme_light = theme_light
+        self.theme_dark = theme_dark
+        self.theme = theme
 
     def _format_subtitle(self) -> str:
         """Format the subtitle with last update time"""
@@ -243,6 +250,9 @@ class Cup(App):
 
     async def on_mount(self) -> None:
         """Start the auto-refresh timer when the app mounts"""
+        # Set initial theme
+        self.theme = self.theme
+        
         if self.auto_refresh_time and self.refresh_callback:
             self._auto_refresh_task = asyncio.create_task(self._auto_refresh_loop())
 
@@ -307,6 +317,26 @@ class Cup(App):
     def action_quit(self) -> None:
         """Quit the application"""
         self.exit()
+    
+    def action_toggle_theme(self) -> None:
+        """Toggle between light and dark theme"""
+        current_theme = self.theme
+        
+        # Determine if current theme is light or dark
+        is_dark = current_theme == self.theme_dark
+        
+        if is_dark:
+            # Switch to light theme
+            new_theme = self.theme_light
+            theme_name = "light"
+        else:
+            # Switch to dark theme
+            new_theme = self.theme_dark
+            theme_name = "dark"
+        
+        # Apply the new theme
+        self.theme = new_theme
+        self.notify(f"Switched to {theme_name} theme: {new_theme}", severity="information")
     
     def action_toggle_editorial(self) -> None:
         """Toggle between editorial and articles view"""
@@ -377,6 +407,9 @@ def serve(
     auto_refresh_time: Optional[time] = time(8, 0),
     editorial_content: Optional[str] = None,
     editorial_generator: Optional[Any] = None,
+    theme: str = "rose-pine",
+    theme_light: str = "rose-pine-dawn",
+    theme_dark: str = "rose-pine",
 ):
     """
     Display articles in the TUI
@@ -388,6 +421,19 @@ def serve(
         auto_refresh_time: Time of day to automatically refresh (default: 8:00 AM)
         editorial_content: Optional markdown content of the editorial
         editorial_generator: Optional EditorialGenerator instance for accessing past editorials
+        theme: Initial theme to use (default: rose-pine)
+        theme_light: Light theme option (default: rose-pine-dawn)
+        theme_dark: Dark theme option (default: rose-pine)
     """
-    app = Cup(articles, last_update, refresh_callback, auto_refresh_time, editorial_content, editorial_generator)
+    app = Cup(
+        articles,
+        last_update,
+        refresh_callback,
+        auto_refresh_time,
+        editorial_content,
+        editorial_generator,
+        theme,
+        theme_light,
+        theme_dark,
+    )
     app.run()

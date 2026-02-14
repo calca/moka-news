@@ -72,6 +72,9 @@ DEFAULT_CONFIG = {
     },
     "ui": {
         "use_tui": True,
+        "theme": "rose-pine",  # Default theme (dark, relaxing)
+        "theme_light": "rose-pine-dawn",  # Light theme option
+        "theme_dark": "rose-pine",  # Dark theme option
     },
 }
 
@@ -249,6 +252,9 @@ feeds:
 # UI Configuration
 ui:
   use_tui: true  # Set to false to use console output instead of TUI
+  theme: rose-pine  # Default theme (dark, relaxing) - see Textual themes
+  theme_light: rose-pine-dawn  # Light theme option
+  theme_dark: rose-pine  # Dark theme option
 """
 
     with open(path, "w") as f:

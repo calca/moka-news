@@ -49,3 +49,23 @@ def test_article_card_initialization():
     }
     card = ArticleCard(article)
     assert card.article == article
+
+
+def test_cup_theme_initialization():
+    """Test that Cup can be initialized with custom themes"""
+    app = Cup(
+        theme="rose-pine",
+        theme_light="rose-pine-dawn",
+        theme_dark="rose-pine"
+    )
+    assert app.theme == "rose-pine"
+    assert app.theme_light == "rose-pine-dawn"
+    assert app.theme_dark == "rose-pine"
+
+
+def test_cup_default_theme():
+    """Test that Cup has default theme values"""
+    app = Cup()
+    assert app.theme == "rose-pine"
+    assert app.theme_light == "rose-pine-dawn"
+    assert app.theme_dark == "rose-pine"

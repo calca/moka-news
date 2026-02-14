@@ -417,7 +417,21 @@ Feed Management:
         def refresh_callback():
             return fetch_and_brew(feed_urls, config, ai_provider, download_tracker)
         
-        serve(processed_articles, last_update, refresh_callback, editorial_content=editorial_content, editorial_generator=editorial_generator)
+        # Get theme configuration
+        theme = config["ui"].get("theme", "rose-pine")
+        theme_light = config["ui"].get("theme_light", "rose-pine-dawn")
+        theme_dark = config["ui"].get("theme_dark", "rose-pine")
+        
+        serve(
+            processed_articles,
+            last_update,
+            refresh_callback,
+            editorial_content=editorial_content,
+            editorial_generator=editorial_generator,
+            theme=theme,
+            theme_light=theme_light,
+            theme_dark=theme_dark,
+        )
 
 
 if __name__ == "__main__":

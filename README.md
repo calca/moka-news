@@ -157,6 +157,21 @@ ai:
 # UI Configuration
 ui:
   use_tui: true  # Set to false to use console output
+  theme: rose-pine  # Default theme (dark, relaxing)
+  theme_light: rose-pine-dawn  # Light theme option
+  theme_dark: rose-pine  # Dark theme option
+```
+
+**Theme Configuration:**
+
+MoKa News includes two beautiful, relaxing themes optimized for comfortable reading:
+- **Dark theme:** `rose-pine` - Soft purple tones that are easy on the eyes
+- **Light theme:** `rose-pine-dawn` - Warm, gentle light theme for daytime reading
+
+Switch between themes anytime by pressing `t` in the TUI!
+
+Other available Textual themes include: `textual-dark`, `textual-light`, `nord`, `gruvbox`, `catppuccin-mocha`, `dracula`, `tokyo-night`, `monokai`, `solarized-light`, `solarized-dark`, and more.
+
 ```
 
 You can place the config file in:
@@ -378,6 +393,7 @@ While in the TUI:
 - `e` - Toggle between editorial and articles view
 - `a` - Show articles view
 - `h` - Browse past editorials (history)
+- `t` - Toggle between light and dark theme
 - Mouse click on article - Open in browser
 
 The TUI displays your morning editorial by default, with easy access to individual articles and past editorials. It also automatically refreshes at 8:00 AM daily for your morning coffee! ☕
