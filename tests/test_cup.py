@@ -4,6 +4,7 @@ Tests for The Cup component
 
 from moka_news.cup import Cup, ArticleCard
 from datetime import datetime
+from unittest.mock import MagicMock
 
 
 def test_cup_initialization():
@@ -72,36 +73,26 @@ def test_cup_default_theme():
 
 
 def test_cup_theme_toggle():
-    """Test that theme toggle switches between light and dark themes"""
+    """Test that theme toggle action switches between light and dark themes"""
     app = Cup(
         theme="rose-pine",
         theme_light="rose-pine-dawn",
         theme_dark="rose-pine"
     )
     
+    # Mock the notify method since it requires the app to be running
+    app.notify = MagicMock()
+    
     # Initially on dark theme
     assert app.theme == "rose-pine"
     
-    # Simulate first toggle: dark -> light
-    # Since current theme is dark (rose-pine), it should switch to light
-    current_theme = app.theme
-    if current_theme == app.theme_light:
-        expected_theme = app.theme_dark
-    else:
-        expected_theme = app.theme_light
-    
-    # Manually apply the toggle logic
-    app.theme = expected_theme
+    # Call the actual action method to toggle to light
+    app.action_toggle_theme()
     assert app.theme == "rose-pine-dawn", "First toggle should switch to light theme"
+    assert app.notify.called, "Should notify user of theme change"
     
-    # Simulate second toggle: light -> dark
-    current_theme = app.theme
-    if current_theme == app.theme_light:
-        expected_theme = app.theme_dark
-    else:
-        expected_theme = app.theme_light
-    
-    app.theme = expected_theme
+    # Call the action method again to toggle back to dark
+    app.action_toggle_theme()
     assert app.theme == "rose-pine", "Second toggle should switch back to dark theme"
 
 
@@ -113,15 +104,16 @@ def test_cup_theme_toggle_from_custom():
         theme_dark="rose-pine"
     )
     
+    # Mock the notify method
+    app.notify = MagicMock()
+    
     # Starting with custom theme
     assert app.theme == "nord"
     
-    # Apply toggle logic: custom theme -> light (since it's not the light theme)
-    current_theme = app.theme
-    if current_theme == app.theme_light:
-        expected_theme = app.theme_dark
-    else:
-        expected_theme = app.theme_light
-    
-    app.theme = expected_theme
+    # Toggle from custom theme should switch to light (since it's not the light theme)
+    app.action_toggle_theme()
     assert app.theme == "rose-pine-dawn", "Toggle from custom theme should switch to light"
+    
+    # Toggle again should switch to dark
+    app.action_toggle_theme()
+    assert app.theme == "rose-pine", "Second toggle should switch to dark"
