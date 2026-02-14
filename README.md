@@ -140,6 +140,19 @@ ai:
     - technology
     - artificial intelligence
     - programming
+  
+  # Editorial Prompts (optional)
+  # Customize how the AI generates morning editorials
+  editorial_prompts:
+    system_message: "You are a skilled news editor creating an engaging morning editorial."
+    user_prompt: |
+      Create a cohesive morning news editorial from these articles:
+      {content}
+      
+      Write an engaging editorial that highlights important news and
+      connects topics into a coherent narrative enjoyable over morning coffee.
+    keywords_section: |
+      Pay special attention to topics related to: {keywords}
 
 # UI Configuration
 ui:
@@ -373,12 +386,36 @@ The TUI displays your morning editorial by default, with easy access to individu
 
 MoKa News generates a single, AI-powered editorial that combines your news articles into a coherent morning reading experience:
 
-- **Smart Content Selection**: The AI selects and summarizes the most important articles based on your keywords
+- **Smart Content Selection**: The AI processes all articles filtered by date (since last download) based on your keywords
 - **Cohesive Narrative**: Articles are combined into a single, flowing editorial rather than separate summaries
 - **Source Links**: All source articles are linked at the end of the editorial
 - **Markdown Archive**: Each editorial is saved as a markdown file in `~/.config/moka-news/editorials/`
 - **Date-based Filename**: Editorials are saved as `YYYY-MM-DD_HH-MM.md` for easy organization
 - **History Access**: Press `h` in the TUI to browse and read past editorials
+- **Customizable Prompts**: Fine-tune how the AI generates editorials by customizing prompts in your config file
+
+### Customizing Editorial Generation
+
+You can customize the editorial generation by adding `editorial_prompts` to your `config.yaml`:
+
+```yaml
+ai:
+  editorial_prompts:
+    system_message: "You are a skilled news editor..."
+    user_prompt: |
+      Create a cohesive morning news editorial from these articles:
+      {content}
+      
+      [Your custom instructions here]
+    keywords_section: |
+      Pay special attention to: {keywords}
+```
+
+This allows you to fine-tune:
+- The editorial style and tone
+- How topics are connected
+- The level of detail
+- Focus areas and priorities
 
 Example editorial structure:
 ```markdown
@@ -399,7 +436,7 @@ Example editorial structure:
 ...
 ```
 
-The editorial feature respects your configured keywords, ensuring the content focuses on topics you care about!
+The editorial feature respects your configured keywords and processes all articles (not just a subset), ensuring comprehensive coverage of the day's news!
 
 ## Development
 
