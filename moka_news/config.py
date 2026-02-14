@@ -8,6 +8,25 @@ import yaml
 from typing import Dict, Any, Optional
 from pathlib import Path
 
+DEFAULT_PROMPTS = {
+    "system_message": "You are a news editor creating engaging titles and summaries.",
+    "user_prompt": """Given this article:
+Title: {title}
+Content: {content}
+
+Generate:
+1. A concise, engaging title (max 80 characters)
+2. A brief summary (max 200 characters)""",
+    "keywords_section": """
+
+Focus on these keywords/topics if relevant: {keywords}""",
+    "format_section": """
+
+Format as:
+TITLE: <title>
+SUMMARY: <summary>"""
+}
+
 DEFAULT_CONFIG = {
     "ai": {
         "provider": "openai",  # Changed from "simple" - AI is now default, simple is demo only
@@ -18,6 +37,7 @@ DEFAULT_CONFIG = {
             "mistral": None,
         },
         "keywords": [],  # Optional keywords for summary generation
+        "prompts": DEFAULT_PROMPTS,  # External prompts with placeholders
     },
     "feeds": {
         "urls": [
@@ -146,6 +166,28 @@ ai:
     # - technology
     # - artificial intelligence
     # - programming
+  
+  # AI Prompts Configuration (optional)
+  # You can customize the prompts used for AI summary generation
+  # Use placeholders: {title}, {content}, {keywords}
+  prompts:
+    system_message: "You are a news editor creating engaging titles and summaries."
+    user_prompt: |
+      Given this article:
+      Title: {title}
+      Content: {content}
+
+      Generate:
+      1. A concise, engaging title (max 80 characters)
+      2. A brief summary (max 200 characters)
+    keywords_section: |
+
+      Focus on these keywords/topics if relevant: {keywords}
+    format_section: |
+
+      Format as:
+      TITLE: <title>
+      SUMMARY: <summary>
 
 # RSS Feed Configuration
 feeds:
