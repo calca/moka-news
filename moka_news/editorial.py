@@ -55,7 +55,8 @@ class EditorialGenerator:
                 "title": "Good Morning!",
                 "content": "No news articles available today.",
                 "timestamp": datetime.now(),
-                "sources": []
+                "sources": [],
+                "article_count": 0
             }
         
         # Build editorial prompt
