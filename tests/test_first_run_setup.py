@@ -3,6 +3,7 @@ Tests for first-run setup module
 """
 
 import os
+import yaml
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 from moka_news.first_run_setup import (
@@ -80,7 +81,6 @@ def test_save_config(tmp_path):
     assert config_path.exists()
     
     # Read and verify content
-    import yaml
     with open(config_path, 'r') as f:
         saved_config = yaml.safe_load(f)
     
@@ -117,7 +117,6 @@ def test_save_config_includes_keywords(tmp_path):
     assert config_path.exists()
     
     # Read and verify content
-    import yaml
     with open(config_path, 'r') as f:
         saved_config = yaml.safe_load(f)
     
@@ -136,7 +135,6 @@ def test_save_config_defaults_empty_keywords(tmp_path):
     result_path = save_config(config_data, config_path)
     
     # Read and verify content
-    import yaml
     with open(config_path, 'r') as f:
         saved_config = yaml.safe_load(f)
     
