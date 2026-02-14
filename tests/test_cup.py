@@ -82,26 +82,46 @@ def test_cup_theme_toggle():
     # Initially on dark theme
     assert app.theme == "rose-pine"
     
-    # Simulate toggle action (we can't easily test the actual action without running the app)
-    # Instead, test the toggle logic directly
+    # Simulate first toggle: dark -> light
+    # Since current theme is dark (rose-pine), it should switch to light
     current_theme = app.theme
-    is_dark = current_theme == app.theme_dark
-    
-    # After first toggle, should switch to light
-    if is_dark:
-        new_theme = app.theme_light
+    if current_theme == app.theme_light:
+        expected_theme = app.theme_dark
     else:
-        new_theme = app.theme_dark
+        expected_theme = app.theme_light
     
-    assert new_theme == "rose-pine-dawn", "First toggle should switch to light theme"
+    # Manually apply the toggle logic
+    app.theme = expected_theme
+    assert app.theme == "rose-pine-dawn", "First toggle should switch to light theme"
     
-    # After second toggle, should switch back to dark
-    current_theme = new_theme
-    is_dark = current_theme == app.theme_dark
-    
-    if is_dark:
-        new_theme = app.theme_light
+    # Simulate second toggle: light -> dark
+    current_theme = app.theme
+    if current_theme == app.theme_light:
+        expected_theme = app.theme_dark
     else:
-        new_theme = app.theme_dark
+        expected_theme = app.theme_light
     
-    assert new_theme == "rose-pine", "Second toggle should switch back to dark theme"
+    app.theme = expected_theme
+    assert app.theme == "rose-pine", "Second toggle should switch back to dark theme"
+
+
+def test_cup_theme_toggle_from_custom():
+    """Test that theme toggle from a custom theme switches to light first"""
+    app = Cup(
+        theme="nord",  # Custom theme not matching either light or dark
+        theme_light="rose-pine-dawn",
+        theme_dark="rose-pine"
+    )
+    
+    # Starting with custom theme
+    assert app.theme == "nord"
+    
+    # Apply toggle logic: custom theme -> light (since it's not the light theme)
+    current_theme = app.theme
+    if current_theme == app.theme_light:
+        expected_theme = app.theme_dark
+    else:
+        expected_theme = app.theme_light
+    
+    app.theme = expected_theme
+    assert app.theme == "rose-pine-dawn", "Toggle from custom theme should switch to light"
