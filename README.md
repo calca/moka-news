@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/b7ba51ff-ecc2-478e-a652-698b7c1b31ca" alt="MOKA NEWS Logo" width="400"/>
+</p>
+
 # ☕ MoKa News
 
 **Morning Persona News** - A beautiful TUI (Text User Interface) RSS news aggregator with AI-powered summaries.
