@@ -379,7 +379,7 @@ def run_first_run_setup(opml_manager: OPMLManager) -> Dict[str, Any]:
     provider_config["keywords"] = keywords
     
     # Prompt for prompts customization
-    prompts_info = prompt_prompts_customization()
+    will_customize_prompts = prompt_prompts_customization()
     
     # Prompt for OPML setup
     feeds_configured = prompt_opml_setup(opml_manager)
@@ -395,7 +395,7 @@ def run_first_run_setup(opml_manager: OPMLManager) -> Dict[str, Any]:
         print(f"Feeds saved to: {opml_manager.opml_path}")
     if keywords:
         print(f"Keywords configured: {', '.join(keywords)}")
-    if prompts_info:
+    if will_customize_prompts:
         print("AI prompts: Can be customized in config file")
     else:
         print("AI prompts: Using defaults (can customize later)")
