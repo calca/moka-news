@@ -4,11 +4,13 @@ Displays the news digest in a beautiful terminal interface
 """
 
 from textual.app import App, ComposeResult
-from textual.containers import ScrollableContainer
-from textual.widgets import Header, Footer, Static, Label
+from textual.containers import ScrollableContainer, VerticalScroll
+from textual.widgets import Header, Footer, Static, Label, Markdown, ListView, ListItem
 from textual.binding import Binding
+from textual.screen import Screen
 from typing import List, Dict, Any, Callable, Optional
 from datetime import datetime, time
+from pathlib import Path
 import webbrowser
 import asyncio
 
@@ -48,6 +50,92 @@ class ArticleCard(Static):
                 self.app.notify(f"Could not open link: {e}", severity="error")
 
 
+class EditorialView(Static):
+    """Widget to display the morning editorial"""
+    
+    def __init__(self, editorial_content: str, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.editorial_content = editorial_content
+    
+    def compose(self) -> ComposeResult:
+        """Create the editorial view layout"""
+        yield Markdown(self.editorial_content)
+
+
+class EditorialListScreen(Screen):
+    """Screen for browsing past editorials"""
+    
+    BINDINGS = [
+        Binding("escape", "dismiss", "Back", priority=True),
+        ("q", "dismiss", "Back"),
+    ]
+    
+    CSS = """
+    EditorialListScreen {
+        align: center middle;
+    }
+    
+    #editorial-list-container {
+        width: 80%;
+        height: 80%;
+        border: solid $primary;
+        background: $panel;
+        padding: 1;
+    }
+    
+    ListView {
+        height: 100%;
+    }
+    
+    ListItem {
+        padding: 1 2;
+    }
+    
+    ListItem:hover {
+        background: $boost;
+    }
+    """
+    
+    def __init__(self, editorials: List[Dict[str, Any]], *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.editorials = editorials
+        self.selected_editorial = None
+    
+    def compose(self) -> ComposeResult:
+        """Create the editorial list layout"""
+        yield Header()
+        
+        with VerticalScroll(id="editorial-list-container"):
+            if self.editorials:
+                list_view = ListView()
+                for editorial in self.editorials:
+                    timestamp = editorial['timestamp']
+                    date_str = timestamp.strftime("%A, %B %d, %Y at %H:%M")
+                    title = editorial.get('title', 'Untitled')
+                    item = ListItem(Label(f"[bold]{title}[/bold]\n[dim]{date_str}[/dim]"))
+                    item.editorial_data = editorial
+                    list_view.append(item)
+                yield list_view
+            else:
+                yield Static(
+                    "[bold]No past editorials found[/bold]\n\n"
+                    "Editorials will appear here after they are generated.",
+                    id="empty-state"
+                )
+        
+        yield Footer()
+    
+    def on_list_view_selected(self, event: ListView.Selected) -> None:
+        """Handle editorial selection"""
+        if hasattr(event.item, 'editorial_data'):
+            self.selected_editorial = event.item.editorial_data
+            self.dismiss(self.selected_editorial)
+    
+    def action_dismiss(self) -> None:
+        """Dismiss the screen"""
+        self.dismiss(None)
+
+
 class Cup(App):
     """MoKa News TUI Application"""
 
@@ -56,7 +144,17 @@ class Cup(App):
         background: $surface;
     }
     
+    #content-container {
+        height: 100%;
+        padding: 1;
+    }
+    
     #articles-container {
+        height: 100%;
+        padding: 1;
+    }
+    
+    #editorial-container {
         height: 100%;
         padding: 1;
     }
@@ -71,6 +169,12 @@ class Cup(App):
     ArticleCard:hover {
         background: $boost;
         border: solid $accent;
+    }
+    
+    EditorialView {
+        border: solid $primary;
+        padding: 2;
+        background: $panel;
     }
     
     #empty-state {
@@ -89,6 +193,9 @@ class Cup(App):
     BINDINGS = [
         Binding("q", "quit", "Quit", priority=True),
         Binding("r", "refresh", "Refresh"),
+        Binding("e", "toggle_editorial", "Editorial"),
+        Binding("a", "show_articles", "Articles"),
+        Binding("h", "show_history", "History"),
         ("ctrl+c", "quit", "Quit"),
     ]
 
@@ -98,12 +205,17 @@ class Cup(App):
         last_update: Optional[datetime] = None,
         refresh_callback: Optional[Callable[[], tuple[List[Dict[str, Any]], datetime]]] = None,
         auto_refresh_time: Optional[time] = time(8, 0),  # Default 8:00 AM
+        editorial_content: Optional[str] = None,
+        editorial_generator: Optional[Any] = None,
     ):
         super().__init__()
         self.articles = articles or []
         self.last_update = last_update or datetime.now()
         self.refresh_callback = refresh_callback
         self.auto_refresh_time = auto_refresh_time
+        self.editorial_content = editorial_content
+        self.editorial_generator = editorial_generator
+        self.view_mode = "editorial" if editorial_content else "articles"
         self.title = "☕ MoKa News"
         self.sub_title = self._format_subtitle()
         self._auto_refresh_task = None
@@ -112,16 +224,21 @@ class Cup(App):
         """Format the subtitle with last update time"""
         time_str = self.last_update.strftime("%H:%M:%S")
         date_str = self.last_update.strftime("%d/%m/%Y")
-        return f"Your Morning Persona News | Last update: {date_str} at {time_str}"
+        mode_text = "Editorial View" if self.view_mode == "editorial" else "Articles View"
+        return f"Your Morning Persona News | {mode_text} | Last update: {date_str} at {time_str}"
 
     def compose(self) -> ComposeResult:
         """Create the application layout"""
         yield Header(show_clock=True)
 
-        with ScrollableContainer(id="articles-container"):
-            if self.articles:
-                for article in self.articles:
-                    yield ArticleCard(article)
+        with ScrollableContainer(id="content-container"):
+            if self.view_mode == "editorial" and self.editorial_content:
+                yield EditorialView(self.editorial_content, id="editorial-container")
+            elif self.articles:
+                container_id = "articles-container"
+                with ScrollableContainer(id=container_id):
+                    for article in self.articles:
+                        yield ArticleCard(article)
             else:
                 yield Static(
                     "[bold]No articles available[/bold]\n\n"
@@ -197,6 +314,67 @@ class Cup(App):
     def action_quit(self) -> None:
         """Quit the application"""
         self.exit()
+    
+    def action_toggle_editorial(self) -> None:
+        """Toggle between editorial and articles view"""
+        if self.editorial_content:
+            self.view_mode = "editorial" if self.view_mode == "articles" else "articles"
+            self.sub_title = self._format_subtitle()
+            self._rebuild_view()
+        else:
+            self.notify("No editorial available", severity="warning")
+    
+    def action_show_articles(self) -> None:
+        """Show articles view"""
+        self.view_mode = "articles"
+        self.sub_title = self._format_subtitle()
+        self._rebuild_view()
+    
+    async def action_show_history(self) -> None:
+        """Show past editorials"""
+        if not self.editorial_generator:
+            self.notify("Editorial history not available", severity="warning")
+            return
+        
+        editorials = self.editorial_generator.list_editorials()
+        
+        if not editorials:
+            self.notify("No past editorials found", severity="information")
+            return
+        
+        # Show editorial list screen
+        screen = EditorialListScreen(editorials)
+        result = await self.push_screen_wait(screen)
+        
+        if result:
+            # Load and display selected editorial
+            editorial_path = result['filepath']
+            try:
+                content = self.editorial_generator.load_editorial(editorial_path)
+                self.editorial_content = content
+                self.view_mode = "editorial"
+                self.sub_title = self._format_subtitle()
+                self._rebuild_view()
+                self.notify(f"Loaded editorial: {result['title']}", severity="information")
+            except Exception as e:
+                self.notify(f"Error loading editorial: {e}", severity="error")
+    
+    def _rebuild_view(self) -> None:
+        """Rebuild the view based on current mode"""
+        container = self.query_one("#content-container")
+        container.remove_children()
+        
+        if self.view_mode == "editorial" and self.editorial_content:
+            container.mount(EditorialView(self.editorial_content, id="editorial-container"))
+        elif self.articles:
+            for article in self.articles:
+                container.mount(ArticleCard(article))
+        else:
+            container.mount(Static(
+                "[bold]No articles available[/bold]\n\n"
+                "Run with RSS feeds to see news articles here.",
+                id="empty-state",
+            ))
 
 
 def serve(
@@ -204,6 +382,8 @@ def serve(
     last_update: Optional[datetime] = None,
     refresh_callback: Optional[Callable[[], tuple[List[Dict[str, Any]], datetime]]] = None,
     auto_refresh_time: Optional[time] = time(8, 0),
+    editorial_content: Optional[str] = None,
+    editorial_generator: Optional[Any] = None,
 ):
     """
     Display articles in the TUI
@@ -213,6 +393,8 @@ def serve(
         last_update: Timestamp of when articles were last fetched
         refresh_callback: Optional callback function to refresh articles
         auto_refresh_time: Time of day to automatically refresh (default: 8:00 AM)
+        editorial_content: Optional markdown content of the editorial
+        editorial_generator: Optional EditorialGenerator instance for accessing past editorials
     """
-    app = Cup(articles, last_update, refresh_callback, auto_refresh_time)
+    app = Cup(articles, last_update, refresh_callback, auto_refresh_time, editorial_content, editorial_generator)
     app.run()
