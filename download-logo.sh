@@ -7,6 +7,9 @@ set -e  # Exit on error
 LOGO_URL="https://github.com/user-attachments/assets/b7ba51ff-ecc2-478e-a652-698b7c1b31ca"
 LOGO_PATH="assets/logo.png"
 
+# Ensure assets directory exists
+mkdir -p assets
+
 echo "Downloading MOKA NEWS logo..."
 echo "From: $LOGO_URL"
 echo "To: $LOGO_PATH"

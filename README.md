@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" alt="MOKA NEWS Logo" width="400"/>
+  <img src="assets/logo.png" alt="MOKA NEWS - Morning Persona News aggregator logo with colorful geometric design" width="400"/>
 </p>
 
 > **Note**: If the logo is not displaying, run `./download-logo.sh` to download it, or manually download it from [here](https://github.com/user-attachments/assets/b7ba51ff-ecc2-478e-a652-698b7c1b31ca) and save it as `assets/logo.png`.
