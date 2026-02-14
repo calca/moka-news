@@ -237,6 +237,46 @@ def prompt_keywords() -> list:
             print("Please enter 'y' or 'n'.")
 
 
+def prompt_prompts_customization() -> bool:
+    """
+    Prompt user if they want to customize AI prompts
+    
+    Returns:
+        True if user wants to customize prompts, False otherwise
+    """
+    print("\n" + "=" * 60)
+    print("📝 AI Prompts Customization (Optional)")
+    print("=" * 60)
+    print("\nMoKa News uses AI prompts to generate article titles and summaries.")
+    print("You can use the default prompts or customize them later.")
+    print("\nDefault prompts are well-tested and work great for most users.")
+    print("Advanced users can customize prompts in the config file using placeholders:")
+    print("  - {title}: Article title")
+    print("  - {content}: Article content")
+    print("  - {keywords}: Your configured keywords")
+    
+    while True:
+        choice = input("\nUse default prompts? [Y/n]: ").strip().lower()
+        
+        if choice in ['', 'y', 'yes']:
+            print("\n✓ Using default AI prompts.")
+            print("  You can customize prompts later in your config file.")
+            print("  See the 'ai.prompts' section in ~/.config/moka-news/config.yaml")
+            return False
+        elif choice in ['n', 'no']:
+            print("\n✓ You can customize prompts after setup.")
+            print("  Edit the 'ai.prompts' section in your config file:")
+            print("  ~/.config/moka-news/config.yaml")
+            print("\n  Available prompts to customize:")
+            print("    - system_message: AI system instructions")
+            print("    - user_prompt: Main prompt template")
+            print("    - keywords_section: Keywords integration template")
+            print("    - format_section: Output format instructions")
+            return True
+        else:
+            print("Please enter 'y' or 'n'.")
+
+
 def prompt_opml_setup(opml_manager: OPMLManager) -> bool:
     """
     Prompt user to set up OPML feeds with suggestions
@@ -293,6 +333,9 @@ def save_config(config_data: Dict[str, Any], config_path: Optional[Path] = None)
     # Ensure directory exists
     config_path.parent.mkdir(parents=True, exist_ok=True)
     
+    # Load default prompts
+    from moka_news.config import DEFAULT_PROMPTS
+    
     # Prepare config content
     config_content = {
         "ai": {
@@ -303,7 +346,8 @@ def save_config(config_data: Dict[str, Any], config_path: Optional[Path] = None)
                 "gemini": None,
                 "mistral": None,
             },
-            "keywords": config_data.get("keywords", [])
+            "keywords": config_data.get("keywords", []),
+            "prompts": DEFAULT_PROMPTS  # Include default prompts
         },
         "ui": {
             "use_tui": True
@@ -334,6 +378,9 @@ def run_first_run_setup(opml_manager: OPMLManager) -> Dict[str, Any]:
     keywords = prompt_keywords()
     provider_config["keywords"] = keywords
     
+    # Prompt for prompts customization
+    will_customize_prompts = prompt_prompts_customization()
+    
     # Prompt for OPML setup
     feeds_configured = prompt_opml_setup(opml_manager)
     
@@ -348,6 +395,10 @@ def run_first_run_setup(opml_manager: OPMLManager) -> Dict[str, Any]:
         print(f"Feeds saved to: {opml_manager.opml_path}")
     if keywords:
         print(f"Keywords configured: {', '.join(keywords)}")
+    if will_customize_prompts:
+        print("AI prompts: Can be customized in config file")
+    else:
+        print("AI prompts: Using defaults (can customize later)")
     print("\nYou can now run: moka-news")
     print("=" * 60 + "\n")
     

@@ -91,9 +91,9 @@ for i, article in enumerate(processed_articles, 1):
     print(f"    Summary: {article['ai_summary']}")
     print(f"    Link: {article['link']}")
 
-# Example 4: How keywords affect AI prompts
+# Example 4: How keywords and prompts affect AI behavior
 print("\n" + "=" * 80)
-print("Example 4: How keywords affect AI prompts")
+print("Example 4: How keywords and prompts affect AI behavior")
 print("=" * 80)
 
 from moka_news.barista import _build_prompt
@@ -114,14 +114,31 @@ prompt_with_keywords = _build_prompt(test_article, test_keywords)
 print("\n--- Prompt WITH keywords ---")
 print(prompt_with_keywords)
 
+# With custom prompts
+custom_prompts = {
+    "user_prompt": "Article: {title}\nContent: {content}\n\nCreate a summary:",
+    "keywords_section": "\nFocus areas: {keywords}",
+    "format_section": "\nOutput: TITLE and SUMMARY"
+}
+prompt_custom = _build_prompt(test_article, test_keywords, custom_prompts)
+print("\n--- Prompt WITH custom prompts ---")
+print(prompt_custom)
+
 print("\n" + "=" * 80)
 print("Summary")
 print("=" * 80)
 print("""
-Keywords help AI providers focus on specific topics:
+Keywords and prompts help customize AI behavior:
 1. Add keywords to your moka-news.yaml configuration file
 2. Keywords are passed to all AI providers (OpenAI, Anthropic, Gemini, etc.)
 3. The AI will prioritize these topics when generating summaries
 4. Keywords are optional - the system works fine without them
 5. Great for customizing news summaries to your interests!
+
+Prompts customization (NEW):
+6. Prompts are now external and can be customized in config files
+7. Use placeholders: {title}, {content}, {keywords}
+8. Customize system_message, user_prompt, keywords_section, format_section
+9. Edit the 'ai.prompts' section in ~/.config/moka-news/config.yaml
+10. Default prompts work great for most users
 """)
