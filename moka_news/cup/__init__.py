@@ -149,11 +149,6 @@ class Cup(App):
         padding: 1;
     }
     
-    #articles-container {
-        height: 100%;
-        padding: 1;
-    }
-    
     #editorial-container {
         height: 100%;
         padding: 1;
@@ -235,10 +230,8 @@ class Cup(App):
             if self.view_mode == "editorial" and self.editorial_content:
                 yield EditorialView(self.editorial_content, id="editorial-container")
             elif self.articles:
-                container_id = "articles-container"
-                with ScrollableContainer(id=container_id):
-                    for article in self.articles:
-                        yield ArticleCard(article)
+                for article in self.articles:
+                    yield ArticleCard(article)
             else:
                 yield Static(
                     "[bold]No articles available[/bold]\n\n"
