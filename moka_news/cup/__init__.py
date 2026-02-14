@@ -319,8 +319,9 @@ class Cup(App):
         """Toggle between light and dark theme"""
         current_theme = self.theme
         
-        # Determine if current theme is light or dark
-        is_dark = current_theme == self.theme_dark
+        # Determine if current theme is the dark theme
+        # If theme doesn't match either, treat as dark and switch to light
+        is_dark = current_theme == self.theme_dark or current_theme != self.theme_light
         
         if is_dark:
             # Switch to light theme

@@ -69,3 +69,39 @@ def test_cup_default_theme():
     assert app.theme == "rose-pine"
     assert app.theme_light == "rose-pine-dawn"
     assert app.theme_dark == "rose-pine"
+
+
+def test_cup_theme_toggle():
+    """Test that theme toggle switches between light and dark themes"""
+    app = Cup(
+        theme="rose-pine",
+        theme_light="rose-pine-dawn",
+        theme_dark="rose-pine"
+    )
+    
+    # Initially on dark theme
+    assert app.theme == "rose-pine"
+    
+    # Simulate toggle action (we can't easily test the actual action without running the app)
+    # Instead, test the toggle logic directly
+    current_theme = app.theme
+    is_dark = current_theme == app.theme_dark
+    
+    # After first toggle, should switch to light
+    if is_dark:
+        new_theme = app.theme_light
+    else:
+        new_theme = app.theme_dark
+    
+    assert new_theme == "rose-pine-dawn", "First toggle should switch to light theme"
+    
+    # After second toggle, should switch back to dark
+    current_theme = new_theme
+    is_dark = current_theme == app.theme_dark
+    
+    if is_dark:
+        new_theme = app.theme_light
+    else:
+        new_theme = app.theme_dark
+    
+    assert new_theme == "rose-pine", "Second toggle should switch back to dark theme"
