@@ -140,3 +140,30 @@ def test_save_config_defaults_empty_keywords(tmp_path):
     
     assert "keywords" in saved_config["ai"]
     assert saved_config["ai"]["keywords"] == []
+
+
+def test_save_config_includes_prompts(tmp_path):
+    """Test that save_config includes default prompts"""
+    config_path = tmp_path / "config.yaml"
+    
+    config_data = {
+        "provider": "openai",
+        "keywords": []
+    }
+    
+    result_path = save_config(config_data, config_path)
+    
+    # Read and verify content
+    with open(config_path, 'r') as f:
+        saved_config = yaml.safe_load(f)
+    
+    assert "prompts" in saved_config["ai"]
+    assert "system_message" in saved_config["ai"]["prompts"]
+    assert "user_prompt" in saved_config["ai"]["prompts"]
+    assert "keywords_section" in saved_config["ai"]["prompts"]
+    assert "format_section" in saved_config["ai"]["prompts"]
+    
+    # Verify prompts have placeholders
+    assert "{title}" in saved_config["ai"]["prompts"]["user_prompt"]
+    assert "{content}" in saved_config["ai"]["prompts"]["user_prompt"]
+    assert "{keywords}" in saved_config["ai"]["prompts"]["keywords_section"]
