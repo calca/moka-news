@@ -72,7 +72,8 @@ pip install -e ".[all]"       # Install all AI providers
 On your first run, MoKa News will launch an interactive setup wizard that will:
 
 1. **Select your AI provider** - Choose from OpenAI, Anthropic, Gemini, Mistral, or CLI-based providers
-2. **Configure RSS feeds** - Accept our curated list of 5 tech feeds or configure your own later
+2. **Configure keywords** (optional) - Set keywords to focus AI summaries on topics you care about
+3. **Configure RSS feeds** - Accept our curated list of 5 tech feeds or configure your own later
 
 Simply run:
 
@@ -94,6 +95,7 @@ MoKa News can be configured in multiple ways:
 
 On first launch, MoKa News will automatically run an interactive setup wizard to help you:
 - Choose your preferred AI provider
+- Optionally configure keywords to focus summaries on your interests
 - Configure your RSS feeds with our curated tech feed suggestions
 
 Simply run `moka-news` and follow the prompts!
@@ -164,7 +166,11 @@ Or create a `.env` file in the project root with the same variables.
 
 ### 4. Keywords Configuration
 
-You can configure keywords to help focus AI-generated summaries on specific topics you're interested in. Add them to your configuration file:
+You can configure keywords to help focus AI-generated summaries on specific topics you're interested in.
+
+**During first-run setup:** The setup wizard will prompt you to optionally configure keywords.
+
+**Manual configuration:** Add them to your configuration file:
 
 ```yaml
 ai:

@@ -199,6 +199,44 @@ def prompt_ai_provider() -> Dict[str, Any]:
             sys.exit(1)
 
 
+def prompt_keywords() -> list:
+    """
+    Prompt user to configure keywords for summary focus
+    
+    Returns:
+        List of keywords (empty if user skips)
+    """
+    print("\n" + "=" * 60)
+    print("🔑 Keywords Configuration (Optional)")
+    print("=" * 60)
+    print("\nKeywords help focus AI summaries on topics you care about.")
+    print("Examples: 'artificial intelligence', 'security', 'python', 'kubernetes'")
+    print("\nYou can enter multiple keywords separated by commas.")
+    
+    while True:
+        choice = input("\nConfigure keywords now? [y/N]: ").strip().lower()
+        
+        if choice in ['n', 'no', '']:
+            print("\n⏭️  Skipping keywords configuration.")
+            print("  You can add keywords later in your config file.")
+            return []
+        elif choice in ['y', 'yes']:
+            keywords_input = input("\nEnter keywords (comma-separated): ").strip()
+            if keywords_input:
+                keywords = [k.strip() for k in keywords_input.split(',') if k.strip()]
+                if keywords:
+                    print(f"\n✓ Keywords configured: {', '.join(keywords)}")
+                    return keywords
+                else:
+                    print("\n⚠️  No valid keywords entered. Skipping.")
+                    return []
+            else:
+                print("\n⚠️  No keywords entered. Skipping.")
+                return []
+        else:
+            print("Please enter 'y' or 'n'.")
+
+
 def prompt_opml_setup(opml_manager: OPMLManager) -> bool:
     """
     Prompt user to set up OPML feeds with suggestions
@@ -264,7 +302,8 @@ def save_config(config_data: Dict[str, Any], config_path: Optional[Path] = None)
                 "anthropic": None,
                 "gemini": None,
                 "mistral": None,
-            }
+            },
+            "keywords": config_data.get("keywords", [])
         },
         "ui": {
             "use_tui": True
@@ -291,6 +330,10 @@ def run_first_run_setup(opml_manager: OPMLManager) -> Dict[str, Any]:
     # Prompt for AI provider
     provider_config = prompt_ai_provider()
     
+    # Prompt for keywords
+    keywords = prompt_keywords()
+    provider_config["keywords"] = keywords
+    
     # Prompt for OPML setup
     feeds_configured = prompt_opml_setup(opml_manager)
     
@@ -303,11 +346,14 @@ def run_first_run_setup(opml_manager: OPMLManager) -> Dict[str, Any]:
     print(f"Configuration saved to: {config_path}")
     if feeds_configured:
         print(f"Feeds saved to: {opml_manager.opml_path}")
+    if keywords:
+        print(f"Keywords configured: {', '.join(keywords)}")
     print("\nYou can now run: moka-news")
     print("=" * 60 + "\n")
     
     return {
         "provider": provider_config["provider"],
+        "keywords": keywords,
         "config_path": config_path,
         "feeds_configured": feeds_configured
     }

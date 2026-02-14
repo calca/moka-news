@@ -101,3 +101,44 @@ def test_save_config_creates_directory(tmp_path):
     
     assert config_path.exists()
     assert config_path.parent.exists()
+
+
+def test_save_config_includes_keywords(tmp_path):
+    """Test that save_config includes keywords when provided"""
+    config_path = tmp_path / "config.yaml"
+    
+    config_data = {
+        "provider": "openai",
+        "keywords": ["technology", "AI", "programming"]
+    }
+    
+    result_path = save_config(config_data, config_path)
+    
+    assert config_path.exists()
+    
+    # Read and verify content
+    import yaml
+    with open(config_path, 'r') as f:
+        saved_config = yaml.safe_load(f)
+    
+    assert "keywords" in saved_config["ai"]
+    assert saved_config["ai"]["keywords"] == ["technology", "AI", "programming"]
+
+
+def test_save_config_defaults_empty_keywords(tmp_path):
+    """Test that save_config defaults to empty keywords list"""
+    config_path = tmp_path / "config.yaml"
+    
+    config_data = {
+        "provider": "gemini"
+    }
+    
+    result_path = save_config(config_data, config_path)
+    
+    # Read and verify content
+    import yaml
+    with open(config_path, 'r') as f:
+        saved_config = yaml.safe_load(f)
+    
+    assert "keywords" in saved_config["ai"]
+    assert saved_config["ai"]["keywords"] == []
