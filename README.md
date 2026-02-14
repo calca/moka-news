@@ -172,8 +172,6 @@ Switch between themes anytime by pressing `t` in the TUI!
 
 Other available Textual themes include: `textual-dark`, `textual-light`, `nord`, `gruvbox`, `catppuccin-mocha`, `dracula`, `tokyo-night`, `monokai`, `solarized-light`, `solarized-dark`, and more.
 
-```
-
 You can place the config file in:
 - Current directory: `./moka-news.yaml` or `./.moka-news.yaml`
 - User config: `~/.config/moka-news/config.yaml`

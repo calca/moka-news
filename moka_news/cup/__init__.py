@@ -250,9 +250,6 @@ class Cup(App):
 
     async def on_mount(self) -> None:
         """Start the auto-refresh timer when the app mounts"""
-        # Set initial theme
-        self.theme = self.theme
-        
         if self.auto_refresh_time and self.refresh_callback:
             self._auto_refresh_task = asyncio.create_task(self._auto_refresh_loop())
 
