@@ -30,6 +30,7 @@ A beautiful Textual-based TUI that displays your personalized news digest in the
 - 📰 Parse multiple RSS feeds simultaneously
 - 🤖 AI-powered article summarization with multiple providers (OpenAI, Anthropic, Gemini, Mistral)
 - 🎯 **Smart first-run setup** - Interactive wizard to configure AI provider and feeds
+- 🔑 **Keyword-focused summaries** - Configure keywords to focus AI summaries on topics you care about
 - ⚙️  Configuration file support (YAML)
 - 🎨 Beautiful terminal user interface
 - ⌨️  Keyboard shortcuts for navigation
@@ -71,7 +72,8 @@ pip install -e ".[all]"       # Install all AI providers
 On your first run, MoKa News will launch an interactive setup wizard that will:
 
 1. **Select your AI provider** - Choose from OpenAI, Anthropic, Gemini, Mistral, or CLI-based providers
-2. **Configure RSS feeds** - Accept our curated list of 5 tech feeds or configure your own later
+2. **Configure keywords** (optional) - Set keywords to focus AI summaries on topics you care about
+3. **Configure RSS feeds** - Accept our curated list of 5 tech feeds or configure your own later
 
 Simply run:
 
@@ -93,6 +95,7 @@ MoKa News can be configured in multiple ways:
 
 On first launch, MoKa News will automatically run an interactive setup wizard to help you:
 - Choose your preferred AI provider
+- Optionally configure keywords to focus summaries on your interests
 - Configure your RSS feeds with our curated tech feed suggestions
 
 Simply run `moka-news` and follow the prompts!
@@ -123,6 +126,13 @@ ai:
     anthropic: your-key-here
     gemini: your-key-here
     mistral: your-key-here
+  
+  # Keywords for summary generation (optional)
+  # These keywords help focus the AI on specific topics or aspects
+  keywords:
+    - technology
+    - artificial intelligence
+    - programming
 
 # UI Configuration
 ui:
@@ -154,7 +164,41 @@ export MISTRAL_API_KEY=your-mistral-api-key-here
 
 Or create a `.env` file in the project root with the same variables.
 
-### 4. Command Line Arguments
+### 4. Keywords Configuration
+
+You can configure keywords to help focus AI-generated summaries on specific topics you're interested in.
+
+**During first-run setup:** The setup wizard will prompt you to optionally configure keywords.
+
+**Manual configuration:** Add them to your configuration file:
+
+```yaml
+ai:
+  keywords:
+    - technology
+    - artificial intelligence
+    - machine learning
+    - cybersecurity
+    - programming
+```
+
+When keywords are configured, the AI will receive these as context when generating summaries:
+- The AI will prioritize these topics when relevant to the article
+- Helps customize summaries to your specific interests
+- Optional - the system works perfectly without keywords
+- All AI providers support keywords (OpenAI, Anthropic, Gemini, Mistral, CLI variants)
+
+**Example use cases:**
+- Focus on specific technologies: `python`, `rust`, `kubernetes`
+- Emphasize certain domains: `fintech`, `healthcare`, `education`
+- Highlight particular aspects: `security`, `performance`, `user experience`
+
+To see keywords in action, check out the example:
+```bash
+python examples/keywords_example.py
+```
+
+### 5. Command Line Arguments
 
 CLI arguments override both config file and environment variables.
 

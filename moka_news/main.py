@@ -44,6 +44,9 @@ def fetch_and_brew(feed_urls, config, ai_provider):
         print("No articles found. Please check your RSS feeds.")
         return [], last_update
     
+    # Get keywords from config
+    keywords = config["ai"].get("keywords", [])
+    
     # Step 2: The Barista - Process articles with AI
     print(f"🤖 Brewing summaries with {ai_provider}...")
     
@@ -54,13 +57,13 @@ def fetch_and_brew(feed_urls, config, ai_provider):
             print(
                 "   Set your API key in config file or: export OPENAI_API_KEY='your-key'"
             )
-            barista = Barista(SimpleBarista())
+            barista = Barista(SimpleBarista(), keywords)
         else:
             try:
-                barista = Barista(OpenAIBarista(api_key=api_key))
+                barista = Barista(OpenAIBarista(api_key=api_key), keywords)
             except ImportError as e:
                 print(f"⚠️  Error: {e}")
-                barista = Barista(SimpleBarista())
+                barista = Barista(SimpleBarista(), keywords)
     elif ai_provider == "anthropic":
         api_key = config["ai"]["api_keys"].get("anthropic") or os.getenv(
             "ANTHROPIC_API_KEY"
@@ -72,13 +75,13 @@ def fetch_and_brew(feed_urls, config, ai_provider):
             print(
                 "   Set your API key in config file or: export ANTHROPIC_API_KEY='your-key'"
             )
-            barista = Barista(SimpleBarista())
+            barista = Barista(SimpleBarista(), keywords)
         else:
             try:
-                barista = Barista(AnthropicBarista(api_key=api_key))
+                barista = Barista(AnthropicBarista(api_key=api_key), keywords)
             except ImportError as e:
                 print(f"⚠️  Error: {e}")
-                barista = Barista(SimpleBarista())
+                barista = Barista(SimpleBarista(), keywords)
     elif ai_provider == "gemini":
         api_key = config["ai"]["api_keys"].get("gemini") or os.getenv("GEMINI_API_KEY")
         if not api_key:
@@ -86,13 +89,13 @@ def fetch_and_brew(feed_urls, config, ai_provider):
             print(
                 "   Set your API key in config file or: export GEMINI_API_KEY='your-key'"
             )
-            barista = Barista(SimpleBarista())
+            barista = Barista(SimpleBarista(), keywords)
         else:
             try:
-                barista = Barista(GeminiBarista(api_key=api_key))
+                barista = Barista(GeminiBarista(api_key=api_key), keywords)
             except ImportError as e:
                 print(f"⚠️  Error: {e}")
-                barista = Barista(SimpleBarista())
+                barista = Barista(SimpleBarista(), keywords)
     elif ai_provider == "mistral":
         api_key = config["ai"]["api_keys"].get("mistral") or os.getenv(
             "MISTRAL_API_KEY"
@@ -104,39 +107,39 @@ def fetch_and_brew(feed_urls, config, ai_provider):
             print(
                 "   Set your API key in config file or: export MISTRAL_API_KEY='your-key'"
             )
-            barista = Barista(SimpleBarista())
+            barista = Barista(SimpleBarista(), keywords)
         else:
             try:
-                barista = Barista(MistralBarista(api_key=api_key))
+                barista = Barista(MistralBarista(api_key=api_key), keywords)
             except ImportError as e:
                 print(f"⚠️  Error: {e}")
-                barista = Barista(SimpleBarista())
+                barista = Barista(SimpleBarista(), keywords)
     elif ai_provider == "copilot-cli":
         print("ℹ️  Using GitHub Copilot CLI (requires 'gh' CLI installed)")
         try:
-            barista = Barista(GitHubCopilotCLIBarista())
+            barista = Barista(GitHubCopilotCLIBarista(), keywords)
         except RuntimeError as e:
             print(f"⚠️  Error: {e}")
             print("   Falling back to simple mode.")
-            barista = Barista(SimpleBarista())
+            barista = Barista(SimpleBarista(), keywords)
     elif ai_provider == "gemini-cli":
         print("ℹ️  Using Gemini CLI (requires 'gcloud' CLI installed)")
         try:
-            barista = Barista(GeminiCLIBarista())
+            barista = Barista(GeminiCLIBarista(), keywords)
         except RuntimeError as e:
             print(f"⚠️  Error: {e}")
             print("   Falling back to simple mode.")
-            barista = Barista(SimpleBarista())
+            barista = Barista(SimpleBarista(), keywords)
     elif ai_provider == "mistral-cli":
         print("ℹ️  Using Mistral CLI (requires 'mistral' CLI installed)")
         try:
-            barista = Barista(MistralCLIBarista())
+            barista = Barista(MistralCLIBarista(), keywords)
         except RuntimeError as e:
             print(f"⚠️  Error: {e}")
             print("   Falling back to simple mode.")
-            barista = Barista(SimpleBarista())
+            barista = Barista(SimpleBarista(), keywords)
     else:
-        barista = Barista(SimpleBarista())
+        barista = Barista(SimpleBarista(), keywords)
     
     processed_articles = barista.brew(articles)
     print(f"✓ Brewed {len(processed_articles)} articles")
