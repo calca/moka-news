@@ -22,20 +22,35 @@ from moka_news.cup import serve
 from moka_news.config import load_config, create_sample_config
 from moka_news.opml_manager import OPMLManager
 from moka_news.first_run_setup import is_first_run, run_first_run_setup
+from moka_news.download_tracker import DownloadTracker
+from moka_news.editorial import EditorialGenerator
 from datetime import datetime, time
 
 
-def fetch_and_brew(feed_urls, config, ai_provider):
+def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
     """
     Fetch RSS feeds and brew articles with AI summaries.
+    
+    Args:
+        feed_urls: List of RSS feed URLs
+        config: Configuration dictionary
+        ai_provider: AI provider name
+        download_tracker: Optional DownloadTracker instance for date filtering
     
     Returns:
         Tuple of (processed_articles, last_update_time)
     """
+    # Get last download timestamp for filtering
+    since = None
+    if download_tracker:
+        since = download_tracker.get_last_download()
+        if since:
+            print(f"📅 Filtering articles since {since.strftime('%Y-%m-%d %H:%M:%S')}")
+    
     print(f"📡 Grinding {len(feed_urls)} feeds...")
     
     # Step 1: The Grinder - Extract articles from RSS feeds
-    grinder = Grinder(feed_urls)
+    grinder = Grinder(feed_urls, since=since)
     articles, last_update = grinder.grind()
     
     print(f"✓ Ground {len(articles)} articles")
@@ -43,6 +58,10 @@ def fetch_and_brew(feed_urls, config, ai_provider):
     if not articles:
         print("No articles found. Please check your RSS feeds.")
         return [], last_update
+    
+    # Update download tracker
+    if download_tracker:
+        download_tracker.update_last_download(last_update)
     
     # Get keywords and prompts from config
     keywords = config["ai"].get("keywords", [])
@@ -310,12 +329,70 @@ Feed Management:
 
     print("☕ Brewing your morning news...")
     
+    # Initialize download tracker
+    download_tracker = DownloadTracker()
+    
     # Fetch and brew articles
-    processed_articles, last_update = fetch_and_brew(feed_urls, config, ai_provider)
+    processed_articles, last_update = fetch_and_brew(feed_urls, config, ai_provider, download_tracker)
     
     if not processed_articles:
         print("No articles to display.")
         return
+
+    # Generate editorial
+    print("📝 Generating morning editorial...")
+    editorial_content = None
+    editorial_generator = None
+    
+    # Get AI provider instance for editorial generation
+    keywords = config["ai"].get("keywords", [])
+    editorial_prompts = config["ai"].get("editorial_prompts", None)
+    
+    if ai_provider == "openai":
+        api_key = config["ai"]["api_keys"].get("openai") or os.getenv("OPENAI_API_KEY")
+        if api_key:
+            try:
+                ai_instance = OpenAIBarista(api_key=api_key)
+                editorial_generator = EditorialGenerator(ai_instance, keywords, editorial_prompts=editorial_prompts)
+            except ImportError:
+                pass
+    elif ai_provider == "anthropic":
+        api_key = config["ai"]["api_keys"].get("anthropic") or os.getenv("ANTHROPIC_API_KEY")
+        if api_key:
+            try:
+                ai_instance = AnthropicBarista(api_key=api_key)
+                editorial_generator = EditorialGenerator(ai_instance, keywords, editorial_prompts=editorial_prompts)
+            except ImportError:
+                pass
+    elif ai_provider == "gemini":
+        api_key = config["ai"]["api_keys"].get("gemini") or os.getenv("GEMINI_API_KEY")
+        if api_key:
+            try:
+                ai_instance = GeminiBarista(api_key=api_key)
+                editorial_generator = EditorialGenerator(ai_instance, keywords, editorial_prompts=editorial_prompts)
+            except ImportError:
+                pass
+    elif ai_provider == "mistral":
+        api_key = config["ai"]["api_keys"].get("mistral") or os.getenv("MISTRAL_API_KEY")
+        if api_key:
+            try:
+                ai_instance = MistralBarista(api_key=api_key)
+                editorial_generator = EditorialGenerator(ai_instance, keywords, editorial_prompts=editorial_prompts)
+            except ImportError:
+                pass
+    
+    # Fallback to simple barista if no AI provider available
+    if not editorial_generator:
+        editorial_generator = EditorialGenerator(SimpleBarista(), keywords, editorial_prompts=editorial_prompts)
+    
+    try:
+        editorial = editorial_generator.generate_editorial(processed_articles)
+        editorial_path = editorial_generator.save_editorial(editorial)
+        editorial_content = editorial_generator.load_editorial(editorial_path)
+        print(f"✓ Editorial saved to: {editorial_path}")
+    except Exception as e:
+        print(f"⚠️  Error generating editorial: {e}")
+        editorial_content = None
 
     # Step 3: The Cup - Display in TUI
     if not use_tui:
@@ -326,14 +403,21 @@ Feed Management:
             print(f"    {article.get('ai_summary', article['summary'][:200])}")
             print(f"    Link: {article.get('link', 'N/A')}")
         print("\n" + "=" * 80)
+        
+        # Print editorial if available
+        if editorial_content:
+            print("\n📰 MORNING EDITORIAL")
+            print("=" * 80)
+            print(editorial_content)
+            print("=" * 80)
     else:
         print("☕ Serving your news...\n")
         
         # Create refresh callback for the TUI
         def refresh_callback():
-            return fetch_and_brew(feed_urls, config, ai_provider)
+            return fetch_and_brew(feed_urls, config, ai_provider, download_tracker)
         
-        serve(processed_articles, last_update, refresh_callback)
+        serve(processed_articles, last_update, refresh_callback, editorial_content=editorial_content, editorial_generator=editorial_generator)
 
 
 if __name__ == "__main__":

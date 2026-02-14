@@ -27,6 +27,29 @@ TITLE: <title>
 SUMMARY: <summary>"""
 }
 
+DEFAULT_EDITORIAL_PROMPTS = {
+    "system_message": "You are a skilled news editor creating an engaging morning editorial.",
+    "user_prompt": """Create a cohesive morning news editorial from these articles:
+
+{content}
+
+Write an engaging editorial that:
+1. Highlights the most important and relevant news
+2. Connects related topics into a coherent narrative
+3. Is enjoyable to read over morning coffee
+4. Is approximately 300-500 words
+
+Focus on creating a pleasant reading experience.""",
+    "keywords_section": """
+
+Pay special attention to topics related to: {keywords}""",
+    "format_section": """
+
+Format as:
+TITLE: <engaging editorial title>
+SUMMARY: <the editorial content>"""
+}
+
 DEFAULT_CONFIG = {
     "ai": {
         "provider": "openai",  # Changed from "simple" - AI is now default, simple is demo only
@@ -38,6 +61,7 @@ DEFAULT_CONFIG = {
         },
         "keywords": [],  # Optional keywords for summary generation
         "prompts": DEFAULT_PROMPTS,  # External prompts with placeholders
+        "editorial_prompts": DEFAULT_EDITORIAL_PROMPTS,  # Prompts for editorial generation
     },
     "feeds": {
         "urls": [
@@ -188,6 +212,32 @@ ai:
       Format as:
       TITLE: <title>
       SUMMARY: <summary>
+  
+  # Editorial Prompts Configuration (optional)
+  # Customize the prompts used for generating morning editorials
+  # Use placeholders: {content}, {keywords}
+  editorial_prompts:
+    system_message: "You are a skilled news editor creating an engaging morning editorial."
+    user_prompt: |
+      Create a cohesive morning news editorial from these articles:
+
+      {content}
+
+      Write an engaging editorial that:
+      1. Highlights the most important and relevant news
+      2. Connects related topics into a coherent narrative
+      3. Is enjoyable to read over morning coffee
+      4. Is approximately 300-500 words
+
+      Focus on creating a pleasant reading experience.
+    keywords_section: |
+
+      Pay special attention to topics related to: {keywords}
+    format_section: |
+
+      Format as:
+      TITLE: <engaging editorial title>
+      SUMMARY: <the editorial content>
 
 # RSS Feed Configuration
 feeds:

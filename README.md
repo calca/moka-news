@@ -4,10 +4,10 @@
 
 ## Architecture
 
-MoKa News consists of three main components working together:
+MoKa News consists of four main components working together:
 
 ### 🔄 The Grinder (Il Macinino)
-A Python module using `feedparser` to extract data from RSS feeds. It gathers articles from multiple sources and prepares them for processing.
+A Python module using `feedparser` to extract data from RSS feeds. It gathers articles from multiple sources, filters them by date (only new articles since last download), and prepares them for processing.
 
 ### 🤖 The Barista (L'Agente AI)
 An AI agent that takes raw article text and generates engaging titles and concise summaries using:
@@ -22,18 +22,25 @@ An AI agent that takes raw article text and generates engaging titles and concis
   - Mistral CLI
 - Simple mode (no AI, for testing)
 
+### 📝 The Editorial Generator
+Creates a cohesive morning editorial from multiple articles, combining the most important news into a single, enjoyable reading experience. Editorials are saved as markdown files with source links for future reference.
+
 ### ☕ The Cup (La Tazzina)
-A beautiful Textual-based TUI that displays your personalized news digest in the terminal.
+A beautiful Textual-based TUI that displays your personalized news digest in the terminal. Features multiple views (editorial/articles), past editorial browsing, and keyboard navigation.
 
 ## Features
 
 - 📰 Parse multiple RSS feeds simultaneously
 - 🤖 AI-powered article summarization with multiple providers (OpenAI, Anthropic, Gemini, Mistral)
+- 📝 **AI-Generated Morning Editorials** - Get a single, cohesive editorial combining the most important news
 - 🎯 **Smart first-run setup** - Interactive wizard to configure AI provider and feeds
 - 🔑 **Keyword-focused summaries** - Configure keywords to focus AI summaries on topics you care about
+- 📅 **Smart date filtering** - Only fetch articles since your last download
+- 💾 **Editorial archive** - All editorials saved as markdown files for future reference
+- 🗂️  **Browse past editorials** - Access and read previous morning editions through the TUI
 - ⚙️  Configuration file support (YAML)
 - 🎨 Beautiful terminal user interface
-- ⌨️  Keyboard shortcuts for navigation
+- ⌨️  Keyboard shortcuts for navigation (e: editorial, a: articles, h: history)
 - 🔄 **Manual refresh** - Press 'r' to fetch latest articles
 - ⏰ **Auto-refresh at 8:00 AM** - Wake up to fresh news with your morning coffee! ☕
 - 📅 **Last update display** - Always know when your feed was refreshed
@@ -133,6 +140,19 @@ ai:
     - technology
     - artificial intelligence
     - programming
+  
+  # Editorial Prompts (optional)
+  # Customize how the AI generates morning editorials
+  editorial_prompts:
+    system_message: "You are a skilled news editor creating an engaging morning editorial."
+    user_prompt: |
+      Create a cohesive morning news editorial from these articles:
+      {content}
+      
+      Write an engaging editorial that highlights important news and
+      connects topics into a coherent narrative enjoyable over morning coffee.
+    keywords_section: |
+      Pay special attention to topics related to: {keywords}
 
 # UI Configuration
 ui:
@@ -355,9 +375,68 @@ While in the TUI:
 
 - `q` or `Ctrl+C` - Quit the application
 - `r` - Refresh feed (fetch latest articles)
+- `e` - Toggle between editorial and articles view
+- `a` - Show articles view
+- `h` - Browse past editorials (history)
 - Mouse click on article - Open in browser
 
-The TUI also displays the last update time in the header and automatically refreshes at 8:00 AM daily for your morning coffee! ☕
+The TUI displays your morning editorial by default, with easy access to individual articles and past editorials. It also automatically refreshes at 8:00 AM daily for your morning coffee! ☕
+
+## Morning Editorial Feature
+
+MoKa News generates a single, AI-powered editorial that combines your news articles into a coherent morning reading experience:
+
+- **Smart Content Selection**: The AI processes all articles filtered by date (since last download) based on your keywords
+- **Cohesive Narrative**: Articles are combined into a single, flowing editorial rather than separate summaries
+- **Source Links**: All source articles are linked at the end of the editorial
+- **Markdown Archive**: Each editorial is saved as a markdown file in `~/.config/moka-news/editorials/`
+- **Date-based Filename**: Editorials are saved as `YYYY-MM-DD_HH-MM.md` for easy organization
+- **History Access**: Press `h` in the TUI to browse and read past editorials
+- **Customizable Prompts**: Fine-tune how the AI generates editorials by customizing prompts in your config file
+
+### Customizing Editorial Generation
+
+You can customize the editorial generation by adding `editorial_prompts` to your `config.yaml`:
+
+```yaml
+ai:
+  editorial_prompts:
+    system_message: "You are a skilled news editor..."
+    user_prompt: |
+      Create a cohesive morning news editorial from these articles:
+      {content}
+      
+      [Your custom instructions here]
+    keywords_section: |
+      Pay special attention to: {keywords}
+```
+
+This allows you to fine-tune:
+- The editorial style and tone
+- How topics are connected
+- The level of detail
+- Focus areas and priorities
+
+Example editorial structure:
+```markdown
+# Your Morning News
+
+*Monday, February 14, 2026 at 08:00*
+
+---
+
+[AI-generated editorial content combining multiple articles...]
+
+---
+
+## Sources
+
+- **Article Title** - *Source Name*
+  [https://example.com/article](https://example.com/article)
+...
+```
+
+The editorial feature respects your configured keywords and processes all articles (not just a subset), ensuring comprehensive coverage of the day's news!
 
 ## Development
 
@@ -381,9 +460,13 @@ ruff check moka_news/
 
 After the first-run setup, MoKa News uses:
 - **AI Mode:** AI-powered summaries are enabled by default (OpenAI or your chosen provider)
+- **Editorial Generation:** Automatically creates morning editorials from fetched articles
+- **Date Filtering:** Only fetches articles published since the last download
 - **Simple Mode:** Available as `--ai simple` for demo/testing only (no AI summaries)
 - **RSS Feeds:** Stored in `~/.config/moka-news/feeds.opml`
 - **Config File:** Located at `~/.config/moka-news/config.yaml`
+- **Editorials Archive:** Saved in `~/.config/moka-news/editorials/`
+- **Download Tracking:** Last download timestamp in `~/.config/moka-news/last_download.json`
 
 The first-run wizard makes it easy to get started with intelligent news summaries!
 
