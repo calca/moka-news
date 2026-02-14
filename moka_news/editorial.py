@@ -17,7 +17,8 @@ class EditorialGenerator:
         self,
         ai_provider: AIProvider,
         keywords: Optional[List[str]] = None,
-        editorials_dir: Optional[Path] = None
+        editorials_dir: Optional[Path] = None,
+        editorial_prompts: Optional[Dict[str, str]] = None
     ):
         """
         Initialize the Editorial Generator
@@ -26,9 +27,11 @@ class EditorialGenerator:
             ai_provider: AI provider instance for generating editorial content
             keywords: Optional list of keywords to focus the editorial on
             editorials_dir: Directory to save editorials (defaults to ~/.config/moka-news/editorials)
+            editorial_prompts: Optional dictionary of custom prompts for editorial generation
         """
         self.ai_provider = ai_provider
         self.keywords = keywords or []
+        self.editorial_prompts = editorial_prompts
         
         # Set editorials directory
         if editorials_dir:
@@ -111,11 +114,9 @@ class EditorialGenerator:
         Returns:
             Formatted prompt string
         """
-        # Limit to most recent/important articles
-        selected_articles = articles[:10]  # Take up to 10 articles
-        
+        # Use all articles - they are already filtered by date
         articles_text = ""
-        for i, article in enumerate(selected_articles, 1):
+        for i, article in enumerate(articles, 1):
             title = article.get("ai_title", article.get("title", ""))
             summary = article.get("ai_summary", article.get("summary", ""))[:200]
             source = article.get("source", "Unknown")
@@ -133,30 +134,13 @@ class EditorialGenerator:
         Returns:
             Dictionary of custom prompts for editorial generation
         """
-        prompts = {
-            "system_message": "You are a skilled news editor creating an engaging morning editorial.",
-            "user_prompt": """Create a cohesive morning news editorial from these articles:
-
-{content}
-
-Write an engaging editorial that:
-1. Highlights the most important and relevant news
-2. Connects related topics into a coherent narrative
-3. Is enjoyable to read over morning coffee
-4. Is approximately 300-500 words
-
-Focus on creating a pleasant reading experience.""",
-            "keywords_section": """
-
-Pay special attention to topics related to: {keywords}""",
-            "format_section": """
-
-Format as:
-TITLE: <engaging editorial title>
-SUMMARY: <the editorial content>"""
-        }
+        # Use configured prompts if provided, otherwise use defaults
+        if self.editorial_prompts:
+            return self.editorial_prompts
         
-        return prompts
+        # Default prompts
+        from moka_news.config import DEFAULT_EDITORIAL_PROMPTS
+        return DEFAULT_EDITORIAL_PROMPTS
     
     def _create_simple_editorial(self, articles: List[Dict[str, Any]]) -> str:
         """

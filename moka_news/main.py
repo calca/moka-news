@@ -346,13 +346,14 @@ Feed Management:
     
     # Get AI provider instance for editorial generation
     keywords = config["ai"].get("keywords", [])
+    editorial_prompts = config["ai"].get("editorial_prompts", None)
     
     if ai_provider == "openai":
         api_key = config["ai"]["api_keys"].get("openai") or os.getenv("OPENAI_API_KEY")
         if api_key:
             try:
                 ai_instance = OpenAIBarista(api_key=api_key)
-                editorial_generator = EditorialGenerator(ai_instance, keywords)
+                editorial_generator = EditorialGenerator(ai_instance, keywords, editorial_prompts=editorial_prompts)
             except ImportError:
                 pass
     elif ai_provider == "anthropic":
@@ -360,7 +361,7 @@ Feed Management:
         if api_key:
             try:
                 ai_instance = AnthropicBarista(api_key=api_key)
-                editorial_generator = EditorialGenerator(ai_instance, keywords)
+                editorial_generator = EditorialGenerator(ai_instance, keywords, editorial_prompts=editorial_prompts)
             except ImportError:
                 pass
     elif ai_provider == "gemini":
@@ -368,7 +369,7 @@ Feed Management:
         if api_key:
             try:
                 ai_instance = GeminiBarista(api_key=api_key)
-                editorial_generator = EditorialGenerator(ai_instance, keywords)
+                editorial_generator = EditorialGenerator(ai_instance, keywords, editorial_prompts=editorial_prompts)
             except ImportError:
                 pass
     elif ai_provider == "mistral":
@@ -376,13 +377,13 @@ Feed Management:
         if api_key:
             try:
                 ai_instance = MistralBarista(api_key=api_key)
-                editorial_generator = EditorialGenerator(ai_instance, keywords)
+                editorial_generator = EditorialGenerator(ai_instance, keywords, editorial_prompts=editorial_prompts)
             except ImportError:
                 pass
     
     # Fallback to simple barista if no AI provider available
     if not editorial_generator:
-        editorial_generator = EditorialGenerator(SimpleBarista(), keywords)
+        editorial_generator = EditorialGenerator(SimpleBarista(), keywords, editorial_prompts=editorial_prompts)
     
     try:
         editorial = editorial_generator.generate_editorial(processed_articles)
