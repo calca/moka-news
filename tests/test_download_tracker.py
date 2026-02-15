@@ -21,8 +21,25 @@ def test_get_last_download_no_file():
     with tempfile.TemporaryDirectory() as tmpdir:
         tracker_file = Path(tmpdir) / "tracker.json"
         tracker = DownloadTracker(tracker_file)
-        last_download = tracker.get_last_download()
+        last_download = tracker.get_last_download(default_to_yesterday=False)
         assert last_download is None
+
+
+def test_get_last_download_defaults_to_yesterday():
+    """Test get_last_download defaults to yesterday on first run"""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tracker_file = Path(tmpdir) / "tracker.json"
+        tracker = DownloadTracker(tracker_file)
+        last_download = tracker.get_last_download(default_to_yesterday=True)
+        
+        # Should return yesterday at midnight
+        expected = datetime.now() - timedelta(days=1)
+        expected = expected.replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        assert last_download is not None
+        assert last_download.date() == expected.date()
+        assert last_download.hour == 0
+        assert last_download.minute == 0
 
 
 def test_update_and_get_last_download():
