@@ -500,7 +500,7 @@ class Barista:
                 processed_article["ai_summary"] = enhanced["summary"]
                 processed.append(processed_article)
             except Exception as e:
-                print(f"Error processing article: {e}")
+                logger.error(f"Error processing article: {e}", exc_info=True)
                 article["ai_title"] = article["title"]
                 article["ai_summary"] = article["summary"][:SUMMARY_TRUNCATE_LENGTH]
                 processed.append(article)

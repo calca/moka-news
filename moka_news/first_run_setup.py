@@ -13,17 +13,8 @@ from moka_news.opml_manager import OPMLManager
 from moka_news.constants import DEFAULT_TECH_FEEDS
 
 
-# Suggested tech feeds for moka-cafè (with additional metadata for OPML)
-SUGGESTED_TECH_FEEDS = [
-    {**feed, "htmlUrl": feed.get("htmlUrl", "")}
-    for feed in DEFAULT_TECH_FEEDS
-]
-# Add htmlUrl for feeds that need it
-SUGGESTED_TECH_FEEDS[0]["htmlUrl"] = "https://news.ycombinator.com"
-SUGGESTED_TECH_FEEDS[1]["htmlUrl"] = "https://github.blog"
-SUGGESTED_TECH_FEEDS[2]["htmlUrl"] = "https://www.theverge.com"
-SUGGESTED_TECH_FEEDS[3]["htmlUrl"] = "https://techcrunch.com"
-SUGGESTED_TECH_FEEDS[4]["htmlUrl"] = "https://arstechnica.com"
+# Suggested tech feeds for moka-cafè (directly use from constants)
+SUGGESTED_TECH_FEEDS = DEFAULT_TECH_FEEDS
 
 # AI provider configurations
 AI_PROVIDERS = {

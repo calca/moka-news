@@ -6,23 +6,28 @@ Constants and configuration values for MoKa News
 DEFAULT_TECH_FEEDS = [
     {
         "url": "https://news.ycombinator.com/rss",
-        "title": "Hacker News"
+        "title": "Hacker News",
+        "htmlUrl": "https://news.ycombinator.com"
     },
     {
         "url": "https://github.blog/feed/",
-        "title": "GitHub Blog"
+        "title": "GitHub Blog",
+        "htmlUrl": "https://github.blog"
     },
     {
         "url": "https://www.theverge.com/rss/index.xml",
-        "title": "The Verge - Tech"
+        "title": "The Verge - Tech",
+        "htmlUrl": "https://www.theverge.com"
     },
     {
         "url": "https://techcrunch.com/feed/",
-        "title": "TechCrunch"
+        "title": "TechCrunch",
+        "htmlUrl": "https://techcrunch.com"
     },
     {
         "url": "https://feeds.arstechnica.com/arstechnica/index",
-        "title": "Ars Technica"
+        "title": "Ars Technica",
+        "htmlUrl": "https://arstechnica.com"
     }
 ]
 
