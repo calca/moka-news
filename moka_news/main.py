@@ -85,7 +85,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  moka-news                          # Use default feeds with AI processing (OpenAI)
+  moka-news                          # Use default feeds with AI processing (Gemini CLI)
   moka-news --ai openai              # Use OpenAI API for summaries
   moka-news --ai anthropic           # Use Anthropic API for summaries
   moka-news --ai gemini              # Use Google Gemini API for summaries
@@ -135,7 +135,7 @@ Feed Management:
             "mistral-cli",
         ],
         default=None,
-        help="AI provider for generating summaries (default: from config or openai; 'simple' is demo/testing only)",
+        help="AI provider for generating summaries (default: from config or gemini-cli; 'simple' is demo/testing only)",
     )
 
     parser.add_argument(

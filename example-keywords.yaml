@@ -3,7 +3,7 @@
 
 # AI Provider Configuration
 ai:
-  provider: openai  # Options: openai, anthropic, gemini, mistral, copilot-cli, gemini-cli, mistral-cli
+  provider: gemini-cli  # Options: openai, anthropic, gemini, mistral, copilot-cli, gemini-cli, mistral-cli
                      # Note: 'simple' mode is for demo/testing only (no AI summaries)
   
   # API Keys (can also be set via environment variables)
