@@ -387,14 +387,11 @@ moka-news --no-tui
 While in the TUI:
 
 - `q` or `Ctrl+C` - Quit the application
-- `r` - Refresh feed (fetch latest articles)
-- `e` - Toggle between editorial and articles view
-- `a` - Show articles view
+- `r` - Refresh feed (fetch latest articles and regenerate editorial)
 - `h` - Browse past editorials (history)
 - `t` - Toggle between light and dark theme
-- Mouse click on article - Open in browser
 
-The TUI displays your morning editorial by default, with easy access to individual articles and past editorials. It also automatically refreshes at 8:00 AM daily for your morning coffee! ☕
+The TUI displays your morning editorial, with easy access to past editorials. It also automatically refreshes at 8:00 AM daily for your morning coffee! ☕
 
 ## Morning Editorial Feature
 

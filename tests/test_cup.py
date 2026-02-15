@@ -2,7 +2,7 @@
 Tests for The Cup component
 """
 
-from moka_news.cup import Cup, ArticleCard
+from moka_news.cup import Cup
 from datetime import datetime
 from unittest.mock import MagicMock
 
@@ -38,18 +38,6 @@ def test_cup_initialization_without_articles():
     app = Cup()
     assert app.articles == []
     assert isinstance(app.last_update, datetime)
-
-
-def test_article_card_initialization():
-    """Test that ArticleCard can be initialized"""
-    article = {
-        "title": "Test",
-        "summary": "Test summary",
-        "link": "https://example.com",
-        "source": "Test Source",
-    }
-    card = ArticleCard(article)
-    assert card.article == article
 
 
 def test_cup_theme_initialization():
@@ -117,3 +105,10 @@ def test_cup_theme_toggle_from_custom():
     # Toggle again should switch to dark
     app.action_toggle_theme()
     assert app.theme == "rose-pine", "Second toggle should switch to dark"
+
+
+def test_cup_with_editorial_content():
+    """Test that Cup can display editorial content"""
+    editorial_content = "# Test Editorial\n\nThis is a test editorial."
+    app = Cup(editorial_content=editorial_content)
+    assert app.editorial_content == editorial_content

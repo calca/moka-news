@@ -1,6 +1,6 @@
 """
 The Cup - Textual TUI Interface
-Displays the news digest in a beautiful terminal interface
+Displays the morning editorial in a beautiful terminal interface
 """
 
 from textual.app import App, ComposeResult
@@ -13,41 +13,6 @@ from datetime import datetime, time
 from pathlib import Path
 import webbrowser
 import asyncio
-
-
-class ArticleCard(Static):
-    """Widget to display a single article"""
-
-    def __init__(self, article: Dict[str, Any], *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.article = article
-        self.border_title = article.get("source", "Unknown Source")
-
-    def compose(self) -> ComposeResult:
-        """Create the article card layout"""
-        title = self.article.get("ai_title", self.article.get("title", "No Title"))
-        summary = self.article.get(
-            "ai_summary", self.article.get("summary", "No summary available.")
-        )
-        link = self.article.get("link", "")
-        published = self.article.get("published", "")
-
-        yield Label(f"[bold cyan]{title}[/bold cyan]")
-        yield Label(f"\n{summary}")
-        if published:
-            yield Label(f"\n[dim]{published}[/dim]")
-        if link:
-            # Display simplified link - click the article card to open
-            yield Label(f"[dim]🔗 Click card to open link[/dim]")
-
-    def on_click(self) -> None:
-        """Open article link in browser when clicked"""
-        link = self.article.get("link")
-        if link:
-            try:
-                webbrowser.open(link)
-            except Exception as e:
-                self.app.notify(f"Could not open link: {e}", severity="error")
 
 
 class EditorialView(Static):
@@ -154,18 +119,6 @@ class Cup(App):
         padding: 1;
     }
     
-    ArticleCard {
-        border: solid $primary;
-        padding: 1 2;
-        margin: 1 0;
-        background: $panel;
-    }
-    
-    ArticleCard:hover {
-        background: $boost;
-        border: solid $accent;
-    }
-    
     EditorialView {
         border: solid $primary;
         padding: 2;
@@ -188,8 +141,6 @@ class Cup(App):
     BINDINGS = [
         Binding("q", "quit", "Quit", priority=True),
         Binding("r", "refresh", "Refresh"),
-        Binding("e", "toggle_editorial", "Editorial"),
-        Binding("a", "show_articles", "Articles"),
         Binding("h", "show_history", "History"),
         Binding("t", "toggle_theme", "Toggle Theme"),
         ("ctrl+c", "quit", "Quit"),
@@ -214,7 +165,6 @@ class Cup(App):
         self.auto_refresh_time = auto_refresh_time
         self.editorial_content = editorial_content
         self.editorial_generator = editorial_generator
-        self.view_mode = "editorial" if editorial_content else "articles"
         self.title = "☕ MoKa News"
         self.sub_title = self._format_subtitle()
         self._auto_refresh_task = None
@@ -226,23 +176,19 @@ class Cup(App):
         """Format the subtitle with last update time"""
         time_str = self.last_update.strftime("%H:%M:%S")
         date_str = self.last_update.strftime("%d/%m/%Y")
-        mode_text = "Editorial View" if self.view_mode == "editorial" else "Articles View"
-        return f"Your Morning Persona News | {mode_text} | Last update: {date_str} at {time_str}"
+        return f"Your Morning Persona News | Last update: {date_str} at {time_str}"
 
     def compose(self) -> ComposeResult:
         """Create the application layout"""
         yield Header(show_clock=True)
 
         with ScrollableContainer(id="content-container"):
-            if self.view_mode == "editorial" and self.editorial_content:
+            if self.editorial_content:
                 yield EditorialView(self.editorial_content, id="editorial-container")
-            elif self.articles:
-                for article in self.articles:
-                    yield ArticleCard(article)
             else:
                 yield Static(
-                    "[bold]No articles available[/bold]\n\n"
-                    "Run with RSS feeds to see news articles here.",
+                    "[bold]No editorial available[/bold]\n\n"
+                    "The editorial is being generated from your RSS feeds.",
                     id="empty-state",
                 )
 
@@ -282,7 +228,7 @@ class Cup(App):
             await asyncio.sleep(60)
 
     def action_refresh(self) -> None:
-        """Refresh the news feed"""
+        """Refresh the news feed and regenerate editorial"""
         if not self.refresh_callback:
             self.notify("Refresh functionality not available", severity="warning")
             return
@@ -290,7 +236,7 @@ class Cup(App):
         self.notify("Refreshing news feeds...", severity="information")
         
         try:
-            # Call the refresh callback to fetch new articles
+            # Call the refresh callback to fetch new articles and regenerate editorial
             new_articles, new_update_time = self.refresh_callback()
             
             if new_articles:
@@ -298,14 +244,9 @@ class Cup(App):
                 self.last_update = new_update_time
                 self.sub_title = self._format_subtitle()
                 
-                # Rebuild the UI with new articles
-                container = self.query_one("#articles-container")
-                container.remove_children()
-                
-                for article in self.articles:
-                    container.mount(ArticleCard(article))
-                
-                self.notify(f"✓ Refreshed {len(new_articles)} articles", severity="information")
+                # Note: Editorial is regenerated by the refresh_callback
+                # The UI will be updated when the editorial is available
+                self.notify(f"✓ Fetched {len(new_articles)} articles for editorial generation", severity="information")
             else:
                 self.notify("No articles found during refresh", severity="warning")
         except Exception as e:
@@ -334,21 +275,6 @@ class Cup(App):
         self.theme = new_theme
         self.notify(f"Switched to {theme_name} theme: {new_theme}", severity="information")
     
-    def action_toggle_editorial(self) -> None:
-        """Toggle between editorial and articles view"""
-        if self.editorial_content:
-            self.view_mode = "editorial" if self.view_mode == "articles" else "articles"
-            self.sub_title = self._format_subtitle()
-            self._rebuild_view()
-        else:
-            self.notify("No editorial available", severity="warning")
-    
-    def action_show_articles(self) -> None:
-        """Show articles view"""
-        self.view_mode = "articles"
-        self.sub_title = self._format_subtitle()
-        self._rebuild_view()
-    
     async def action_show_history(self) -> None:
         """Show past editorials"""
         if not self.editorial_generator:
@@ -371,7 +297,6 @@ class Cup(App):
             try:
                 content = self.editorial_generator.load_editorial(editorial_path)
                 self.editorial_content = content
-                self.view_mode = "editorial"
                 self.sub_title = self._format_subtitle()
                 self._rebuild_view()
                 self.notify(f"Loaded editorial: {result['title']}", severity="information")
@@ -379,19 +304,16 @@ class Cup(App):
                 self.notify(f"Error loading editorial: {e}", severity="error")
     
     def _rebuild_view(self) -> None:
-        """Rebuild the view based on current mode"""
+        """Rebuild the editorial view"""
         container = self.query_one("#content-container")
         container.remove_children()
         
-        if self.view_mode == "editorial" and self.editorial_content:
+        if self.editorial_content:
             container.mount(EditorialView(self.editorial_content, id="editorial-container"))
-        elif self.articles:
-            for article in self.articles:
-                container.mount(ArticleCard(article))
         else:
             container.mount(Static(
-                "[bold]No articles available[/bold]\n\n"
-                "Run with RSS feeds to see news articles here.",
+                "[bold]No editorial available[/bold]\n\n"
+                "The editorial is being generated from your RSS feeds.",
                 id="empty-state",
             ))
 
@@ -408,15 +330,15 @@ def serve(
     theme_dark: str = "rose-pine",
 ):
     """
-    Display articles in the TUI
+    Display the morning editorial in the TUI
 
     Args:
-        articles: List of article dictionaries to display
+        articles: List of article dictionaries used as source material for editorial generation
         last_update: Timestamp of when articles were last fetched
-        refresh_callback: Optional callback function to refresh articles
+        refresh_callback: Optional callback function to refresh articles and regenerate editorial
         auto_refresh_time: Time of day to automatically refresh (default: 8:00 AM)
-        editorial_content: Optional markdown content of the editorial
-        editorial_generator: Optional EditorialGenerator instance for accessing past editorials
+        editorial_content: Markdown content of the editorial to display
+        editorial_generator: EditorialGenerator instance for accessing past editorials
         theme: Initial theme to use (default: rose-pine)
         theme_light: Light theme option (default: rose-pine-dawn)
         theme_dark: Dark theme option (default: rose-pine)
