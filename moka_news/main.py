@@ -1,6 +1,6 @@
 """
 MoKa News - Main Entry Point
-Orchestrates The Grinder (RSS extraction), Editorial Generation (AI focus), and The Cup (Display)
+Orchestrates The Grinder (RSS extraction), The Editorial Generator (AI focus), and The Cup (Display)
 """
 
 import argparse
@@ -56,8 +56,8 @@ def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
     if download_tracker:
         download_tracker.update_last_download(last_update)
     
-    # Skip AI processing on individual articles - focus AI on editorial only
-    logger.info(f"Skipping individual article processing - AI will focus on editorial")
+    # Articles are returned without AI processing - AI will be applied during editorial generation
+    logger.info(f"Extracted {len(articles)} articles - AI processing will be applied during editorial generation")
     
     return articles, last_update
 
