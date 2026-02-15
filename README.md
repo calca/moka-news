@@ -1,16 +1,18 @@
 # ☕ MoKa News
 
-**Morning Persona News** - A beautiful TUI (Text User Interface) RSS news aggregator with AI-powered summaries.
+**Morning Persona News** - A beautiful TUI (Text User Interface) RSS news aggregator with AI-powered editorial generation.
 
 ## Architecture
 
-MoKa News consists of four main components working together:
+MoKa News consists of three main components working together:
 
 ### 🔄 The Grinder (Il Macinino)
 A Python module using `feedparser` to extract data from RSS feeds. It gathers articles from multiple sources, filters them by date (only new articles since last download), and prepares them for processing.
 
-### 🤖 The Barista (L'Agente AI)
-An AI agent that takes raw article text and generates engaging titles and concise summaries using:
+### 📝 The Editorial Generator (AI-Powered)
+Uses AI to create a cohesive morning editorial from multiple articles, combining the most important news into a single, enjoyable reading experience. Editorials are saved as markdown files with source links for future reference.
+
+Supports multiple AI providers:
 - **API-based providers:**
   - OpenAI (GPT models)
   - Anthropic (Claude models)
@@ -22,29 +24,26 @@ An AI agent that takes raw article text and generates engaging titles and concis
   - Mistral CLI
 - Simple mode (no AI, for testing)
 
-### 📝 The Editorial Generator
-Creates a cohesive morning editorial from multiple articles, combining the most important news into a single, enjoyable reading experience. Editorials are saved as markdown files with source links for future reference.
-
 ### ☕ The Cup (La Tazzina)
-A beautiful Textual-based TUI that displays your personalized news digest in the terminal. Features multiple views (editorial/articles), past editorial browsing, and keyboard navigation.
+A beautiful Textual-based TUI that displays your personalized morning editorial in the terminal. Features editorial-focused reading, past editorial browsing, and keyboard navigation.
 
 ## Features
 
 - 📰 Parse multiple RSS feeds simultaneously
-- 🤖 AI-powered article summarization with multiple providers (OpenAI, Anthropic, Gemini, Mistral)
+- 🤖 **AI-powered editorial generation** with multiple providers (OpenAI, Anthropic, Gemini, Mistral)
 - 📝 **AI-Generated Morning Editorials** - Get a single, cohesive editorial combining the most important news
 - 🎯 **Smart first-run setup** - Interactive wizard to configure AI provider and feeds
-- 🔑 **Keyword-focused summaries** - Configure keywords to focus AI summaries on topics you care about
+- 🔑 **Keyword-focused editorials** - Configure keywords to focus AI editorials on topics you care about
 - 📅 **Smart date filtering** - Only fetch articles since your last download
 - 💾 **Editorial archive** - All editorials saved as markdown files for future reference
 - 🗂️  **Browse past editorials** - Access and read previous morning editions through the TUI
 - ⚙️  Configuration file support (YAML)
 - 🎨 Beautiful terminal user interface
-- ⌨️  Keyboard shortcuts for navigation (e: editorial, a: articles, h: history)
+- ⌨️  Keyboard shortcuts for navigation (h: history, t: toggle theme, r: refresh)
 - 🔄 **Manual refresh** - Press 'r' to fetch latest articles
 - ⏰ **Auto-refresh at 8:00 AM** - Wake up to fresh news with your morning coffee! ☕
 - 📅 **Last update display** - Always know when your feed was refreshed
-- 🔗 Click to open articles in browser
+- 🔗 Source links in editorial markdown for easy access
 - 🚀 Fast and lightweight
 - 💾 RSS feed management with OPML storage
 
@@ -79,7 +78,7 @@ pip install -e ".[all]"       # Install all AI providers
 On your first run, MoKa News will launch an interactive setup wizard that will:
 
 1. **Select your AI provider** - Choose from OpenAI, Anthropic, Gemini, Mistral, or CLI-based providers
-2. **Configure keywords** (optional) - Set keywords to focus AI summaries on topics you care about
+2. **Configure keywords** (optional) - Set keywords to focus AI editorials on topics you care about
 3. **Configure RSS feeds** - Accept our curated list of 5 tech feeds or configure your own later
 
 Simply run:
@@ -102,7 +101,7 @@ MoKa News can be configured in multiple ways:
 
 On first launch, MoKa News will automatically run an interactive setup wizard to help you:
 - Choose your preferred AI provider
-- Optionally configure keywords to focus summaries on your interests
+- Optionally configure keywords to focus editorials on your interests
 - Configure your RSS feeds with our curated tech feed suggestions
 
 Simply run `moka-news` and follow the prompts!
@@ -199,7 +198,7 @@ Or create a `.env` file in the project root with the same variables.
 
 ### 4. Keywords Configuration
 
-You can configure keywords to help focus AI-generated summaries on specific topics you're interested in.
+You can configure keywords to help focus AI-generated editorials on specific topics you're interested in.
 
 **During first-run setup:** The setup wizard will prompt you to optionally configure keywords.
 
@@ -215,9 +214,9 @@ ai:
     - programming
 ```
 
-When keywords are configured, the AI will receive these as context when generating summaries:
-- The AI will prioritize these topics when relevant to the article
-- Helps customize summaries to your specific interests
+When keywords are configured, the AI will receive these as context when generating editorials:
+- The AI will prioritize these topics when creating the morning editorial
+- Helps customize editorials to your specific interests
 - Optional - the system works perfectly without keywords
 - All AI providers support keywords (OpenAI, Anthropic, Gemini, Mistral, CLI variants)
 
@@ -245,7 +244,7 @@ Simply run:
 moka-news
 ```
 
-On first run, this will launch the setup wizard. On subsequent runs, it will use your saved configuration to fetch and display news with AI-powered summaries.
+On first run, this will launch the setup wizard. On subsequent runs, it will use your saved configuration to fetch and display news with AI-powered editorials.
 
 ### Basic Usage
 
@@ -261,25 +260,25 @@ Override your configured provider:
 
 **API-based providers:**
 
-Use OpenAI for intelligent summaries:
+Use OpenAI for editorial generation:
 
 ```bash
 moka-news --ai openai
 ```
 
-Use Anthropic Claude for summaries:
+Use Anthropic Claude for editorial generation:
 
 ```bash
 moka-news --ai anthropic
 ```
 
-Use Google Gemini for summaries:
+Use Google Gemini for editorial generation:
 
 ```bash
 moka-news --ai gemini
 ```
 
-Use Mistral AI for summaries:
+Use Mistral AI for editorial generation:
 
 ```bash
 moka-news --ai mistral
@@ -313,7 +312,7 @@ For testing without AI:
 moka-news --ai simple
 ```
 
-**Note:** Simple mode is for demo/testing only and does not generate AI summaries.
+**Note:** Simple mode is for demo/testing only and does not use AI for editorial generation.
 
 ### Custom RSS Feeds
 
@@ -387,14 +386,11 @@ moka-news --no-tui
 While in the TUI:
 
 - `q` or `Ctrl+C` - Quit the application
-- `r` - Refresh feed (fetch latest articles)
-- `e` - Toggle between editorial and articles view
-- `a` - Show articles view
+- `r` - Refresh feed (fetch latest articles and regenerate editorial)
 - `h` - Browse past editorials (history)
 - `t` - Toggle between light and dark theme
-- Mouse click on article - Open in browser
 
-The TUI displays your morning editorial by default, with easy access to individual articles and past editorials. It also automatically refreshes at 8:00 AM daily for your morning coffee! ☕
+The TUI displays your morning editorial, with easy access to past editorials through the history feature. It also automatically refreshes at 8:00 AM daily for your morning coffee! ☕
 
 ## Morning Editorial Feature
 
@@ -473,16 +469,16 @@ ruff check moka_news/
 ## Default Configuration
 
 After the first-run setup, MoKa News uses:
-- **AI Mode:** AI-powered summaries are enabled by default (Gemini CLI or your chosen provider)
+- **AI Mode:** AI-powered editorial generation is enabled by default (Gemini CLI or your chosen provider)
 - **Editorial Generation:** Automatically creates morning editorials from fetched articles
 - **Date Filtering:** Only fetches articles published since the last download
-- **Simple Mode:** Available as `--ai simple` for demo/testing only (no AI summaries)
+- **Simple Mode:** Available as `--ai simple` for demo/testing only (no AI for editorials)
 - **RSS Feeds:** Stored in `~/.config/moka-news/feeds.opml`
 - **Config File:** Located at `~/.config/moka-news/config.yaml`
 - **Editorials Archive:** Saved in `~/.config/moka-news/editorials/`
 - **Download Tracking:** Last download timestamp in `~/.config/moka-news/last_download.json`
 
-The first-run wizard makes it easy to get started with intelligent news summaries!
+The first-run wizard makes it easy to get started with AI-powered morning editorials!
 
 ## Project Structure
 
@@ -519,4 +515,4 @@ Gianluigi Calcaterra
 
 - Built with [Textual](https://textual.textualize.io/) for the TUI
 - Uses [feedparser](https://feedparser.readthedocs.io/) for RSS parsing
-- Powered by OpenAI and Anthropic for AI summaries
+- Powered by OpenAI, Anthropic, Google Gemini, and Mistral AI for editorial generation
