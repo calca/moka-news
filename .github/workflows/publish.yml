@@ -1,0 +1,60 @@
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      test_pypi:
+        description: 'Publish to Test PyPI instead of PyPI'
+        required: false
+        default: 'false'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/moka-news
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Create virtual environment
+      run: |
+        python -m venv venv
+        echo "Virtual environment created to avoid system pollution"
+    
+    - name: Install build dependencies
+      run: |
+        source venv/bin/activate
+        python -m pip install --upgrade pip
+        pip install build twine
+    
+    - name: Build package
+      run: |
+        source venv/bin/activate
+        python -m build
+    
+    - name: Check package
+      run: |
+        source venv/bin/activate
+        twine check dist/*
+    
+    - name: Publish to Test PyPI
+      if: github.event.inputs.test_pypi == 'true'
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/
+        skip-existing: true
+    
+    - name: Publish to PyPI
+      if: github.event_name == 'release' && github.event.action == 'published'
+      uses: pypa/gh-action-pypi-publish@release/v1
