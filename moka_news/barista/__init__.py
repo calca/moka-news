@@ -27,9 +27,10 @@ def _build_prompt(article: Dict[str, Any], keywords: list = None, prompts: Dict[
         prompts = DEFAULT_PROMPTS
     
     # Build the base prompt using the template with placeholders
+    # Increased from 500 to 1500 characters for better context while still being token-efficient
     base_prompt = prompts.get("user_prompt", "").format(
         title=article['title'],
-        content=article['summary'][:500]
+        content=article['summary'][:1500]
     )
     
     # Add keywords section if keywords are provided
@@ -106,7 +107,7 @@ class OpenAIBarista(AIProvider):
                     },
                     {"role": "user", "content": prompt},
                 ],
-                max_tokens=150,
+                max_tokens=250,  # Increased from 150 for better quality summaries
                 temperature=0.7,
             )
 
@@ -154,7 +155,7 @@ class AnthropicBarista(AIProvider):
 
             response = self.client.messages.create(
                 model="claude-3-haiku-20240307",
-                max_tokens=150,
+                max_tokens=250,  # Increased from 150 for better quality summaries
                 messages=[{"role": "user", "content": prompt}],
             )
 
@@ -243,7 +244,7 @@ class MistralBarista(AIProvider):
             response = self.client.chat(
                 model="mistral-tiny",
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=150,
+                max_tokens=250,  # Increased from 150 for better quality summaries
                 temperature=0.7,
             )
 
