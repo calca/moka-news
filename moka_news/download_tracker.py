@@ -3,7 +3,7 @@ Download Tracker - Tracks last download timestamp for filtering articles
 """
 
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
@@ -41,8 +41,6 @@ class DownloadTracker:
         if not self.tracker_file.exists():
             if default_to_yesterday:
                 # First time - return yesterday's date to limit articles
-                from datetime import timedelta
-
                 yesterday = datetime.now() - timedelta(days=1)
                 # Set to start of yesterday to get full day's articles
                 return yesterday.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -58,8 +56,6 @@ class DownloadTracker:
             print(f"Warning: Could not read download tracker: {e}")
 
         if default_to_yesterday:
-            from datetime import timedelta
-
             yesterday = datetime.now() - timedelta(days=1)
             return yesterday.replace(hour=0, minute=0, second=0, microsecond=0)
 

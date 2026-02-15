@@ -380,6 +380,39 @@ class Cup(App):
             # Wait a bit to avoid multiple triggers
             await asyncio.sleep(60)
 
+    def _update_with_new_articles(
+        self, new_articles, new_update_time, notify_editorial: bool = False
+    ):
+        """
+        Update the app with new articles and generate editorial
+
+        Args:
+            new_articles: List of new articles
+            new_update_time: Timestamp of the update
+            notify_editorial: Whether to show editorial generation notifications
+        """
+        self.articles = new_articles
+        self.last_update = new_update_time
+        self.sub_title = self._format_subtitle()
+
+        # Generate new editorial
+        if self.editorial_generator:
+            if notify_editorial:
+                self.notify("Generating editorial...", severity="information")
+            try:
+                editorial = self.editorial_generator.generate_editorial(new_articles)
+                editorial_path = self.editorial_generator.save_editorial(editorial)
+                self.editorial_content = self.editorial_generator.load_editorial(
+                    editorial_path
+                )
+                if notify_editorial:
+                    self.notify("✓ Editorial generated", severity="information")
+            except Exception as e:
+                self.notify(f"Error generating editorial: {e}", severity="error")
+
+        # Rebuild the UI
+        self._rebuild_view()
+
     async def _perform_auto_refresh(self) -> None:
         """Perform automatic refresh without user confirmation"""
         if not self.refresh_callback:
@@ -392,29 +425,9 @@ class Cup(App):
             new_articles, new_update_time = self.refresh_callback()
 
             if new_articles:
-                self.articles = new_articles
-                self.last_update = new_update_time
-                self.sub_title = self._format_subtitle()
-
-                # Generate new editorial
-                if self.editorial_generator:
-                    try:
-                        editorial = self.editorial_generator.generate_editorial(
-                            new_articles
-                        )
-                        editorial_path = self.editorial_generator.save_editorial(
-                            editorial
-                        )
-                        self.editorial_content = (
-                            self.editorial_generator.load_editorial(editorial_path)
-                        )
-                    except Exception as e:
-                        self.notify(
-                            f"Error generating editorial: {e}", severity="error"
-                        )
-
-                # Rebuild the UI
-                self._rebuild_view()
+                self._update_with_new_articles(
+                    new_articles, new_update_time, notify_editorial=False
+                )
 
                 # Log the automatic refresh
                 if self.refresh_manager:
@@ -461,31 +474,9 @@ class Cup(App):
             new_articles, new_update_time = self.refresh_callback()
 
             if new_articles:
-                self.articles = new_articles
-                self.last_update = new_update_time
-                self.sub_title = self._format_subtitle()
-
-                # Generate new editorial
-                if self.editorial_generator:
-                    self.notify("Generating editorial...", severity="information")
-                    try:
-                        editorial = self.editorial_generator.generate_editorial(
-                            new_articles
-                        )
-                        editorial_path = self.editorial_generator.save_editorial(
-                            editorial
-                        )
-                        self.editorial_content = (
-                            self.editorial_generator.load_editorial(editorial_path)
-                        )
-                        self.notify("✓ Editorial generated", severity="information")
-                    except Exception as e:
-                        self.notify(
-                            f"Error generating editorial: {e}", severity="error"
-                        )
-
-                # Rebuild the UI
-                self._rebuild_view()
+                self._update_with_new_articles(
+                    new_articles, new_update_time, notify_editorial=True
+                )
 
                 # Log the refresh
                 if self.refresh_manager:
