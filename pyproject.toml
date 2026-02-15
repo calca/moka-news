@@ -40,6 +40,7 @@ dependencies = [
 Homepage = "https://github.com/calca/moka-news"
 Repository = "https://github.com/calca/moka-news"
 Issues = "https://github.com/calca/moka-news/issues"
+Changelog = "https://github.com/calca/moka-news/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [

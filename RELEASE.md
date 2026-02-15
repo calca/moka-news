@@ -4,12 +4,32 @@ Quick reference for releasing a new version of MoKa News.
 
 ## Pre-Release
 
-1. **Update Version Numbers**
+1. **Determine Version Number**
+   
+   Follow [Semantic Versioning 2.0.0](https://semver.org/):
+   
+   Given a version number MAJOR.MINOR.PATCH, increment the:
+   - **MAJOR** version when you make incompatible API changes
+   - **MINOR** version when you add functionality in a backward compatible manner
+   - **PATCH** version when you make backward compatible bug fixes
+   
+   Examples:
+   - Bug fix: `0.1.0` → `0.1.1`
+   - New feature: `0.1.1` → `0.2.0`
+   - Breaking change: `0.9.0` → `1.0.0`
+
+2. **Update CHANGELOG**
+   - [ ] Move items from `[Unreleased]` section to new version section
+   - [ ] Add release date in format `[X.Y.Z] - YYYY-MM-DD`
+   - [ ] Update comparison links at bottom of CHANGELOG.md
+   - [ ] Ensure all changes are categorized: Added, Changed, Deprecated, Removed, Fixed, Security
+
+3. **Update Version Numbers**
    - [ ] Update version in `pyproject.toml`
    - [ ] Update `__version__` in `moka_news/__init__.py`
-   - [ ] Ensure both versions match
+   - [ ] Ensure both versions match the version in CHANGELOG
 
-2. **Run Quality Checks**
+4. **Run Quality Checks**
    ```bash
    # Create virtual environment
    python -m venv venv
@@ -28,7 +48,7 @@ Quick reference for releasing a new version of MoKa News.
    black --check moka_news/
    ```
 
-3. **Test Build**
+5. **Test Build**
    ```bash
    # Install build tools
    pip install build twine
@@ -43,7 +63,7 @@ Quick reference for releasing a new version of MoKa News.
    twine check dist/*
    ```
 
-4. **Test Installation**
+6. **Test Installation**
    ```bash
    # Create test environment
    python -m venv test_env
@@ -60,16 +80,16 @@ Quick reference for releasing a new version of MoKa News.
 
 ### Automated (Recommended)
 
-1. **Commit Version Changes**
+1. **Commit Version and CHANGELOG Changes**
    ```bash
-   git add pyproject.toml moka_news/__init__.py
-   git commit -m "Bump version to X.Y.Z"
+   git add CHANGELOG.md pyproject.toml moka_news/__init__.py
+   git commit -m "Release version X.Y.Z"
    git push
    ```
 
 2. **Create Git Tag**
    ```bash
-   git tag vX.Y.Z
+   git tag vX.Y.Z -a -m "Release version X.Y.Z"
    git push --tags
    ```
 
@@ -77,7 +97,7 @@ Quick reference for releasing a new version of MoKa News.
    - Go to https://github.com/calca/moka-news/releases/new
    - Select the tag you just created
    - Set release title: `vX.Y.Z`
-   - Add release notes describing changes
+   - Copy the relevant section from CHANGELOG.md as release notes
    - Click "Publish release"
    
    The GitHub Actions workflow will automatically:
@@ -114,22 +134,68 @@ twine upload dist/*
    moka-news --help
    ```
 
-3. **Update Documentation**
+3. **Update Documentation and Prepare for Next Version**
    - [ ] Update README if needed
    - [ ] Update DISTRIBUTION.md if release process changed
    - [ ] Close related issues on GitHub
+   - [ ] Add new `[Unreleased]` section to CHANGELOG.md for next version
+   - [ ] Update comparison link in CHANGELOG.md to track unreleased changes
 
-## Version Numbering
+4. **Announce Release** (optional)
+   - Share release notes with users
+   - Update project documentation sites if applicable
 
-Follow Semantic Versioning (SemVer):
+## Semantic Versioning Guidelines
+
+This project follows [Semantic Versioning 2.0.0](https://semver.org/):
+
+### Version Format: MAJOR.MINOR.PATCH
+
 - **MAJOR** version (X.0.0): Incompatible API changes
+  - Breaking changes to command-line interface
+  - Removal of features or configuration options
+  - Changes that require user action to upgrade
+  
 - **MINOR** version (0.X.0): New functionality, backward compatible
+  - New features or commands
+  - New configuration options
+  - New AI provider support
+  - Performance improvements
+  
 - **PATCH** version (0.0.X): Bug fixes, backward compatible
+  - Bug fixes
+  - Security patches
+  - Documentation updates
+  - Internal refactoring
 
-Examples:
-- `0.1.0` → `0.1.1`: Bug fix
-- `0.1.1` → `0.2.0`: New feature
-- `0.9.0` → `1.0.0`: First stable release
+### Pre-release Versions
+
+For pre-release versions, use suffixes:
+- `X.Y.Z-alpha.N`: Alpha releases (early testing)
+- `X.Y.Z-beta.N`: Beta releases (feature complete, testing)
+- `X.Y.Z-rc.N`: Release candidates (ready for release)
+
+### Version 0.x.x
+
+While in major version zero (0.y.z):
+- MINOR version changes MAY include breaking changes
+- PATCH version changes are for backward compatible fixes
+- Consider anything as potentially unstable
+
+### Version 1.0.0
+
+Version 1.0.0 defines the first stable public API. After this:
+- Strictly follow semver rules
+- Breaking changes require MAJOR version increment
+
+### Examples
+
+- `0.1.0` → `0.1.1`: Bug fix (README typo, test fix)
+- `0.1.1` → `0.2.0`: New feature (add new AI provider)
+- `0.9.0` → `1.0.0`: First stable release with stable API
+- `1.0.0` → `2.0.0`: Breaking change (remove deprecated option)
+- `1.0.0` → `1.1.0`: New feature (add export command)
+- `1.1.0` → `1.1.1`: Bug fix (fix crash on empty feed)
 
 ## Troubleshooting
 

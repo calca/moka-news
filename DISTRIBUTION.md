@@ -161,16 +161,27 @@ ruff check --fix moka_news/
 
 ## Version Management
 
-The version is defined in two places and should be kept in sync:
+This project follows [Semantic Versioning 2.0.0](https://semver.org/).
+
+The version is defined in three places and should be kept in sync:
 - `pyproject.toml` - The `version` field under `[project]`
 - `moka_news/__init__.py` - The `__version__` variable
+- `CHANGELOG.md` - The version sections tracking changes
 
-When releasing a new version:
-1. Update both version strings
-2. Commit the changes
-3. Create a git tag: `git tag v0.1.0`
-4. Push with tags: `git push --tags`
-5. Create a GitHub release
+### Releasing a New Version
+
+1. Determine the version number following semver rules (see RELEASE.md)
+2. Update CHANGELOG.md:
+   - Move items from `[Unreleased]` to new version section
+   - Add release date
+   - Update comparison links
+3. Update version in `pyproject.toml` and `moka_news/__init__.py`
+4. Commit changes: `git commit -m "Release version X.Y.Z"`
+5. Create annotated tag: `git tag vX.Y.Z -a -m "Release version X.Y.Z"`
+6. Push with tags: `git push --tags`
+7. Create a GitHub release (triggers automatic PyPI publishing)
+
+See [RELEASE.md](RELEASE.md) for detailed release checklist.
 
 ## Package Configuration
 

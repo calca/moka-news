@@ -549,6 +549,9 @@ moka-news/
 │   └── cup/              # TUI interface
 │       └── __init__.py
 ├── pyproject.toml        # Project configuration
+├── CHANGELOG.md          # Version history
+├── DISTRIBUTION.md       # Build and distribution guide
+├── RELEASE.md            # Release checklist
 ├── README.md
 └── LICENSE
 ```
