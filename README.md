@@ -54,6 +54,23 @@ A beautiful Textual-based TUI that displays your personalized morning editorial 
 - pip
 - (Optional) AI provider CLI tools: `gh` for GitHub Copilot, `gcloud` for Gemini, `mistral` for Mistral
 
+### Install from PyPI (Coming Soon)
+
+Once the package is published to PyPI, you'll be able to install it with:
+
+```bash
+# Basic installation
+pip install moka-news
+
+# With additional AI providers
+pip install moka-news[gemini]    # For Google Gemini support
+pip install moka-news[mistral]   # For Mistral AI support
+pip install moka-news[all]       # Install all AI providers
+
+# With development dependencies
+pip install moka-news[dev]
+```
+
 ### Install from source
 
 ```bash
@@ -484,6 +501,8 @@ Example editorial structure:
 The editorial feature respects your configured keywords and processes all articles (not just a subset), ensuring comprehensive coverage of the day's news!
 
 ## Development
+
+For detailed information about building, testing, and distributing MoKa News, see [DISTRIBUTION.md](DISTRIBUTION.md).
 
 ### Running Tests
 
