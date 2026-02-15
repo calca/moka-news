@@ -40,8 +40,8 @@ A beautiful Textual-based TUI that displays your personalized morning editorial 
 - ⚙️  Configuration file support (YAML)
 - 🎨 Beautiful terminal user interface
 - ⌨️  Keyboard shortcuts for navigation (h: history, t: toggle theme, r: refresh)
-- 🔄 **Manual refresh** - Press 'r' to fetch latest articles
-- ⏰ **Auto-refresh at 8:00 AM** - Wake up to fresh news with your morning coffee! ☕
+- 🔄 **Scheduled refreshes** - Automatic updates at morning (8 AM) and evening (8 PM)
+- ⚠️  **Smart refresh control** - Asks for confirmation when refreshing outside scheduled times
 - 📅 **Last update display** - Always know when your feed was refreshed
 - 🔗 Source links in editorial markdown for easy access
 - 🚀 Fast and lightweight
@@ -159,7 +159,25 @@ ui:
   theme: rose-pine  # Default theme (dark, relaxing)
   theme_light: rose-pine-dawn  # Light theme option
   theme_dark: rose-pine  # Dark theme option
+
+# Refresh Configuration
+refresh:
+  allowed_times:
+    - "08:00"  # Morning refresh time
+    - "20:00"  # Evening refresh time
+  max_daily_refreshes: 2  # Maximum number of refreshes per day
+  require_confirmation_outside_hours: true  # Ask for confirmation outside scheduled times
 ```
+
+**Refresh Configuration:**
+
+MoKa News focuses on editorial quality by limiting refreshes to specific times:
+- **Morning refresh:** 8:00 AM - Start your day with fresh news
+- **Evening refresh:** 20:00 (8:00 PM) - Catch up on the day's events
+- **Manual refresh control:** When you press 'r' outside scheduled hours, you'll be asked to confirm
+- **First run:** On the first run, articles from the previous day are fetched to provide initial content
+
+This approach ensures you get quality editorials at predictable times without information overload.
 
 **Theme Configuration:**
 
@@ -386,11 +404,11 @@ moka-news --no-tui
 While in the TUI:
 
 - `q` or `Ctrl+C` - Quit the application
-- `r` - Refresh feed (fetch latest articles and regenerate editorial)
+- `r` - Refresh feed (asks for confirmation if outside scheduled hours)
 - `h` - Browse past editorials (history)
 - `t` - Toggle between light and dark theme
 
-The TUI displays your morning editorial, with easy access to past editorials through the history feature. It also automatically refreshes at 8:00 AM daily for your morning coffee! ☕
+The TUI displays your morning editorial, with easy access to past editorials through the history feature. It automatically refreshes at 8:00 AM and 8:00 PM daily. Manual refreshes outside these times will prompt for confirmation to maintain editorial quality. ☕
 
 ## Morning Editorial Feature
 
