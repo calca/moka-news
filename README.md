@@ -406,6 +406,7 @@ While in the TUI:
 - `q` or `Ctrl+C` - Quit the application
 - `r` - Refresh feed (asks for confirmation if outside scheduled hours)
 - `h` - Browse past editorials (history)
+- `o` - Open current editorial in external app (requires configuration)
 - `t` - Toggle between light and dark theme
 
 The TUI displays your morning editorial, with easy access to past editorials through the history feature. It automatically refreshes at 8:00 AM and 8:00 PM daily. Manual refreshes outside these times will prompt for confirmation to maintain editorial quality. ☕
@@ -417,10 +418,26 @@ MoKa News generates a single, AI-powered editorial that combines your news artic
 - **Smart Content Selection**: The AI processes all articles filtered by date (since last download) based on your keywords
 - **Cohesive Narrative**: Articles are combined into a single, flowing editorial rather than separate summaries
 - **Source Links**: All source articles are linked at the end of the editorial
-- **Markdown Archive**: Each editorial is saved as a markdown file in `~/.config/moka-news/editorials/`
+- **Markdown Archive**: Each editorial is saved as a markdown file (default: `~/.config/moka-news/editorials/`)
 - **Date-based Filename**: Editorials are saved as `YYYY-MM-DD_HH-MM.md` for easy organization
 - **History Access**: Press `h` in the TUI to browse and read past editorials
+- **External Editor Support**: Press `o` in the TUI to open the current editorial in your preferred editor
 - **Customizable Prompts**: Fine-tune how the AI generates editorials by customizing prompts in your config file
+- **Configurable Location**: Save editorials to any directory of your choice
+
+### Configuring Editorial Settings
+
+You can customize editorial settings in your `config.yaml`:
+
+```yaml
+editorial:
+  # Directory to save editorials (defaults to ~/.config/moka-news/editorials if not specified)
+  editorials_dir: ~/Documents/my-news-editorials
+  
+  # Optional command to open editorials in external app
+  # Press 'o' in TUI to open current editorial with this command
+  opener_command: code  # Examples: "code", "vim", "nano", "open", "xdg-open"
+```
 
 ### Customizing Editorial Generation
 
@@ -493,7 +510,7 @@ After the first-run setup, MoKa News uses:
 - **Simple Mode:** Available as `--ai simple` for demo/testing only (no AI for editorials)
 - **RSS Feeds:** Stored in `~/.config/moka-news/feeds.opml`
 - **Config File:** Located at `~/.config/moka-news/config.yaml`
-- **Editorials Archive:** Saved in `~/.config/moka-news/editorials/`
+- **Editorials Archive:** Saved in `~/.config/moka-news/editorials/` by default (configurable)
 - **Download Tracking:** Last download timestamp in `~/.config/moka-news/last_download.json`
 
 The first-run wizard makes it easy to get started with AI-powered morning editorials!
