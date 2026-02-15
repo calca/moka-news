@@ -1,12 +1,12 @@
 """
 MoKa News - Main Entry Point
-Orchestrates The Grinder, The Barista, and The Cup
+Orchestrates The Grinder (RSS extraction), Editorial Generation (AI focus), and The Cup (Display)
 """
 
 import argparse
 from dotenv import load_dotenv
 from moka_news.grinder import Grinder
-from moka_news.barista import create_barista, create_ai_provider, SimpleBarista
+from moka_news.barista import create_ai_provider, SimpleBarista
 from moka_news.cup import serve
 from moka_news.config import load_config, create_sample_config
 from moka_news.opml_manager import OPMLManager
@@ -22,16 +22,16 @@ logger = get_logger(__name__)
 
 def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
     """
-    Fetch RSS feeds and brew articles with AI summaries.
+    Fetch RSS feeds (AI processing focused on editorial only).
     
     Args:
         feed_urls: List of RSS feed URLs
         config: Configuration dictionary
-        ai_provider: AI provider name
+        ai_provider: AI provider name (used only for editorial generation)
         download_tracker: Optional DownloadTracker instance for date filtering
     
     Returns:
-        Tuple of (processed_articles, last_update_time)
+        Tuple of (articles, last_update_time)
     """
     # Get last download timestamp for filtering
     since = None
@@ -56,22 +56,10 @@ def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
     if download_tracker:
         download_tracker.update_last_download(last_update)
     
-    # Get keywords and prompts from config
-    keywords = config["ai"].get("keywords", [])
-    prompts = config["ai"].get("prompts", None)
-    max_content_length = config["ai"].get("max_content_length", 1500)
-    max_tokens = config["ai"].get("max_tokens", 250)
+    # Skip AI processing on individual articles - focus AI on editorial only
+    logger.info(f"Skipping individual article processing - AI will focus on editorial")
     
-    # Step 2: The Barista - Process articles with AI
-    logger.info(f"Brewing summaries with {ai_provider}...")
-    
-    # Use factory to create barista with appropriate provider
-    barista = create_barista(ai_provider, config, keywords, prompts, max_content_length, max_tokens)
-    
-    processed_articles = barista.brew(articles)
-    logger.info(f"Brewed {len(processed_articles)} articles")
-    
-    return processed_articles, last_update
+    return articles, last_update
 
 
 def main():
@@ -239,10 +227,10 @@ Feed Management:
     # Initialize download tracker
     download_tracker = DownloadTracker()
     
-    # Fetch and brew articles
-    processed_articles, last_update = fetch_and_brew(feed_urls, config, ai_provider, download_tracker)
+    # Fetch articles (no AI processing on individual articles)
+    articles, last_update = fetch_and_brew(feed_urls, config, ai_provider, download_tracker)
     
-    if not processed_articles:
+    if not articles:
         print("No articles to display.")
         return
 
@@ -262,7 +250,7 @@ Feed Management:
     editorial_generator = EditorialGenerator(ai_instance, keywords, editorial_prompts=editorial_prompts)
     
     try:
-        editorial = editorial_generator.generate_editorial(processed_articles)
+        editorial = editorial_generator.generate_editorial(articles)
         editorial_path = editorial_generator.save_editorial(editorial)
         editorial_content = editorial_generator.load_editorial(editorial_path)
         print(f"✓ Editorial saved to: {editorial_path}")
@@ -273,7 +261,7 @@ Feed Management:
     # Step 3: The Cup - Display in TUI
     if not use_tui:
         print("\n" + "=" * 80)
-        for i, article in enumerate(processed_articles, 1):
+        for i, article in enumerate(articles, 1):
             print(f"\n[{i}] {article.get('ai_title', article['title'])}")
             print(f"    Source: {article.get('source', 'Unknown')}")
             print(f"    {article.get('ai_summary', article['summary'][:200])}")
@@ -299,7 +287,7 @@ Feed Management:
         theme_dark = config["ui"].get("theme_dark", "rose-pine")
         
         serve(
-            processed_articles,
+            articles,
             last_update,
             refresh_callback,
             editorial_content=editorial_content,
