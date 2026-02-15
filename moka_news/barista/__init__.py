@@ -9,7 +9,7 @@ from typing import Dict, Any, Optional
 from abc import ABC, abstractmethod
 
 
-def _build_prompt(article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None) -> str:
+def _build_prompt(article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = 1500) -> str:
     """
     Build a prompt for summary generation with optional keywords
     
@@ -17,6 +17,7 @@ def _build_prompt(article: Dict[str, Any], keywords: list = None, prompts: Dict[
         article: Article dictionary with title and summary
         keywords: Optional list of keywords to focus on
         prompts: Optional dictionary with custom prompts (user_prompt, keywords_section, format_section)
+        max_content_length: Maximum characters of content to include (default: 1500)
         
     Returns:
         Formatted prompt string
@@ -27,10 +28,10 @@ def _build_prompt(article: Dict[str, Any], keywords: list = None, prompts: Dict[
         prompts = DEFAULT_PROMPTS
     
     # Build the base prompt using the template with placeholders
-    # Increased from 500 to 1500 characters for better context and higher quality summaries
+    # Configurable content truncation for better context and higher quality summaries
     base_prompt = prompts.get("user_prompt", "").format(
         title=article['title'],
-        content=article['summary'][:1500]
+        content=article['summary'][:max_content_length]
     )
     
     # Add keywords section if keywords are provided
@@ -52,7 +53,7 @@ class AIProvider(ABC):
     """Abstract base class for AI providers"""
 
     @abstractmethod
-    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = 1500, max_tokens: int = 250) -> Dict[str, str]:
         """
         Generate a summary and improved title for an article
 
@@ -60,6 +61,8 @@ class AIProvider(ABC):
             article: Article dictionary with title, link, summary
             keywords: Optional list of keywords to focus the summary on
             prompts: Optional dictionary with custom prompts
+            max_content_length: Maximum characters of content to include (default: 1500)
+            max_tokens: Maximum tokens for AI response (default: 250)
 
         Returns:
             Dictionary with 'title' and 'summary' keys
@@ -86,10 +89,10 @@ class OpenAIBarista(AIProvider):
                 "openai package is required. Install with: pip install openai"
             )
 
-    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = 1500, max_tokens: int = 250) -> Dict[str, str]:
         """Generate summary using OpenAI"""
         try:
-            prompt = _build_prompt(article, keywords, prompts)
+            prompt = _build_prompt(article, keywords, prompts, max_content_length)
             
             # Get system message from prompts or use default
             if prompts is None:
@@ -107,7 +110,7 @@ class OpenAIBarista(AIProvider):
                     },
                     {"role": "user", "content": prompt},
                 ],
-                max_tokens=250,  # Increased from 150 for better quality summaries
+                max_tokens=max_tokens,
                 temperature=0.7,
             )
 
@@ -148,14 +151,14 @@ class AnthropicBarista(AIProvider):
                 "anthropic package is required. Install with: pip install anthropic"
             )
 
-    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = 1500, max_tokens: int = 250) -> Dict[str, str]:
         """Generate summary using Anthropic"""
         try:
-            prompt = _build_prompt(article, keywords, prompts)
+            prompt = _build_prompt(article, keywords, prompts, max_content_length)
 
             response = self.client.messages.create(
                 model="claude-3-haiku-20240307",
-                max_tokens=250,  # Increased from 150 for better quality summaries
+                max_tokens=max_tokens,
                 messages=[{"role": "user", "content": prompt}],
             )
 
@@ -195,10 +198,10 @@ class GeminiBarista(AIProvider):
                 "google-generativeai package is required. Install with: pip install google-generativeai"
             )
 
-    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = 1500, max_tokens: int = 250) -> Dict[str, str]:
         """Generate summary using Google Gemini"""
         try:
-            prompt = _build_prompt(article, keywords, prompts)
+            prompt = _build_prompt(article, keywords, prompts, max_content_length)
 
             response = self.model.generate_content(prompt)
             content = response.text
@@ -236,15 +239,15 @@ class MistralBarista(AIProvider):
                 "mistralai package is required. Install with: pip install mistralai"
             )
 
-    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = 1500, max_tokens: int = 250) -> Dict[str, str]:
         """Generate summary using Mistral AI"""
         try:
-            prompt = _build_prompt(article, keywords, prompts)
+            prompt = _build_prompt(article, keywords, prompts, max_content_length)
 
             response = self.client.chat(
                 model="mistral-tiny",
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=250,  # Increased from 150 for better quality summaries
+                max_tokens=max_tokens,
                 temperature=0.7,
             )
 
@@ -267,7 +270,7 @@ class MistralBarista(AIProvider):
 class SimpleBarista(AIProvider):
     """Simple non-AI processor for testing without API keys"""
 
-    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = 1500, max_tokens: int = 250) -> Dict[str, str]:
         """Generate a simple summary by truncating the content"""
         return {
             "title": article.get("title", "No Title")[:80],
@@ -299,10 +302,10 @@ class GitHubCopilotCLIBarista(AIProvider):
                 "GitHub CLI (gh) is not installed. Install from: https://cli.github.com/"
             )
 
-    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = 1500, max_tokens: int = 250) -> Dict[str, str]:
         """Generate summary using GitHub Copilot CLI"""
         try:
-            prompt = _build_prompt(article, keywords, prompts)
+            prompt = _build_prompt(article, keywords, prompts, max_content_length)
 
             # Run gh copilot with the prompt
             # Note: --allow-all-tools is required for non-interactive mode.
@@ -366,10 +369,10 @@ class GeminiCLIBarista(AIProvider):
                 "gcloud CLI is not installed. Install from: https://cloud.google.com/sdk/docs/install"
             )
 
-    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = 1500, max_tokens: int = 250) -> Dict[str, str]:
         """Generate summary using gcloud CLI with Gemini"""
         try:
-            prompt = _build_prompt(article, keywords, prompts)
+            prompt = _build_prompt(article, keywords, prompts, max_content_length)
 
             # Run gcloud with Gemini
             result = subprocess.run(
@@ -431,10 +434,10 @@ class MistralCLIBarista(AIProvider):
                 "Mistral CLI is not installed. Install with: pip install mistralai-cli or from: https://docs.mistral.ai/cli/"
             )
 
-    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = 1500, max_tokens: int = 250) -> Dict[str, str]:
         """Generate summary using Mistral CLI"""
         try:
-            prompt = _build_prompt(article, keywords, prompts)
+            prompt = _build_prompt(article, keywords, prompts, max_content_length)
 
             # Run mistral CLI
             result = subprocess.run(
@@ -479,7 +482,7 @@ class MistralCLIBarista(AIProvider):
 class Barista:
     """Main Barista class that coordinates AI processing"""
 
-    def __init__(self, provider: Optional[AIProvider] = None, keywords: list = None, prompts: Dict[str, str] = None):
+    def __init__(self, provider: Optional[AIProvider] = None, keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = 1500, max_tokens: int = 250):
         """
         Initialize the Barista with an AI provider
 
@@ -487,10 +490,14 @@ class Barista:
             provider: AI provider instance (defaults to SimpleBarista)
             keywords: Optional list of keywords for summary generation
             prompts: Optional dictionary with custom prompts
+            max_content_length: Maximum characters of content to include (default: 1500)
+            max_tokens: Maximum tokens for AI response (default: 250)
         """
         self.provider = provider or SimpleBarista()
         self.keywords = keywords or []
         self.prompts = prompts
+        self.max_content_length = max_content_length
+        self.max_tokens = max_tokens
 
     def brew(self, articles: list) -> list:
         """
@@ -506,7 +513,13 @@ class Barista:
 
         for article in articles:
             try:
-                enhanced = self.provider.generate_summary(article, self.keywords, self.prompts)
+                enhanced = self.provider.generate_summary(
+                    article, 
+                    self.keywords, 
+                    self.prompts,
+                    self.max_content_length,
+                    self.max_tokens
+                )
                 processed_article = article.copy()
                 processed_article["ai_title"] = enhanced["title"]
                 processed_article["ai_summary"] = enhanced["summary"]

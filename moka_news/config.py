@@ -62,6 +62,8 @@ DEFAULT_CONFIG = {
         "keywords": [],  # Optional keywords for summary generation
         "prompts": DEFAULT_PROMPTS,  # External prompts with placeholders
         "editorial_prompts": DEFAULT_EDITORIAL_PROMPTS,  # Prompts for editorial generation
+        "max_content_length": 1500,  # Maximum characters to send to AI for context
+        "max_tokens": 250,  # Maximum tokens for AI response
     },
     "feeds": {
         "urls": [
@@ -241,6 +243,10 @@ ai:
       Format as:
       TITLE: <engaging editorial title>
       SUMMARY: <the editorial content>
+  
+  # Token optimization settings
+  max_content_length: 1500  # Maximum characters of article content to send to AI (default: 1500)
+  max_tokens: 250           # Maximum tokens for AI to generate in response (default: 250)
 
 # RSS Feed Configuration
 feeds:
