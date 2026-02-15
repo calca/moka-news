@@ -183,18 +183,18 @@ Feed Management:
     # Handle feed management commands
     if args.add_feed:
         if opml_manager.add_feed(args.add_feed):
-            print(f"✓ Added feed: {args.add_feed}")
-            print(f"  Saved to: {opml_manager.opml_path}")
+            logger.info(f"Added feed: {args.add_feed}")
+            logger.info(f"Saved to: {opml_manager.opml_path}")
         else:
-            print(f"⚠️  Feed already exists: {args.add_feed}")
+            logger.warning(f"Feed already exists: {args.add_feed}")
         return
 
     if args.remove_feed:
         if opml_manager.remove_feed(args.remove_feed):
-            print(f"✓ Removed feed: {args.remove_feed}")
-            print(f"  Updated: {opml_manager.opml_path}")
+            logger.info(f"Removed feed: {args.remove_feed}")
+            logger.info(f"Updated: {opml_manager.opml_path}")
         else:
-            print(f"⚠️  Feed not found: {args.remove_feed}")
+            logger.warning(f"Feed not found: {args.remove_feed}")
         return
 
     if args.list_feeds:
@@ -235,7 +235,7 @@ Feed Management:
     
     use_tui = not args.no_tui if args.no_tui else config["ui"]["use_tui"]
 
-    print("☕ Brewing your morning news...")
+    logger.info("Brewing your morning news...")
     
     # Initialize download tracker
     download_tracker = DownloadTracker()
@@ -244,11 +244,11 @@ Feed Management:
     processed_articles, last_update = fetch_and_brew(feed_urls, config, ai_provider, download_tracker)
     
     if not processed_articles:
-        print("No articles to display.")
+        logger.warning("No articles to display.")
         return
 
     # Generate editorial
-    print("📝 Generating morning editorial...")
+    logger.info("Generating morning editorial...")
     editorial_content = None
     
     # Get AI provider instance for editorial generation
@@ -266,9 +266,9 @@ Feed Management:
         editorial = editorial_generator.generate_editorial(processed_articles)
         editorial_path = editorial_generator.save_editorial(editorial)
         editorial_content = editorial_generator.load_editorial(editorial_path)
-        print(f"✓ Editorial saved to: {editorial_path}")
+        logger.info(f"Editorial saved to: {editorial_path}")
     except Exception as e:
-        print(f"⚠️  Error generating editorial: {e}")
+        logger.error(f"Error generating editorial: {e}")
         editorial_content = None
 
     # Step 3: The Cup - Display in TUI
@@ -288,7 +288,7 @@ Feed Management:
             print(editorial_content)
             print("=" * 80)
     else:
-        print("☕ Serving your news...\n")
+        logger.info("Serving your news...\n")
         
         # Create refresh callback for the TUI
         def refresh_callback():
