@@ -10,7 +10,6 @@ from textual.binding import Binding
 from textual.screen import Screen
 from typing import List, Dict, Any, Callable, Optional
 from datetime import datetime, time
-from pathlib import Path
 import webbrowser
 import asyncio
 

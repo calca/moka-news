@@ -3,7 +3,6 @@ Editorial Generator - Creates AI-powered morning news editorials
 Combines multiple articles into a single coherent editorial with source links
 """
 
-import os
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List, Optional

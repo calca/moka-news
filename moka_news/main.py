@@ -3,28 +3,21 @@ MoKa News - Main Entry Point
 Orchestrates The Grinder, The Barista, and The Cup
 """
 
-import os
 import argparse
 from dotenv import load_dotenv
 from moka_news.grinder import Grinder
-from moka_news.barista import (
-    Barista,
-    OpenAIBarista,
-    AnthropicBarista,
-    SimpleBarista,
-    GeminiBarista,
-    MistralBarista,
-    GitHubCopilotCLIBarista,
-    GeminiCLIBarista,
-    MistralCLIBarista,
-)
+from moka_news.barista import create_barista, create_ai_provider, SimpleBarista, Barista
 from moka_news.cup import serve
 from moka_news.config import load_config, create_sample_config
 from moka_news.opml_manager import OPMLManager
 from moka_news.first_run_setup import is_first_run, run_first_run_setup
 from moka_news.download_tracker import DownloadTracker
 from moka_news.editorial import EditorialGenerator
-from datetime import datetime, time
+from moka_news.logger import get_logger, setup_logger
+
+# Setup logger for console output
+setup_logger("moka_news")
+logger = get_logger(__name__)
 
 
 def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
@@ -45,18 +38,18 @@ def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
     if download_tracker:
         since = download_tracker.get_last_download()
         if since:
-            print(f"📅 Filtering articles since {since.strftime('%Y-%m-%d %H:%M:%S')}")
+            logger.info(f"Filtering articles since {since.strftime('%Y-%m-%d %H:%M:%S')}")
     
-    print(f"📡 Grinding {len(feed_urls)} feeds...")
+    logger.info(f"Grinding {len(feed_urls)} feeds...")
     
     # Step 1: The Grinder - Extract articles from RSS feeds
     grinder = Grinder(feed_urls, since=since)
     articles, last_update = grinder.grind()
     
-    print(f"✓ Ground {len(articles)} articles")
+    logger.info(f"Ground {len(articles)} articles")
     
     if not articles:
-        print("No articles found. Please check your RSS feeds.")
+        logger.warning("No articles found. Please check your RSS feeds.")
         return [], last_update
     
     # Update download tracker
@@ -71,13 +64,13 @@ def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
     
     # Step 2: Prepare articles (no AI processing on individual articles)
     # AI will be focused only on the editorial generation
-    print(f"📋 Preparing {len(articles)} articles...")
+    logger.info(f"Preparing {len(articles)} articles...")
     
     # Use SimpleBarista to add ai_title and ai_summary fields without AI processing
     # This maintains compatibility with the rest of the codebase
     barista = Barista(SimpleBarista(), keywords, prompts, max_content_length, max_tokens)
     processed_articles = barista.brew(articles)
-    print(f"✓ Prepared {len(processed_articles)} articles")
+    logger.info(f"Prepared {len(processed_articles)} articles")
     
     return processed_articles, last_update
 
@@ -93,7 +86,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  moka-news                          # Use default feeds with AI processing (OpenAI)
+  moka-news                          # Use default feeds with AI processing (Gemini CLI)
   moka-news --ai openai              # Use OpenAI API for summaries
   moka-news --ai anthropic           # Use Anthropic API for summaries
   moka-news --ai gemini              # Use Google Gemini API for summaries
@@ -143,7 +136,7 @@ Feed Management:
             "mistral-cli",
         ],
         default=None,
-        help="AI provider for generating summaries (default: from config or openai; 'simple' is demo/testing only)",
+        help="AI provider for generating summaries (default: from config or gemini-cli; 'simple' is demo/testing only)",
     )
 
     parser.add_argument(
@@ -257,48 +250,17 @@ Feed Management:
     # Generate editorial
     print("📝 Generating morning editorial...")
     editorial_content = None
-    editorial_generator = None
     
     # Get AI provider instance for editorial generation
     keywords = config["ai"].get("keywords", [])
     editorial_prompts = config["ai"].get("editorial_prompts", None)
     
-    if ai_provider == "openai":
-        api_key = config["ai"]["api_keys"].get("openai") or os.getenv("OPENAI_API_KEY")
-        if api_key:
-            try:
-                ai_instance = OpenAIBarista(api_key=api_key)
-                editorial_generator = EditorialGenerator(ai_instance, keywords, editorial_prompts=editorial_prompts)
-            except ImportError:
-                pass
-    elif ai_provider == "anthropic":
-        api_key = config["ai"]["api_keys"].get("anthropic") or os.getenv("ANTHROPIC_API_KEY")
-        if api_key:
-            try:
-                ai_instance = AnthropicBarista(api_key=api_key)
-                editorial_generator = EditorialGenerator(ai_instance, keywords, editorial_prompts=editorial_prompts)
-            except ImportError:
-                pass
-    elif ai_provider == "gemini":
-        api_key = config["ai"]["api_keys"].get("gemini") or os.getenv("GEMINI_API_KEY")
-        if api_key:
-            try:
-                ai_instance = GeminiBarista(api_key=api_key)
-                editorial_generator = EditorialGenerator(ai_instance, keywords, editorial_prompts=editorial_prompts)
-            except ImportError:
-                pass
-    elif ai_provider == "mistral":
-        api_key = config["ai"]["api_keys"].get("mistral") or os.getenv("MISTRAL_API_KEY")
-        if api_key:
-            try:
-                ai_instance = MistralBarista(api_key=api_key)
-                editorial_generator = EditorialGenerator(ai_instance, keywords, editorial_prompts=editorial_prompts)
-            except ImportError:
-                pass
+    # Try to get the AI provider, fall back to SimpleBarista if it fails
+    ai_instance = create_ai_provider(ai_provider, config)
+    if ai_instance is None:
+        ai_instance = SimpleBarista()
     
-    # Fallback to simple barista if no AI provider available
-    if not editorial_generator:
-        editorial_generator = EditorialGenerator(SimpleBarista(), keywords, editorial_prompts=editorial_prompts)
+    editorial_generator = EditorialGenerator(ai_instance, keywords, editorial_prompts=editorial_prompts)
     
     try:
         editorial = editorial_generator.generate_editorial(processed_articles)

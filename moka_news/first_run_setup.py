@@ -10,36 +10,11 @@ import yaml
 from pathlib import Path
 from typing import Dict, Any, Optional
 from moka_news.opml_manager import OPMLManager
+from moka_news.constants import DEFAULT_TECH_FEEDS
 
 
-# Suggested tech feeds for moka-cafè
-SUGGESTED_TECH_FEEDS = [
-    {
-        "url": "https://news.ycombinator.com/rss",
-        "title": "Hacker News",
-        "htmlUrl": "https://news.ycombinator.com"
-    },
-    {
-        "url": "https://github.blog/feed/",
-        "title": "GitHub Blog",
-        "htmlUrl": "https://github.blog"
-    },
-    {
-        "url": "https://www.theverge.com/rss/index.xml",
-        "title": "The Verge - Tech",
-        "htmlUrl": "https://www.theverge.com"
-    },
-    {
-        "url": "https://techcrunch.com/feed/",
-        "title": "TechCrunch",
-        "htmlUrl": "https://techcrunch.com"
-    },
-    {
-        "url": "https://feeds.arstechnica.com/arstechnica/index",
-        "title": "Ars Technica",
-        "htmlUrl": "https://arstechnica.com"
-    }
-]
+# Suggested tech feeds for moka-cafè (directly use from constants)
+SUGGESTED_TECH_FEEDS = DEFAULT_TECH_FEEDS
 
 # AI provider configurations
 AI_PROVIDERS = {

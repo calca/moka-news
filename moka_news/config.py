@@ -7,6 +7,10 @@ import os
 import yaml
 from typing import Dict, Any, Optional
 from pathlib import Path
+from moka_news.constants import DEFAULT_TECH_FEEDS, MAX_CONTENT_LENGTH, MAX_TOKENS
+from moka_news.logger import get_logger
+
+logger = get_logger(__name__)
 
 DEFAULT_PROMPTS = {
     "system_message": "You are a news editor creating engaging titles and summaries.",
@@ -52,7 +56,7 @@ SUMMARY: <the editorial content>"""
 
 DEFAULT_CONFIG = {
     "ai": {
-        "provider": "openai",  # Changed from "simple" - AI is now default, simple is demo only
+        "provider": "gemini-cli",  # Default AI provider - requires gcloud CLI
         "api_keys": {
             "openai": None,
             "anthropic": None,
@@ -62,15 +66,11 @@ DEFAULT_CONFIG = {
         "keywords": [],  # Optional keywords for summary generation
         "prompts": DEFAULT_PROMPTS,  # External prompts with placeholders
         "editorial_prompts": DEFAULT_EDITORIAL_PROMPTS,  # Prompts for editorial generation
-        "max_content_length": 1500,  # Maximum characters to send to AI for context
-        "max_tokens": 250,  # Maximum tokens for AI response
+        "max_content_length": MAX_CONTENT_LENGTH,  # Maximum characters to send to AI for context
+        "max_tokens": MAX_TOKENS,  # Maximum tokens for AI response
     },
     "feeds": {
-        "urls": [
-            "https://news.ycombinator.com/rss",
-            "https://www.reddit.com/r/programming/.rss",
-            "https://github.blog/feed/",
-        ]
+        "urls": [feed["url"] for feed in DEFAULT_TECH_FEEDS[:3]]  # Use first 3 feeds from constants
     },
     "ui": {
         "use_tui": True,
@@ -177,8 +177,8 @@ def create_sample_config(path: str = "moka-news.yaml"):
 
 # AI Provider Configuration
 ai:
-  provider: openai  # Options: openai, anthropic, gemini, mistral, copilot-cli, gemini-cli, mistral-cli
-                     # Note: 'simple' mode is for demo/testing only (no AI summaries)
+  provider: gemini-cli  # Options: openai, anthropic, gemini, mistral, copilot-cli, gemini-cli, mistral-cli
+                        # Note: 'simple' mode is for demo/testing only (no AI summaries)
   
   # API Keys (can also be set via environment variables)
   # Only needed for API-based providers (not CLI providers)

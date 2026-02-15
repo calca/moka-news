@@ -125,8 +125,8 @@ Edit the `moka-news.yaml` file:
 ```yaml
 # AI Provider Configuration
 ai:
-  provider: openai  # Options: openai, anthropic, gemini, mistral, copilot-cli, gemini-cli, mistral-cli
-                     # Note: 'simple' mode is for demo/testing only
+  provider: gemini-cli  # Options: openai, anthropic, gemini, mistral, copilot-cli, gemini-cli, mistral-cli
+                        # Note: 'simple' mode is for demo/testing only
   
   api_keys:
     openai: your-key-here
@@ -470,7 +470,7 @@ ruff check moka_news/
 ## Default Configuration
 
 After the first-run setup, MoKa News uses:
-- **AI Mode:** AI-powered summaries are enabled by default (OpenAI or your chosen provider)
+- **AI Mode:** AI-powered summaries are enabled by default (Gemini CLI or your chosen provider)
 - **Editorial Generation:** Automatically creates morning editorials from fetched articles
 - **Date Filtering:** Only fetches articles published since the last download
 - **Simple Mode:** Available as `--ai simple` for demo/testing only (no AI summaries)
