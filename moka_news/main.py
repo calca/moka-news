@@ -4,6 +4,7 @@ Orchestrates The Grinder (RSS extraction), The Editorial Generator (AI focus), a
 """
 
 import argparse
+from datetime import datetime, time
 from dotenv import load_dotenv
 from moka_news.grinder import Grinder
 from moka_news.barista import create_ai_provider, SimpleBarista
@@ -12,6 +13,7 @@ from moka_news.config import load_config, create_sample_config
 from moka_news.opml_manager import OPMLManager
 from moka_news.first_run_setup import is_first_run, run_first_run_setup
 from moka_news.download_tracker import DownloadTracker
+from moka_news.refresh_manager import RefreshManager
 from moka_news.editorial import EditorialGenerator
 from moka_news.logger import get_logger, setup_logger
 
@@ -286,6 +288,27 @@ Feed Management:
         theme_light = config["ui"].get("theme_light", "rose-pine-dawn")
         theme_dark = config["ui"].get("theme_dark", "rose-pine")
         
+        # Initialize refresh manager if configuration is available
+        refresh_manager = None
+        if config.get("refresh", {}).get("require_confirmation_outside_hours", True):
+            refresh_manager = RefreshManager()
+            
+            # Configure refresh times from config
+            refresh_config = config.get("refresh", {})
+            allowed_times = refresh_config.get("allowed_times", ["08:00", "20:00"])
+            
+            # Parse allowed times and set them in the refresh manager
+            parsed_times = []
+            for time_str in allowed_times:
+                try:
+                    hour, minute = time_str.split(":")
+                    parsed_times.append(time(int(hour), int(minute)))
+                except ValueError:
+                    logger.warning(f"Invalid time format in config: {time_str}")
+            
+            if parsed_times:
+                refresh_manager.allowed_refresh_times = parsed_times
+        
         serve(
             articles,
             last_update,
@@ -295,6 +318,7 @@ Feed Management:
             theme=theme,
             theme_light=theme_light,
             theme_dark=theme_dark,
+            refresh_manager=refresh_manager,
         )
 
 

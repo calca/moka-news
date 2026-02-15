@@ -78,6 +78,11 @@ DEFAULT_CONFIG = {
         "theme_light": "rose-pine-dawn",  # Light theme option
         "theme_dark": "rose-pine",  # Dark theme option
     },
+    "refresh": {
+        "allowed_times": ["08:00", "20:00"],  # Morning and evening refresh times
+        "max_daily_refreshes": 2,  # Maximum refreshes per day
+        "require_confirmation_outside_hours": True,  # Ask for confirmation outside allowed times
+    },
 }
 
 
@@ -261,6 +266,14 @@ ui:
   theme: rose-pine  # Default theme (dark, relaxing) - see Textual themes
   theme_light: rose-pine-dawn  # Light theme option
   theme_dark: rose-pine  # Dark theme option
+
+# Refresh Configuration
+refresh:
+  allowed_times:
+    - "08:00"  # Morning refresh time
+    - "20:00"  # Evening refresh time
+  max_daily_refreshes: 2  # Maximum number of refreshes per day
+  require_confirmation_outside_hours: true  # Require confirmation for manual refresh outside allowed times
 """
 
     with open(path, "w") as f:

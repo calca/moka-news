@@ -25,14 +25,24 @@ class DownloadTracker:
             config_dir.mkdir(parents=True, exist_ok=True)
             self.tracker_file = config_dir / "last_download.json"
     
-    def get_last_download(self) -> Optional[datetime]:
+    def get_last_download(self, default_to_yesterday: bool = True) -> Optional[datetime]:
         """
         Get the timestamp of last download
         
+        Args:
+            default_to_yesterday: If True and no download history exists, 
+                                 return yesterday's date (for limiting initial articles)
+        
         Returns:
-            datetime of last download, or None if never downloaded
+            datetime of last download, or yesterday if never downloaded and default_to_yesterday=True
         """
         if not self.tracker_file.exists():
+            if default_to_yesterday:
+                # First time - return yesterday's date to limit articles
+                from datetime import timedelta
+                yesterday = datetime.now() - timedelta(days=1)
+                # Set to start of yesterday to get full day's articles
+                return yesterday.replace(hour=0, minute=0, second=0, microsecond=0)
             return None
         
         try:
@@ -43,6 +53,11 @@ class DownloadTracker:
                     return datetime.fromisoformat(timestamp_str)
         except Exception as e:
             print(f"Warning: Could not read download tracker: {e}")
+        
+        if default_to_yesterday:
+            from datetime import timedelta
+            yesterday = datetime.now() - timedelta(days=1)
+            return yesterday.replace(hour=0, minute=0, second=0, microsecond=0)
         
         return None
     

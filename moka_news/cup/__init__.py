@@ -4,14 +4,76 @@ Displays the news digest in a beautiful terminal interface
 """
 
 from textual.app import App, ComposeResult
-from textual.containers import ScrollableContainer, VerticalScroll
-from textual.widgets import Header, Footer, Static, Label, Markdown, ListView, ListItem
+from textual.containers import ScrollableContainer, VerticalScroll, Vertical, Horizontal
+from textual.widgets import Header, Footer, Static, Label, Markdown, ListView, ListItem, Button
 from textual.binding import Binding
-from textual.screen import Screen
+from textual.screen import Screen, ModalScreen
 from typing import List, Dict, Any, Callable, Optional
 from datetime import datetime, time
 import webbrowser
 import asyncio
+
+
+class ConfirmationDialog(ModalScreen):
+    """Modal dialog for confirming actions"""
+    
+    BINDINGS = [
+        Binding("escape", "dismiss(False)", "Cancel", priority=True),
+        Binding("n", "dismiss(False)", "No", priority=True),
+        Binding("y", "dismiss(True)", "Yes", priority=True),
+    ]
+    
+    CSS = """
+    ConfirmationDialog {
+        align: center middle;
+    }
+    
+    #dialog-container {
+        width: 60;
+        height: auto;
+        border: thick $primary;
+        background: $panel;
+        padding: 2;
+    }
+    
+    #dialog-message {
+        padding: 1 2;
+        width: 100%;
+        content-align: center middle;
+    }
+    
+    #button-container {
+        width: 100%;
+        height: auto;
+        align: center middle;
+        padding: 1;
+    }
+    
+    Button {
+        margin: 0 1;
+    }
+    """
+    
+    def __init__(self, message: str, title: str = "Confirmation", *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.message = message
+        self.dialog_title = title
+    
+    def compose(self) -> ComposeResult:
+        """Create the dialog layout"""
+        with Vertical(id="dialog-container"):
+            yield Static(f"[bold]{self.dialog_title}[/bold]", id="dialog-title")
+            yield Static(self.message, id="dialog-message")
+            with Horizontal(id="button-container"):
+                yield Button("Yes", variant="success", id="yes-button")
+                yield Button("No", variant="error", id="no-button")
+    
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle button clicks"""
+        if event.button.id == "yes-button":
+            self.dismiss(True)
+        else:
+            self.dismiss(False)
 
 
 class ArticleCard(Static):
@@ -203,6 +265,7 @@ class Cup(App):
         theme: str = "rose-pine",
         theme_light: str = "rose-pine-dawn",
         theme_dark: str = "rose-pine",
+        refresh_manager: Optional[Any] = None,
     ):
         super().__init__()
         self.articles = articles or []
@@ -218,6 +281,7 @@ class Cup(App):
         self.theme_light = theme_light
         self.theme_dark = theme_dark
         self.theme = theme
+        self.refresh_manager = refresh_manager
 
     def _format_subtitle(self) -> str:
         """Format the subtitle with last update time"""
@@ -243,24 +307,53 @@ class Cup(App):
 
     async def on_mount(self) -> None:
         """Start the auto-refresh timer when the app mounts"""
-        if self.auto_refresh_time and self.refresh_callback:
+        # If refresh manager is available, use its configured times
+        # Otherwise, fall back to the single auto_refresh_time
+        if self.refresh_callback:
             self._auto_refresh_task = asyncio.create_task(self._auto_refresh_loop())
 
     async def _auto_refresh_loop(self) -> None:
-        """Background task that triggers refresh at specified time"""
+        """Background task that triggers refresh at specified times"""
+        from datetime import timedelta
+        
         while True:
             now = datetime.now()
-            target = now.replace(
-                hour=self.auto_refresh_time.hour,
-                minute=self.auto_refresh_time.minute,
-                second=0,
-                microsecond=0
-            )
             
-            # If target time has passed today, schedule for tomorrow
-            if now >= target:
-                from datetime import timedelta
-                target = target + timedelta(days=1)
+            # Get refresh times - either from refresh manager or default
+            if self.refresh_manager:
+                allowed_times = self.refresh_manager.get_allowed_refresh_times()
+            elif self.auto_refresh_time:
+                allowed_times = [self.auto_refresh_time]
+            else:
+                # No refresh times configured
+                await asyncio.sleep(3600)
+                continue
+            
+            # Find the next refresh time
+            target = None
+            for refresh_time in allowed_times:
+                potential_target = now.replace(
+                    hour=refresh_time.hour,
+                    minute=refresh_time.minute,
+                    second=0,
+                    microsecond=0
+                )
+                
+                # If this time hasn't passed today
+                if now < potential_target:
+                    if target is None or potential_target < target:
+                        target = potential_target
+            
+            # If all times have passed today, schedule for first time tomorrow
+            if target is None:
+                tomorrow = now + timedelta(days=1)
+                first_time = allowed_times[0]
+                target = tomorrow.replace(
+                    hour=first_time.hour,
+                    minute=first_time.minute,
+                    second=0,
+                    microsecond=0
+                )
             
             # Calculate seconds until target time
             seconds_until_target = (target - now).total_seconds()
@@ -268,17 +361,74 @@ class Cup(App):
             # Wait until target time
             await asyncio.sleep(seconds_until_target)
             
-            # Trigger refresh
-            self.action_refresh()
+            # Trigger automatic refresh (no confirmation needed)
+            await self._perform_auto_refresh()
             
             # Wait a bit to avoid multiple triggers
             await asyncio.sleep(60)
+    
+    async def _perform_auto_refresh(self) -> None:
+        """Perform automatic refresh without user confirmation"""
+        if not self.refresh_callback:
+            return
+        
+        self.notify("Automatic refresh starting...", severity="information")
+        
+        try:
+            # Call the refresh callback to fetch new articles
+            new_articles, new_update_time = self.refresh_callback()
+            
+            if new_articles:
+                self.articles = new_articles
+                self.last_update = new_update_time
+                self.sub_title = self._format_subtitle()
+                
+                # Generate new editorial
+                if self.editorial_generator:
+                    try:
+                        editorial = self.editorial_generator.generate_editorial(new_articles)
+                        editorial_path = self.editorial_generator.save_editorial(editorial)
+                        self.editorial_content = self.editorial_generator.load_editorial(editorial_path)
+                    except Exception as e:
+                        self.notify(f"Error generating editorial: {e}", severity="error")
+                
+                # Rebuild the UI
+                self._rebuild_view()
+                
+                # Log the automatic refresh
+                if self.refresh_manager:
+                    self.refresh_manager.log_refresh(auto=True)
+                
+                self.notify(f"✓ Auto-refreshed {len(new_articles)} articles", severity="information")
+            else:
+                self.notify("No new articles found", severity="information")
+        except Exception as e:
+            self.notify(f"Error during auto-refresh: {e}", severity="error")
 
-    def action_refresh(self) -> None:
+    async def action_refresh(self) -> None:
         """Refresh the news feed"""
         if not self.refresh_callback:
             self.notify("Refresh functionality not available", severity="warning")
             return
+        
+        # Check if refresh manager is available
+        if self.refresh_manager:
+            is_allowed, reason = self.refresh_manager.is_within_allowed_time()
+            
+            if not is_allowed:
+                # Show warning dialog and ask for confirmation
+                dialog = ConfirmationDialog(
+                    message=f"{reason}\n\nDo you want to refresh anyway?",
+                    title="⚠️ Refresh Outside Scheduled Hours"
+                )
+                confirmed = await self.push_screen_wait(dialog)
+                
+                if not confirmed:
+                    self.notify("Refresh cancelled", severity="information")
+                    return
+                
+                # User confirmed, proceed with manual refresh
+                self.notify("Manual refresh confirmed", severity="information")
         
         self.notify("Refreshing news feeds...", severity="information")
         
@@ -291,12 +441,23 @@ class Cup(App):
                 self.last_update = new_update_time
                 self.sub_title = self._format_subtitle()
                 
-                # Rebuild the UI with new articles
-                container = self.query_one("#articles-container")
-                container.remove_children()
+                # Generate new editorial
+                if self.editorial_generator:
+                    self.notify("Generating editorial...", severity="information")
+                    try:
+                        editorial = self.editorial_generator.generate_editorial(new_articles)
+                        editorial_path = self.editorial_generator.save_editorial(editorial)
+                        self.editorial_content = self.editorial_generator.load_editorial(editorial_path)
+                        self.notify("✓ Editorial generated", severity="information")
+                    except Exception as e:
+                        self.notify(f"Error generating editorial: {e}", severity="error")
                 
-                for article in self.articles:
-                    container.mount(ArticleCard(article))
+                # Rebuild the UI
+                self._rebuild_view()
+                
+                # Log the refresh
+                if self.refresh_manager:
+                    self.refresh_manager.log_refresh(auto=False)
                 
                 self.notify(f"✓ Refreshed {len(new_articles)} articles", severity="information")
             else:
@@ -380,6 +541,7 @@ def serve(
     theme: str = "rose-pine",
     theme_light: str = "rose-pine-dawn",
     theme_dark: str = "rose-pine",
+    refresh_manager: Optional[Any] = None,
 ):
     """
     Display articles in the TUI
@@ -394,6 +556,7 @@ def serve(
         theme: Initial theme to use (default: rose-pine)
         theme_light: Light theme option (default: rose-pine-dawn)
         theme_dark: Dark theme option (default: rose-pine)
+        refresh_manager: Optional RefreshManager instance for controlling refresh times
     """
     app = Cup(
         articles,
@@ -405,5 +568,6 @@ def serve(
         theme,
         theme_light,
         theme_dark,
+        refresh_manager,
     )
     app.run()
