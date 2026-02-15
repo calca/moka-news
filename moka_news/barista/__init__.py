@@ -8,11 +8,20 @@ import subprocess
 from typing import Dict, Any, Optional
 from abc import ABC, abstractmethod
 from moka_news.logger import get_logger
+from moka_news.constants import (
+    DEFAULT_AI_MODELS,
+    MAX_CONTENT_LENGTH,
+    MAX_TOKENS,
+    SUMMARY_TRUNCATE_LENGTH,
+    TITLE_MAX_LENGTH,
+    CLI_VERSION_CHECK_TIMEOUT,
+    CLI_GENERATION_TIMEOUT
+)
 
 logger = get_logger(__name__)
 
 
-def _build_prompt(article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = 1500) -> str:
+def _build_prompt(article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = MAX_CONTENT_LENGTH) -> str:
     """
     Build a prompt for summary generation with optional keywords
     
@@ -64,7 +73,7 @@ def _parse_ai_response(content: str, article: Dict[str, Any]) -> Dict[str, str]:
         Dictionary with 'title' and 'summary' keys
     """
     lines = content.strip().split("\n")
-    result = {"title": article["title"], "summary": article["summary"][:200]}
+    result = {"title": article["title"], "summary": article["summary"][:SUMMARY_TRUNCATE_LENGTH]}
     
     for line in lines:
         if line.startswith("TITLE:"):
@@ -79,7 +88,7 @@ class AIProvider(ABC):
     """Abstract base class for AI providers"""
 
     @abstractmethod
-    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = 1500, max_tokens: int = 250) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS) -> Dict[str, str]:
         """
         Generate a summary and improved title for an article
 
@@ -87,8 +96,8 @@ class AIProvider(ABC):
             article: Article dictionary with title, link, summary
             keywords: Optional list of keywords to focus the summary on
             prompts: Optional dictionary with custom prompts
-            max_content_length: Maximum characters of content to include (default: 1500)
-            max_tokens: Maximum tokens for AI response (default: 250)
+            max_content_length: Maximum characters of content to include
+            max_tokens: Maximum tokens for AI response
 
         Returns:
             Dictionary with 'title' and 'summary' keys
@@ -115,7 +124,7 @@ class OpenAIBarista(AIProvider):
                 "openai package is required. Install with: pip install openai"
             )
 
-    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = 1500, max_tokens: int = 250) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS) -> Dict[str, str]:
         """Generate summary using OpenAI"""
         try:
             prompt = _build_prompt(article, keywords, prompts, max_content_length)
@@ -128,7 +137,7 @@ class OpenAIBarista(AIProvider):
             system_message = prompts.get("system_message", "You are a news editor creating engaging titles and summaries.")
 
             response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model=DEFAULT_AI_MODELS["openai"],
                 messages=[
                     {
                         "role": "system",
@@ -144,10 +153,10 @@ class OpenAIBarista(AIProvider):
             return _parse_ai_response(content, article)
         except ImportError as e:
             logger.error(f"OpenAI library not installed: {e}")
-            return {"title": article["title"], "summary": article["summary"][:200]}
+            return {"title": article["title"], "summary": article["summary"][:SUMMARY_TRUNCATE_LENGTH]}
         except Exception as e:
             logger.error(f"Error generating summary with OpenAI: {e}", exc_info=True)
-            return {"title": article["title"], "summary": article["summary"][:200]}
+            return {"title": article["title"], "summary": article["summary"][:SUMMARY_TRUNCATE_LENGTH]}
 
 
 class AnthropicBarista(AIProvider):
@@ -171,13 +180,13 @@ class AnthropicBarista(AIProvider):
                 "anthropic package is required. Install with: pip install anthropic"
             )
 
-    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = 1500, max_tokens: int = 250) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS) -> Dict[str, str]:
         """Generate summary using Anthropic"""
         try:
             prompt = _build_prompt(article, keywords, prompts, max_content_length)
 
             response = self.client.messages.create(
-                model="claude-3-haiku-20240307",
+                model=DEFAULT_AI_MODELS["anthropic"],
                 max_tokens=max_tokens,
                 messages=[{"role": "user", "content": prompt}],
             )
@@ -186,10 +195,10 @@ class AnthropicBarista(AIProvider):
             return _parse_ai_response(content, article)
         except ImportError as e:
             logger.error(f"Anthropic library not installed: {e}")
-            return {"title": article["title"], "summary": article["summary"][:200]}
+            return {"title": article["title"], "summary": article["summary"][:SUMMARY_TRUNCATE_LENGTH]}
         except Exception as e:
             logger.error(f"Error generating summary with Anthropic: {e}", exc_info=True)
-            return {"title": article["title"], "summary": article["summary"][:200]}
+            return {"title": article["title"], "summary": article["summary"][:SUMMARY_TRUNCATE_LENGTH]}
 
 
 class GeminiBarista(AIProvider):
@@ -212,7 +221,7 @@ class GeminiBarista(AIProvider):
                 "google-generativeai package is required. Install with: pip install google-generativeai"
             )
 
-    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = 1500, max_tokens: int = 250) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS) -> Dict[str, str]:
         """Generate summary using Google Gemini"""
         try:
             prompt = _build_prompt(article, keywords, prompts, max_content_length)
@@ -222,10 +231,10 @@ class GeminiBarista(AIProvider):
             return _parse_ai_response(content, article)
         except ImportError as e:
             logger.error(f"Google Gemini library not installed: {e}")
-            return {"title": article["title"], "summary": article["summary"][:200]}
+            return {"title": article["title"], "summary": article["summary"][:SUMMARY_TRUNCATE_LENGTH]}
         except Exception as e:
             logger.error(f"Error generating summary with Gemini: {e}", exc_info=True)
-            return {"title": article["title"], "summary": article["summary"][:200]}
+            return {"title": article["title"], "summary": article["summary"][:SUMMARY_TRUNCATE_LENGTH]}
 
 
 class MistralBarista(AIProvider):
@@ -247,13 +256,13 @@ class MistralBarista(AIProvider):
                 "mistralai package is required. Install with: pip install mistralai"
             )
 
-    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = 1500, max_tokens: int = 250) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS) -> Dict[str, str]:
         """Generate summary using Mistral AI"""
         try:
             prompt = _build_prompt(article, keywords, prompts, max_content_length)
 
             response = self.client.chat(
-                model="mistral-tiny",
+                model=DEFAULT_AI_MODELS["mistral"],
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=max_tokens,
                 temperature=0.7,
@@ -263,21 +272,21 @@ class MistralBarista(AIProvider):
             return _parse_ai_response(content, article)
         except ImportError as e:
             logger.error(f"Mistral library not installed: {e}")
-            return {"title": article["title"], "summary": article["summary"][:200]}
+            return {"title": article["title"], "summary": article["summary"][:SUMMARY_TRUNCATE_LENGTH]}
         except Exception as e:
             logger.error(f"Error generating summary with Mistral: {e}", exc_info=True)
-            return {"title": article["title"], "summary": article["summary"][:200]}
+            return {"title": article["title"], "summary": article["summary"][:SUMMARY_TRUNCATE_LENGTH]}
 
 
 class SimpleBarista(AIProvider):
     """Simple non-AI processor for testing without API keys"""
 
-    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = 1500, max_tokens: int = 250) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS) -> Dict[str, str]:
         """Generate a simple summary by truncating the content"""
         return {
-            "title": article.get("title", "No Title")[:80],
+            "title": article.get("title", "No Title")[:TITLE_MAX_LENGTH],
             "summary": (
-                article.get("summary", "No summary available.")[:200]
+                article.get("summary", "No summary available.")[:SUMMARY_TRUNCATE_LENGTH]
                 if article.get("summary")
                 else "No summary available."
             ),
@@ -295,7 +304,7 @@ class GitHubCopilotCLIBarista(AIProvider):
                 ["gh", "--version"],
                 capture_output=True,
                 text=True,
-                timeout=5,
+                timeout=CLI_VERSION_CHECK_TIMEOUT,
             )
             if result.returncode != 0:
                 raise RuntimeError("GitHub CLI (gh) is not available")
@@ -304,7 +313,7 @@ class GitHubCopilotCLIBarista(AIProvider):
                 "GitHub CLI (gh) is not installed. Install from: https://cli.github.com/"
             )
 
-    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = 1500, max_tokens: int = 250) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS) -> Dict[str, str]:
         """Generate summary using GitHub Copilot CLI"""
         try:
             prompt = _build_prompt(article, keywords, prompts, max_content_length)
@@ -323,7 +332,7 @@ class GitHubCopilotCLIBarista(AIProvider):
                 ],
                 capture_output=True,
                 text=True,
-                timeout=30,
+                timeout=CLI_GENERATION_TIMEOUT,
             )
 
             if result.returncode != 0:
@@ -333,10 +342,10 @@ class GitHubCopilotCLIBarista(AIProvider):
             return _parse_ai_response(content, article)
         except subprocess.TimeoutExpired:
             logger.error("GitHub Copilot CLI timeout")
-            return {"title": article["title"], "summary": article["summary"][:200]}
+            return {"title": article["title"], "summary": article["summary"][:SUMMARY_TRUNCATE_LENGTH]}
         except Exception as e:
             logger.error(f"Error generating summary with GitHub Copilot CLI: {e}", exc_info=True)
-            return {"title": article["title"], "summary": article["summary"][:200]}
+            return {"title": article["title"], "summary": article["summary"][:SUMMARY_TRUNCATE_LENGTH]}
 
 
 class GeminiCLIBarista(AIProvider):
@@ -350,7 +359,7 @@ class GeminiCLIBarista(AIProvider):
                 ["gcloud", "--version"],
                 capture_output=True,
                 text=True,
-                timeout=5,
+                timeout=CLI_VERSION_CHECK_TIMEOUT,
             )
             if result.returncode != 0:
                 raise RuntimeError("gcloud CLI is not available")
@@ -359,7 +368,7 @@ class GeminiCLIBarista(AIProvider):
                 "gcloud CLI is not installed. Install from: https://cloud.google.com/sdk/docs/install"
             )
 
-    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = 1500, max_tokens: int = 250) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS) -> Dict[str, str]:
         """Generate summary using gcloud CLI with Gemini"""
         try:
             prompt = _build_prompt(article, keywords, prompts, max_content_length)
@@ -371,12 +380,12 @@ class GeminiCLIBarista(AIProvider):
                     "ai",
                     "models",
                     "generate-content",
-                    "--model=gemini-pro",
+                    "--model=" + DEFAULT_AI_MODELS["gemini"],
                     f"--prompt={prompt}",
                 ],
                 capture_output=True,
                 text=True,
-                timeout=30,
+                timeout=CLI_GENERATION_TIMEOUT,
             )
 
             if result.returncode != 0:
@@ -386,10 +395,10 @@ class GeminiCLIBarista(AIProvider):
             return _parse_ai_response(content, article)
         except subprocess.TimeoutExpired:
             logger.error("Gemini CLI timeout")
-            return {"title": article["title"], "summary": article["summary"][:200]}
+            return {"title": article["title"], "summary": article["summary"][:SUMMARY_TRUNCATE_LENGTH]}
         except Exception as e:
             logger.error(f"Error generating summary with Gemini CLI: {e}", exc_info=True)
-            return {"title": article["title"], "summary": article["summary"][:200]}
+            return {"title": article["title"], "summary": article["summary"][:SUMMARY_TRUNCATE_LENGTH]}
 
 
 class MistralCLIBarista(AIProvider):
@@ -403,7 +412,7 @@ class MistralCLIBarista(AIProvider):
                 ["mistral", "--version"],
                 capture_output=True,
                 text=True,
-                timeout=5,
+                timeout=CLI_VERSION_CHECK_TIMEOUT,
             )
             if result.returncode != 0:
                 raise RuntimeError("Mistral CLI is not available")
@@ -412,7 +421,7 @@ class MistralCLIBarista(AIProvider):
                 "Mistral CLI is not installed. Install with: pip install mistralai-cli or from: https://docs.mistral.ai/cli/"
             )
 
-    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = 1500, max_tokens: int = 250) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS) -> Dict[str, str]:
         """Generate summary using Mistral CLI"""
         try:
             prompt = _build_prompt(article, keywords, prompts, max_content_length)
@@ -429,7 +438,7 @@ class MistralCLIBarista(AIProvider):
                 ],
                 capture_output=True,
                 text=True,
-                timeout=30,
+                timeout=CLI_GENERATION_TIMEOUT,
             )
 
             if result.returncode != 0:
@@ -439,16 +448,16 @@ class MistralCLIBarista(AIProvider):
             return _parse_ai_response(content, article)
         except subprocess.TimeoutExpired:
             logger.error("Mistral CLI timeout")
-            return {"title": article["title"], "summary": article["summary"][:200]}
+            return {"title": article["title"], "summary": article["summary"][:SUMMARY_TRUNCATE_LENGTH]}
         except Exception as e:
             logger.error(f"Error generating summary with Mistral CLI: {e}", exc_info=True)
-            return {"title": article["title"], "summary": article["summary"][:200]}
+            return {"title": article["title"], "summary": article["summary"][:SUMMARY_TRUNCATE_LENGTH]}
 
 
 class Barista:
     """Main Barista class that coordinates AI processing"""
 
-    def __init__(self, provider: Optional[AIProvider] = None, keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = 1500, max_tokens: int = 250):
+    def __init__(self, provider: Optional[AIProvider] = None, keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS):
         """
         Initialize the Barista with an AI provider
 
@@ -456,8 +465,8 @@ class Barista:
             provider: AI provider instance (defaults to SimpleBarista)
             keywords: Optional list of keywords for summary generation
             prompts: Optional dictionary with custom prompts
-            max_content_length: Maximum characters of content to include (default: 1500)
-            max_tokens: Maximum tokens for AI response (default: 250)
+            max_content_length: Maximum characters of content to include
+            max_tokens: Maximum tokens for AI response
         """
         self.provider = provider or SimpleBarista()
         self.keywords = keywords or []
@@ -493,7 +502,7 @@ class Barista:
             except Exception as e:
                 print(f"Error processing article: {e}")
                 article["ai_title"] = article["title"]
-                article["ai_summary"] = article["summary"][:200]
+                article["ai_summary"] = article["summary"][:SUMMARY_TRUNCATE_LENGTH]
                 processed.append(article)
 
         return processed

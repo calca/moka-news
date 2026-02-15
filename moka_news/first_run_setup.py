@@ -10,36 +10,20 @@ import yaml
 from pathlib import Path
 from typing import Dict, Any, Optional
 from moka_news.opml_manager import OPMLManager
+from moka_news.constants import DEFAULT_TECH_FEEDS
 
 
-# Suggested tech feeds for moka-cafè
+# Suggested tech feeds for moka-cafè (with additional metadata for OPML)
 SUGGESTED_TECH_FEEDS = [
-    {
-        "url": "https://news.ycombinator.com/rss",
-        "title": "Hacker News",
-        "htmlUrl": "https://news.ycombinator.com"
-    },
-    {
-        "url": "https://github.blog/feed/",
-        "title": "GitHub Blog",
-        "htmlUrl": "https://github.blog"
-    },
-    {
-        "url": "https://www.theverge.com/rss/index.xml",
-        "title": "The Verge - Tech",
-        "htmlUrl": "https://www.theverge.com"
-    },
-    {
-        "url": "https://techcrunch.com/feed/",
-        "title": "TechCrunch",
-        "htmlUrl": "https://techcrunch.com"
-    },
-    {
-        "url": "https://feeds.arstechnica.com/arstechnica/index",
-        "title": "Ars Technica",
-        "htmlUrl": "https://arstechnica.com"
-    }
+    {**feed, "htmlUrl": feed.get("htmlUrl", "")}
+    for feed in DEFAULT_TECH_FEEDS
 ]
+# Add htmlUrl for feeds that need it
+SUGGESTED_TECH_FEEDS[0]["htmlUrl"] = "https://news.ycombinator.com"
+SUGGESTED_TECH_FEEDS[1]["htmlUrl"] = "https://github.blog"
+SUGGESTED_TECH_FEEDS[2]["htmlUrl"] = "https://www.theverge.com"
+SUGGESTED_TECH_FEEDS[3]["htmlUrl"] = "https://techcrunch.com"
+SUGGESTED_TECH_FEEDS[4]["htmlUrl"] = "https://arstechnica.com"
 
 # AI provider configurations
 AI_PROVIDERS = {

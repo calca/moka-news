@@ -7,6 +7,10 @@ import feedparser
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from email.utils import parsedate_to_datetime
+from moka_news.logger import get_logger
+from moka_news.constants import DEFAULT_TECH_FEEDS
+
+logger = get_logger(__name__)
 
 
 class Grinder:
@@ -72,7 +76,7 @@ class Grinder:
                     }
                     articles.append(article)
             except Exception as e:
-                print(f"Error parsing feed {feed_url}: {e}")
+                logger.error(f"Error parsing feed {feed_url}: {e}", exc_info=True)
 
         return articles, last_update
 
@@ -80,12 +84,8 @@ class Grinder:
 def get_default_feeds() -> List[str]:
     """
     Get a list of default RSS feeds
-
+    
     Returns:
         List of default RSS feed URLs
     """
-    return [
-        "https://news.ycombinator.com/rss",
-        "https://www.reddit.com/r/programming/.rss",
-        "https://github.blog/feed/",
-    ]
+    return [feed["url"] for feed in DEFAULT_TECH_FEEDS]
