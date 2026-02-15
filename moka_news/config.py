@@ -28,7 +28,7 @@ Focus on these keywords/topics if relevant: {keywords}""",
 
 Format as:
 TITLE: <title>
-SUMMARY: <summary>"""
+SUMMARY: <summary>""",
 }
 
 DEFAULT_EDITORIAL_PROMPTS = {
@@ -51,7 +51,7 @@ Pay special attention to topics related to: {keywords}""",
 
 Format as:
 TITLE: <engaging editorial title>
-SUMMARY: <the editorial content>"""
+SUMMARY: <the editorial content>""",
 }
 
 DEFAULT_CONFIG = {
@@ -70,13 +70,20 @@ DEFAULT_CONFIG = {
         "max_tokens": MAX_TOKENS,  # Maximum tokens for AI response
     },
     "feeds": {
-        "urls": [feed["url"] for feed in DEFAULT_TECH_FEEDS[:3]]  # Use first 3 feeds from constants
+        "urls": [
+            feed["url"] for feed in DEFAULT_TECH_FEEDS[:3]
+        ]  # Use first 3 feeds from constants
     },
     "ui": {
         "use_tui": True,
         "theme": "rose-pine",  # Default theme (dark, relaxing)
         "theme_light": "rose-pine-dawn",  # Light theme option
         "theme_dark": "rose-pine",  # Dark theme option
+    },
+    "refresh": {
+        "allowed_times": ["08:00", "20:00"],  # Morning and evening refresh times
+        "max_daily_refreshes": 2,  # Maximum refreshes per day
+        "require_confirmation_outside_hours": True,  # Ask for confirmation outside allowed times
     },
 }
 
@@ -261,6 +268,14 @@ ui:
   theme: rose-pine  # Default theme (dark, relaxing) - see Textual themes
   theme_light: rose-pine-dawn  # Light theme option
   theme_dark: rose-pine  # Dark theme option
+
+# Refresh Configuration
+refresh:
+  allowed_times:
+    - "08:00"  # Morning refresh time
+    - "20:00"  # Evening refresh time
+  max_daily_refreshes: 2  # Maximum number of refreshes per day
+  require_confirmation_outside_hours: true  # Require confirmation for manual refresh outside allowed times
 """
 
     with open(path, "w") as f:

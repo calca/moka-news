@@ -4,6 +4,7 @@ Orchestrates The Grinder (RSS extraction), The Editorial Generator (AI focus), a
 """
 
 import argparse
+from datetime import time
 from dotenv import load_dotenv
 from moka_news.grinder import Grinder
 from moka_news.barista import create_ai_provider, SimpleBarista
@@ -12,6 +13,7 @@ from moka_news.config import load_config, create_sample_config
 from moka_news.opml_manager import OPMLManager
 from moka_news.first_run_setup import is_first_run, run_first_run_setup
 from moka_news.download_tracker import DownloadTracker
+from moka_news.refresh_manager import RefreshManager
 from moka_news.editorial import EditorialGenerator
 from moka_news.logger import get_logger, setup_logger
 
@@ -23,13 +25,13 @@ logger = get_logger(__name__)
 def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
     """
     Fetch RSS feeds (AI processing focused on editorial only).
-    
+
     Args:
         feed_urls: List of RSS feed URLs
         config: Configuration dictionary
         ai_provider: AI provider name (used only for editorial generation)
         download_tracker: Optional DownloadTracker instance for date filtering
-    
+
     Returns:
         Tuple of (articles, last_update_time)
     """
@@ -38,27 +40,31 @@ def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
     if download_tracker:
         since = download_tracker.get_last_download()
         if since:
-            logger.info(f"Filtering articles since {since.strftime('%Y-%m-%d %H:%M:%S')}")
-    
+            logger.info(
+                f"Filtering articles since {since.strftime('%Y-%m-%d %H:%M:%S')}"
+            )
+
     logger.info(f"Grinding {len(feed_urls)} feeds...")
-    
+
     # Step 1: The Grinder - Extract articles from RSS feeds
     grinder = Grinder(feed_urls, since=since)
     articles, last_update = grinder.grind()
-    
+
     logger.info(f"Ground {len(articles)} articles")
-    
+
     if not articles:
         logger.warning("No articles found. Please check your RSS feeds.")
         return [], last_update
-    
+
     # Update download tracker
     if download_tracker:
         download_tracker.update_last_download(last_update)
-    
+
     # Articles are returned without AI processing - AI will be applied during editorial generation
-    logger.info(f"Extracted {len(articles)} articles - AI processing will be applied during editorial generation")
-    
+    logger.info(
+        f"Extracted {len(articles)} articles - AI processing will be applied during editorial generation"
+    )
+
     return articles, last_update
 
 
@@ -156,12 +162,9 @@ Feed Management:
     # Check for first run and run setup wizard if needed
     # Skip setup wizard for specific commands that don't need it
     skip_setup = (
-        args.create_config or 
-        args.add_feed or 
-        args.remove_feed or 
-        args.list_feeds
+        args.create_config or args.add_feed or args.remove_feed or args.list_feeds
     )
-    
+
     if is_first_run() and not skip_setup:
         run_first_run_setup(opml_manager)
         # After setup, user needs to run moka-news again
@@ -209,7 +212,7 @@ Feed Management:
 
     # CLI arguments override config file
     ai_provider = args.ai if args.ai else config["ai"]["provider"]
-    
+
     # Get feeds from: CLI args > OPML manager > config file
     if args.feeds:
         feed_urls = args.feeds
@@ -219,17 +222,19 @@ Feed Management:
             feed_urls = [feed["url"] for feed in opml_feeds]
         else:
             feed_urls = config["feeds"]["urls"]
-    
+
     use_tui = not args.no_tui if args.no_tui else config["ui"]["use_tui"]
 
     print("☕ Brewing your morning news...")
-    
+
     # Initialize download tracker
     download_tracker = DownloadTracker()
-    
+
     # Fetch articles (no AI processing on individual articles)
-    articles, last_update = fetch_and_brew(feed_urls, config, ai_provider, download_tracker)
-    
+    articles, last_update = fetch_and_brew(
+        feed_urls, config, ai_provider, download_tracker
+    )
+
     if not articles:
         print("No articles to display.")
         return
@@ -237,18 +242,20 @@ Feed Management:
     # Generate editorial
     print("📝 Generating morning editorial...")
     editorial_content = None
-    
+
     # Get AI provider instance for editorial generation
     keywords = config["ai"].get("keywords", [])
     editorial_prompts = config["ai"].get("editorial_prompts", None)
-    
+
     # Try to get the AI provider, fall back to SimpleBarista if it fails
     ai_instance = create_ai_provider(ai_provider, config)
     if ai_instance is None:
         ai_instance = SimpleBarista()
-    
-    editorial_generator = EditorialGenerator(ai_instance, keywords, editorial_prompts=editorial_prompts)
-    
+
+    editorial_generator = EditorialGenerator(
+        ai_instance, keywords, editorial_prompts=editorial_prompts
+    )
+
     try:
         editorial = editorial_generator.generate_editorial(articles)
         editorial_path = editorial_generator.save_editorial(editorial)
@@ -267,7 +274,7 @@ Feed Management:
             print(f"    {article.get('ai_summary', article['summary'][:200])}")
             print(f"    Link: {article.get('link', 'N/A')}")
         print("\n" + "=" * 80)
-        
+
         # Print editorial if available
         if editorial_content:
             print("\n📰 MORNING EDITORIAL")
@@ -276,16 +283,37 @@ Feed Management:
             print("=" * 80)
     else:
         print("☕ Serving your news...\n")
-        
+
         # Create refresh callback for the TUI
         def refresh_callback():
             return fetch_and_brew(feed_urls, config, ai_provider, download_tracker)
-        
+
         # Get theme configuration
         theme = config["ui"].get("theme", "rose-pine")
         theme_light = config["ui"].get("theme_light", "rose-pine-dawn")
         theme_dark = config["ui"].get("theme_dark", "rose-pine")
-        
+
+        # Initialize refresh manager if configuration is available
+        refresh_manager = None
+        if config.get("refresh", {}).get("require_confirmation_outside_hours", True):
+            refresh_manager = RefreshManager()
+
+            # Configure refresh times from config
+            refresh_config = config.get("refresh", {})
+            allowed_times = refresh_config.get("allowed_times", ["08:00", "20:00"])
+
+            # Parse allowed times and set them in the refresh manager
+            parsed_times = []
+            for time_str in allowed_times:
+                try:
+                    hour, minute = time_str.split(":")
+                    parsed_times.append(time(int(hour), int(minute)))
+                except ValueError:
+                    logger.warning(f"Invalid time format in config: {time_str}")
+
+            if parsed_times:
+                refresh_manager.allowed_refresh_times = parsed_times
+
         serve(
             articles,
             last_update,
@@ -295,6 +323,7 @@ Feed Management:
             theme=theme,
             theme_light=theme_light,
             theme_dark=theme_dark,
+            refresh_manager=refresh_manager,
         )
 
 
