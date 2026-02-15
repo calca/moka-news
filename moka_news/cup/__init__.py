@@ -187,8 +187,6 @@ class Cup(App):
     BINDINGS = [
         Binding("q", "quit", "Quit", priority=True),
         Binding("r", "refresh", "Refresh"),
-        Binding("e", "toggle_editorial", "Editorial"),
-        Binding("a", "show_articles", "Articles"),
         Binding("h", "show_history", "History"),
         Binding("t", "toggle_theme", "Toggle Theme"),
         ("ctrl+c", "quit", "Quit"),
@@ -213,7 +211,7 @@ class Cup(App):
         self.auto_refresh_time = auto_refresh_time
         self.editorial_content = editorial_content
         self.editorial_generator = editorial_generator
-        self.view_mode = "editorial" if editorial_content else "articles"
+        self.view_mode = "editorial"  # Always show editorial view
         self.title = "☕ MoKa News"
         self.sub_title = self._format_subtitle()
         self._auto_refresh_task = None
@@ -225,23 +223,19 @@ class Cup(App):
         """Format the subtitle with last update time"""
         time_str = self.last_update.strftime("%H:%M:%S")
         date_str = self.last_update.strftime("%d/%m/%Y")
-        mode_text = "Editorial View" if self.view_mode == "editorial" else "Articles View"
-        return f"Your Morning Persona News | {mode_text} | Last update: {date_str} at {time_str}"
+        return f"Your Morning Persona News | Editorial View | Last update: {date_str} at {time_str}"
 
     def compose(self) -> ComposeResult:
         """Create the application layout"""
         yield Header(show_clock=True)
 
         with ScrollableContainer(id="content-container"):
-            if self.view_mode == "editorial" and self.editorial_content:
+            if self.editorial_content:
                 yield EditorialView(self.editorial_content, id="editorial-container")
-            elif self.articles:
-                for article in self.articles:
-                    yield ArticleCard(article)
             else:
                 yield Static(
-                    "[bold]No articles available[/bold]\n\n"
-                    "Run with RSS feeds to see news articles here.",
+                    "[bold]No editorial available[/bold]\n\n"
+                    "An editorial will be generated from your RSS feeds.",
                     id="empty-state",
                 )
 
@@ -333,21 +327,6 @@ class Cup(App):
         self.theme = new_theme
         self.notify(f"Switched to {theme_name} theme: {new_theme}", severity="information")
     
-    def action_toggle_editorial(self) -> None:
-        """Toggle between editorial and articles view"""
-        if self.editorial_content:
-            self.view_mode = "editorial" if self.view_mode == "articles" else "articles"
-            self.sub_title = self._format_subtitle()
-            self._rebuild_view()
-        else:
-            self.notify("No editorial available", severity="warning")
-    
-    def action_show_articles(self) -> None:
-        """Show articles view"""
-        self.view_mode = "articles"
-        self.sub_title = self._format_subtitle()
-        self._rebuild_view()
-    
     async def action_show_history(self) -> None:
         """Show past editorials"""
         if not self.editorial_generator:
@@ -370,7 +349,6 @@ class Cup(App):
             try:
                 content = self.editorial_generator.load_editorial(editorial_path)
                 self.editorial_content = content
-                self.view_mode = "editorial"
                 self.sub_title = self._format_subtitle()
                 self._rebuild_view()
                 self.notify(f"Loaded editorial: {result['title']}", severity="information")
@@ -378,19 +356,16 @@ class Cup(App):
                 self.notify(f"Error loading editorial: {e}", severity="error")
     
     def _rebuild_view(self) -> None:
-        """Rebuild the view based on current mode"""
+        """Rebuild the view to show the editorial"""
         container = self.query_one("#content-container")
         container.remove_children()
         
-        if self.view_mode == "editorial" and self.editorial_content:
+        if self.editorial_content:
             container.mount(EditorialView(self.editorial_content, id="editorial-container"))
-        elif self.articles:
-            for article in self.articles:
-                container.mount(ArticleCard(article))
         else:
             container.mount(Static(
-                "[bold]No articles available[/bold]\n\n"
-                "Run with RSS feeds to see news articles here.",
+                "[bold]No editorial available[/bold]\n\n"
+                "An editorial will be generated from your RSS feeds.",
                 id="empty-state",
             ))
 

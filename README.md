@@ -25,7 +25,7 @@ Supports multiple AI providers:
 - Simple mode (no AI, for testing)
 
 ### ☕ The Cup (La Tazzina)
-A beautiful Textual-based TUI that displays your personalized news digest in the terminal. Features multiple views (editorial/articles), past editorial browsing, and keyboard navigation.
+A beautiful Textual-based TUI that displays your personalized morning editorial in the terminal. Features editorial-focused reading, past editorial browsing, and keyboard navigation.
 
 ## Features
 
@@ -39,11 +39,11 @@ A beautiful Textual-based TUI that displays your personalized news digest in the
 - 🗂️  **Browse past editorials** - Access and read previous morning editions through the TUI
 - ⚙️  Configuration file support (YAML)
 - 🎨 Beautiful terminal user interface
-- ⌨️  Keyboard shortcuts for navigation (e: editorial, a: articles, h: history)
+- ⌨️  Keyboard shortcuts for navigation (h: history, t: toggle theme, r: refresh)
 - 🔄 **Manual refresh** - Press 'r' to fetch latest articles
 - ⏰ **Auto-refresh at 8:00 AM** - Wake up to fresh news with your morning coffee! ☕
 - 📅 **Last update display** - Always know when your feed was refreshed
-- 🔗 Click to open articles in browser
+- 🔗 Source links in editorial markdown for easy access
 - 🚀 Fast and lightweight
 - 💾 RSS feed management with OPML storage
 
@@ -386,14 +386,11 @@ moka-news --no-tui
 While in the TUI:
 
 - `q` or `Ctrl+C` - Quit the application
-- `r` - Refresh feed (fetch latest articles)
-- `e` - Toggle between editorial and articles view
-- `a` - Show articles view
+- `r` - Refresh feed (fetch latest articles and regenerate editorial)
 - `h` - Browse past editorials (history)
 - `t` - Toggle between light and dark theme
-- Mouse click on article - Open in browser
 
-The TUI displays your morning editorial by default, with easy access to individual articles and past editorials. It also automatically refreshes at 8:00 AM daily for your morning coffee! ☕
+The TUI displays your morning editorial, with easy access to past editorials through the history feature. It also automatically refreshes at 8:00 AM daily for your morning coffee! ☕
 
 ## Morning Editorial Feature
 
