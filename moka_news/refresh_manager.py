@@ -7,6 +7,9 @@ from datetime import datetime, time, timedelta
 from pathlib import Path
 import json
 from typing import Optional, List, Tuple
+from moka_news.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class RefreshManager:
@@ -145,7 +148,8 @@ class RefreshManager:
         try:
             with open(self.refresh_log_file, "r", encoding="utf-8") as f:
                 return json.load(f)
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Could not load refresh log: {e}")
             return []
 
     def _save_refresh_log(self, log: List[dict]):
@@ -154,7 +158,7 @@ class RefreshManager:
             with open(self.refresh_log_file, "w", encoding="utf-8") as f:
                 json.dump(log, f, indent=2)
         except Exception as e:
-            print(f"Warning: Could not save refresh log: {e}")
+            logger.warning(f"Could not save refresh log: {e}")
 
     def _subtract_minutes(self, t: time, minutes: int) -> time:
         """Subtract minutes from a time object"""

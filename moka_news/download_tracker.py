@@ -6,6 +6,9 @@ import json
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
+from moka_news.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class DownloadTracker:
@@ -53,7 +56,7 @@ class DownloadTracker:
                 if timestamp_str:
                     return datetime.fromisoformat(timestamp_str)
         except Exception as e:
-            print(f"Warning: Could not read download tracker: {e}")
+            logger.warning(f"Could not read download tracker: {e}")
 
         if default_to_yesterday:
             yesterday = datetime.now() - timedelta(days=1)
@@ -77,4 +80,4 @@ class DownloadTracker:
             with open(self.tracker_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
         except Exception as e:
-            print(f"Warning: Could not update download tracker: {e}")
+            logger.warning(f"Could not update download tracker: {e}")
