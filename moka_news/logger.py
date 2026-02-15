@@ -7,8 +7,8 @@ import logging
 import sys
 from typing import Optional
 
-# ANSI color codes for terminal output
-COLORS = {
+# ANSI color codes for terminal output (module-private, immutable)
+_COLORS = {
     'DEBUG': '\033[36m',    # Cyan
     'INFO': '\033[32m',     # Green
     'WARNING': '\033[33m',  # Yellow
@@ -25,8 +25,8 @@ class ColoredFormatter(logging.Formatter):
         # Add color to level name
         if hasattr(sys.stderr, 'isatty') and sys.stderr.isatty():
             levelname = record.levelname
-            if levelname in COLORS:
-                record.levelname = f"{COLORS[levelname]}{levelname}{COLORS['RESET']}"
+            if levelname in _COLORS:
+                record.levelname = f"{_COLORS[levelname]}{levelname}{_COLORS['RESET']}"
         return super().format(record)
 
 

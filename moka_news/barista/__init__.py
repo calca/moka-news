@@ -73,7 +73,10 @@ def _parse_ai_response(content: str, article: Dict[str, Any]) -> Dict[str, str]:
         Dictionary with 'title' and 'summary' keys
     """
     lines = content.strip().split("\n")
-    result = {"title": article["title"], "summary": article["summary"][:SUMMARY_TRUNCATE_LENGTH]}
+    result = {
+        "title": article.get("title", "No Title"),
+        "summary": article.get("summary", "")[:SUMMARY_TRUNCATE_LENGTH]
+    }
     
     for line in lines:
         if line.startswith("TITLE:"):
@@ -380,7 +383,7 @@ class GeminiCLIBarista(AIProvider):
                     "ai",
                     "models",
                     "generate-content",
-                    "--model=" + DEFAULT_AI_MODELS["gemini"],
+                    f"--model={DEFAULT_AI_MODELS['gemini']}",
                     f"--prompt={prompt}",
                 ],
                 capture_output=True,
