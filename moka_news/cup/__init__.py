@@ -22,6 +22,7 @@ from pathlib import Path
 from datetime import datetime, time
 import webbrowser
 import asyncio
+import subprocess
 
 
 class ConfirmationDialog(ModalScreen):
@@ -536,7 +537,6 @@ class Cup(App):
             return
         
         try:
-            import subprocess
             subprocess.Popen([self.opener_command, str(self.current_editorial_path)])
             self.notify(
                 f"Opening editorial with {self.opener_command}",
