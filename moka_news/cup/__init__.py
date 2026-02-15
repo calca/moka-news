@@ -5,7 +5,16 @@ Displays the news digest in a beautiful terminal interface
 
 from textual.app import App, ComposeResult
 from textual.containers import ScrollableContainer, VerticalScroll, Vertical, Horizontal
-from textual.widgets import Header, Footer, Static, Label, Markdown, ListView, ListItem, Button
+from textual.widgets import (
+    Header,
+    Footer,
+    Static,
+    Label,
+    Markdown,
+    ListView,
+    ListItem,
+    Button,
+)
 from textual.binding import Binding
 from textual.screen import Screen, ModalScreen
 from typing import List, Dict, Any, Callable, Optional
@@ -16,13 +25,13 @@ import asyncio
 
 class ConfirmationDialog(ModalScreen):
     """Modal dialog for confirming actions"""
-    
+
     BINDINGS = [
         Binding("escape", "dismiss(False)", "Cancel", priority=True),
         Binding("n", "dismiss(False)", "No", priority=True),
         Binding("y", "dismiss(True)", "Yes", priority=True),
     ]
-    
+
     CSS = """
     ConfirmationDialog {
         align: center middle;
@@ -53,12 +62,12 @@ class ConfirmationDialog(ModalScreen):
         margin: 0 1;
     }
     """
-    
+
     def __init__(self, message: str, title: str = "Confirmation", *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.message = message
         self.dialog_title = title
-    
+
     def compose(self) -> ComposeResult:
         """Create the dialog layout"""
         with Vertical(id="dialog-container"):
@@ -67,7 +76,7 @@ class ConfirmationDialog(ModalScreen):
             with Horizontal(id="button-container"):
                 yield Button("Yes", variant="success", id="yes-button")
                 yield Button("No", variant="error", id="no-button")
-    
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button clicks"""
         if event.button.id == "yes-button":
@@ -113,11 +122,11 @@ class ArticleCard(Static):
 
 class EditorialView(Static):
     """Widget to display the morning editorial"""
-    
+
     def __init__(self, editorial_content: str, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.editorial_content = editorial_content
-    
+
     def compose(self) -> ComposeResult:
         """Create the editorial view layout"""
         yield Markdown(self.editorial_content)
@@ -125,12 +134,12 @@ class EditorialView(Static):
 
 class EditorialListScreen(Screen):
     """Screen for browsing past editorials"""
-    
+
     BINDINGS = [
         Binding("escape", "dismiss", "Back", priority=True),
         ("q", "dismiss", "Back"),
     ]
-    
+
     CSS = """
     EditorialListScreen {
         align: center middle;
@@ -156,24 +165,26 @@ class EditorialListScreen(Screen):
         background: $boost;
     }
     """
-    
+
     def __init__(self, editorials: List[Dict[str, Any]], *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.editorials = editorials
         self.selected_editorial = None
-    
+
     def compose(self) -> ComposeResult:
         """Create the editorial list layout"""
         yield Header()
-        
+
         with VerticalScroll(id="editorial-list-container"):
             if self.editorials:
                 list_view = ListView()
                 for editorial in self.editorials:
-                    timestamp = editorial['timestamp']
+                    timestamp = editorial["timestamp"]
                     date_str = timestamp.strftime("%A, %B %d, %Y at %H:%M")
-                    title = editorial.get('title', 'Untitled')
-                    item = ListItem(Label(f"[bold]{title}[/bold]\n[dim]{date_str}[/dim]"))
+                    title = editorial.get("title", "Untitled")
+                    item = ListItem(
+                        Label(f"[bold]{title}[/bold]\n[dim]{date_str}[/dim]")
+                    )
                     item.editorial_data = editorial
                     list_view.append(item)
                 yield list_view
@@ -181,17 +192,17 @@ class EditorialListScreen(Screen):
                 yield Static(
                     "[bold]No past editorials found[/bold]\n\n"
                     "Editorials will appear here after they are generated.",
-                    id="empty-state"
+                    id="empty-state",
                 )
-        
+
         yield Footer()
-    
+
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         """Handle editorial selection"""
-        if hasattr(event.item, 'editorial_data'):
+        if hasattr(event.item, "editorial_data"):
             self.selected_editorial = event.item.editorial_data
             self.dismiss(self.selected_editorial)
-    
+
     def action_dismiss(self) -> None:
         """Dismiss the screen"""
         self.dismiss(None)
@@ -258,7 +269,9 @@ class Cup(App):
         self,
         articles: List[Dict[str, Any]] = None,
         last_update: Optional[datetime] = None,
-        refresh_callback: Optional[Callable[[], tuple[List[Dict[str, Any]], datetime]]] = None,
+        refresh_callback: Optional[
+            Callable[[], tuple[List[Dict[str, Any]], datetime]]
+        ] = None,
         auto_refresh_time: Optional[time] = time(8, 0),  # Default 8:00 AM
         editorial_content: Optional[str] = None,
         editorial_generator: Optional[Any] = None,
@@ -315,10 +328,10 @@ class Cup(App):
     async def _auto_refresh_loop(self) -> None:
         """Background task that triggers refresh at specified times"""
         from datetime import timedelta
-        
+
         while True:
             now = datetime.now()
-            
+
             # Get refresh times - either from refresh manager or default
             if self.refresh_manager:
                 allowed_times = self.refresh_manager.get_allowed_refresh_times()
@@ -328,7 +341,7 @@ class Cup(App):
                 # No refresh times configured
                 await asyncio.sleep(3600)
                 continue
-            
+
             # Find the next refresh time
             target = None
             for refresh_time in allowed_times:
@@ -336,14 +349,14 @@ class Cup(App):
                     hour=refresh_time.hour,
                     minute=refresh_time.minute,
                     second=0,
-                    microsecond=0
+                    microsecond=0,
                 )
-                
+
                 # If this time hasn't passed today
                 if now < potential_target:
                     if target is None or potential_target < target:
                         target = potential_target
-            
+
             # If all times have passed today, schedule for first time tomorrow
             if target is None:
                 tomorrow = now + timedelta(days=1)
@@ -352,54 +365,65 @@ class Cup(App):
                     hour=first_time.hour,
                     minute=first_time.minute,
                     second=0,
-                    microsecond=0
+                    microsecond=0,
                 )
-            
+
             # Calculate seconds until target time
             seconds_until_target = (target - now).total_seconds()
-            
+
             # Wait until target time
             await asyncio.sleep(seconds_until_target)
-            
+
             # Trigger automatic refresh (no confirmation needed)
             await self._perform_auto_refresh()
-            
+
             # Wait a bit to avoid multiple triggers
             await asyncio.sleep(60)
-    
+
     async def _perform_auto_refresh(self) -> None:
         """Perform automatic refresh without user confirmation"""
         if not self.refresh_callback:
             return
-        
+
         self.notify("Automatic refresh starting...", severity="information")
-        
+
         try:
             # Call the refresh callback to fetch new articles
             new_articles, new_update_time = self.refresh_callback()
-            
+
             if new_articles:
                 self.articles = new_articles
                 self.last_update = new_update_time
                 self.sub_title = self._format_subtitle()
-                
+
                 # Generate new editorial
                 if self.editorial_generator:
                     try:
-                        editorial = self.editorial_generator.generate_editorial(new_articles)
-                        editorial_path = self.editorial_generator.save_editorial(editorial)
-                        self.editorial_content = self.editorial_generator.load_editorial(editorial_path)
+                        editorial = self.editorial_generator.generate_editorial(
+                            new_articles
+                        )
+                        editorial_path = self.editorial_generator.save_editorial(
+                            editorial
+                        )
+                        self.editorial_content = (
+                            self.editorial_generator.load_editorial(editorial_path)
+                        )
                     except Exception as e:
-                        self.notify(f"Error generating editorial: {e}", severity="error")
-                
+                        self.notify(
+                            f"Error generating editorial: {e}", severity="error"
+                        )
+
                 # Rebuild the UI
                 self._rebuild_view()
-                
+
                 # Log the automatic refresh
                 if self.refresh_manager:
                     self.refresh_manager.log_refresh(auto=True)
-                
-                self.notify(f"✓ Auto-refreshed {len(new_articles)} articles", severity="information")
+
+                self.notify(
+                    f"✓ Auto-refreshed {len(new_articles)} articles",
+                    severity="information",
+                )
             else:
                 self.notify("No new articles found", severity="information")
         except Exception as e:
@@ -410,56 +434,66 @@ class Cup(App):
         if not self.refresh_callback:
             self.notify("Refresh functionality not available", severity="warning")
             return
-        
+
         # Check if refresh manager is available
         if self.refresh_manager:
             is_allowed, reason = self.refresh_manager.is_within_allowed_time()
-            
+
             if not is_allowed:
                 # Show warning dialog and ask for confirmation
                 dialog = ConfirmationDialog(
                     message=f"{reason}\n\nDo you want to refresh anyway?",
-                    title="⚠️ Refresh Outside Scheduled Hours"
+                    title="⚠️ Refresh Outside Scheduled Hours",
                 )
                 confirmed = await self.push_screen_wait(dialog)
-                
+
                 if not confirmed:
                     self.notify("Refresh cancelled", severity="information")
                     return
-                
+
                 # User confirmed, proceed with manual refresh
                 self.notify("Manual refresh confirmed", severity="information")
-        
+
         self.notify("Refreshing news feeds...", severity="information")
-        
+
         try:
             # Call the refresh callback to fetch new articles
             new_articles, new_update_time = self.refresh_callback()
-            
+
             if new_articles:
                 self.articles = new_articles
                 self.last_update = new_update_time
                 self.sub_title = self._format_subtitle()
-                
+
                 # Generate new editorial
                 if self.editorial_generator:
                     self.notify("Generating editorial...", severity="information")
                     try:
-                        editorial = self.editorial_generator.generate_editorial(new_articles)
-                        editorial_path = self.editorial_generator.save_editorial(editorial)
-                        self.editorial_content = self.editorial_generator.load_editorial(editorial_path)
+                        editorial = self.editorial_generator.generate_editorial(
+                            new_articles
+                        )
+                        editorial_path = self.editorial_generator.save_editorial(
+                            editorial
+                        )
+                        self.editorial_content = (
+                            self.editorial_generator.load_editorial(editorial_path)
+                        )
                         self.notify("✓ Editorial generated", severity="information")
                     except Exception as e:
-                        self.notify(f"Error generating editorial: {e}", severity="error")
-                
+                        self.notify(
+                            f"Error generating editorial: {e}", severity="error"
+                        )
+
                 # Rebuild the UI
                 self._rebuild_view()
-                
+
                 # Log the refresh
                 if self.refresh_manager:
                     self.refresh_manager.log_refresh(auto=False)
-                
-                self.notify(f"✓ Refreshed {len(new_articles)} articles", severity="information")
+
+                self.notify(
+                    f"✓ Refreshed {len(new_articles)} articles", severity="information"
+                )
             else:
                 self.notify("No articles found during refresh", severity="warning")
         except Exception as e:
@@ -468,11 +502,11 @@ class Cup(App):
     def action_quit(self) -> None:
         """Quit the application"""
         self.exit()
-    
+
     def action_toggle_theme(self) -> None:
         """Toggle between light and dark theme"""
         current_theme = self.theme
-        
+
         # If current theme is the light theme, switch to dark
         # Otherwise (including custom themes), switch to light
         if current_theme == self.theme_light:
@@ -483,58 +517,68 @@ class Cup(App):
             # Switch to light theme
             new_theme = self.theme_light
             theme_name = "light"
-        
+
         # Apply the new theme
         self.theme = new_theme
-        self.notify(f"Switched to {theme_name} theme: {new_theme}", severity="information")
-    
+        self.notify(
+            f"Switched to {theme_name} theme: {new_theme}", severity="information"
+        )
+
     async def action_show_history(self) -> None:
         """Show past editorials"""
         if not self.editorial_generator:
             self.notify("Editorial history not available", severity="warning")
             return
-        
+
         editorials = self.editorial_generator.list_editorials()
-        
+
         if not editorials:
             self.notify("No past editorials found", severity="information")
             return
-        
+
         # Show editorial list screen
         screen = EditorialListScreen(editorials)
         result = await self.push_screen_wait(screen)
-        
+
         if result:
             # Load and display selected editorial
-            editorial_path = result['filepath']
+            editorial_path = result["filepath"]
             try:
                 content = self.editorial_generator.load_editorial(editorial_path)
                 self.editorial_content = content
                 self.sub_title = self._format_subtitle()
                 self._rebuild_view()
-                self.notify(f"Loaded editorial: {result['title']}", severity="information")
+                self.notify(
+                    f"Loaded editorial: {result['title']}", severity="information"
+                )
             except Exception as e:
                 self.notify(f"Error loading editorial: {e}", severity="error")
-    
+
     def _rebuild_view(self) -> None:
         """Rebuild the view to show the editorial"""
         container = self.query_one("#content-container")
         container.remove_children()
-        
+
         if self.editorial_content:
-            container.mount(EditorialView(self.editorial_content, id="editorial-container"))
+            container.mount(
+                EditorialView(self.editorial_content, id="editorial-container")
+            )
         else:
-            container.mount(Static(
-                "[bold]No editorial available[/bold]\n\n"
-                "An editorial will be generated from your RSS feeds.",
-                id="empty-state",
-            ))
+            container.mount(
+                Static(
+                    "[bold]No editorial available[/bold]\n\n"
+                    "An editorial will be generated from your RSS feeds.",
+                    id="empty-state",
+                )
+            )
 
 
 def serve(
     articles: List[Dict[str, Any]],
     last_update: Optional[datetime] = None,
-    refresh_callback: Optional[Callable[[], tuple[List[Dict[str, Any]], datetime]]] = None,
+    refresh_callback: Optional[
+        Callable[[], tuple[List[Dict[str, Any]], datetime]]
+    ] = None,
     auto_refresh_time: Optional[time] = time(8, 0),
     editorial_content: Optional[str] = None,
     editorial_generator: Optional[Any] = None,
