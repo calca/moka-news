@@ -115,10 +115,11 @@ class EditorialGenerator:
             Formatted prompt string
         """
         # Use all articles - they are already filtered by date
+        # Use full AI summaries (already optimized) instead of truncating
         articles_text = ""
         for i, article in enumerate(articles, 1):
             title = article.get("ai_title", article.get("title", ""))
-            summary = article.get("ai_summary", article.get("summary", ""))[:200]
+            summary = article.get("ai_summary", article.get("summary", ""))
             source = article.get("source", "Unknown")
             
             articles_text += f"{i}. {title}\n"

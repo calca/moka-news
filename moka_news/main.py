@@ -66,6 +66,8 @@ def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
     # Get keywords and prompts from config
     keywords = config["ai"].get("keywords", [])
     prompts = config["ai"].get("prompts", None)
+    max_content_length = config["ai"].get("max_content_length", 1500)
+    max_tokens = config["ai"].get("max_tokens", 250)
     
     # Step 2: The Barista - Process articles with AI
     print(f"🤖 Brewing summaries with {ai_provider}...")
@@ -77,13 +79,13 @@ def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
             print(
                 "   Set your API key in config file or: export OPENAI_API_KEY='your-key'"
             )
-            barista = Barista(SimpleBarista(), keywords, prompts)
+            barista = Barista(SimpleBarista(), keywords, prompts, max_content_length, max_tokens)
         else:
             try:
-                barista = Barista(OpenAIBarista(api_key=api_key), keywords, prompts)
+                barista = Barista(OpenAIBarista(api_key=api_key), keywords, prompts, max_content_length, max_tokens)
             except ImportError as e:
                 print(f"⚠️  Error: {e}")
-                barista = Barista(SimpleBarista(), keywords, prompts)
+                barista = Barista(SimpleBarista(), keywords, prompts, max_content_length, max_tokens)
     elif ai_provider == "anthropic":
         api_key = config["ai"]["api_keys"].get("anthropic") or os.getenv(
             "ANTHROPIC_API_KEY"
@@ -95,13 +97,13 @@ def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
             print(
                 "   Set your API key in config file or: export ANTHROPIC_API_KEY='your-key'"
             )
-            barista = Barista(SimpleBarista(), keywords, prompts)
+            barista = Barista(SimpleBarista(), keywords, prompts, max_content_length, max_tokens)
         else:
             try:
-                barista = Barista(AnthropicBarista(api_key=api_key), keywords, prompts)
+                barista = Barista(AnthropicBarista(api_key=api_key), keywords, prompts, max_content_length, max_tokens)
             except ImportError as e:
                 print(f"⚠️  Error: {e}")
-                barista = Barista(SimpleBarista(), keywords, prompts)
+                barista = Barista(SimpleBarista(), keywords, prompts, max_content_length, max_tokens)
     elif ai_provider == "gemini":
         api_key = config["ai"]["api_keys"].get("gemini") or os.getenv("GEMINI_API_KEY")
         if not api_key:
@@ -109,13 +111,13 @@ def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
             print(
                 "   Set your API key in config file or: export GEMINI_API_KEY='your-key'"
             )
-            barista = Barista(SimpleBarista(), keywords, prompts)
+            barista = Barista(SimpleBarista(), keywords, prompts, max_content_length, max_tokens)
         else:
             try:
-                barista = Barista(GeminiBarista(api_key=api_key), keywords, prompts)
+                barista = Barista(GeminiBarista(api_key=api_key), keywords, prompts, max_content_length, max_tokens)
             except ImportError as e:
                 print(f"⚠️  Error: {e}")
-                barista = Barista(SimpleBarista(), keywords, prompts)
+                barista = Barista(SimpleBarista(), keywords, prompts, max_content_length, max_tokens)
     elif ai_provider == "mistral":
         api_key = config["ai"]["api_keys"].get("mistral") or os.getenv(
             "MISTRAL_API_KEY"
@@ -127,39 +129,39 @@ def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
             print(
                 "   Set your API key in config file or: export MISTRAL_API_KEY='your-key'"
             )
-            barista = Barista(SimpleBarista(), keywords, prompts)
+            barista = Barista(SimpleBarista(), keywords, prompts, max_content_length, max_tokens)
         else:
             try:
-                barista = Barista(MistralBarista(api_key=api_key), keywords, prompts)
+                barista = Barista(MistralBarista(api_key=api_key), keywords, prompts, max_content_length, max_tokens)
             except ImportError as e:
                 print(f"⚠️  Error: {e}")
-                barista = Barista(SimpleBarista(), keywords, prompts)
+                barista = Barista(SimpleBarista(), keywords, prompts, max_content_length, max_tokens)
     elif ai_provider == "copilot-cli":
         print("ℹ️  Using GitHub Copilot CLI (requires 'gh' CLI installed)")
         try:
-            barista = Barista(GitHubCopilotCLIBarista(), keywords, prompts)
+            barista = Barista(GitHubCopilotCLIBarista(), keywords, prompts, max_content_length, max_tokens)
         except RuntimeError as e:
             print(f"⚠️  Error: {e}")
             print("   Falling back to simple mode.")
-            barista = Barista(SimpleBarista(), keywords, prompts)
+            barista = Barista(SimpleBarista(), keywords, prompts, max_content_length, max_tokens)
     elif ai_provider == "gemini-cli":
         print("ℹ️  Using Gemini CLI (requires 'gcloud' CLI installed)")
         try:
-            barista = Barista(GeminiCLIBarista(), keywords, prompts)
+            barista = Barista(GeminiCLIBarista(), keywords, prompts, max_content_length, max_tokens)
         except RuntimeError as e:
             print(f"⚠️  Error: {e}")
             print("   Falling back to simple mode.")
-            barista = Barista(SimpleBarista(), keywords, prompts)
+            barista = Barista(SimpleBarista(), keywords, prompts, max_content_length, max_tokens)
     elif ai_provider == "mistral-cli":
         print("ℹ️  Using Mistral CLI (requires 'mistral' CLI installed)")
         try:
-            barista = Barista(MistralCLIBarista(), keywords, prompts)
+            barista = Barista(MistralCLIBarista(), keywords, prompts, max_content_length, max_tokens)
         except RuntimeError as e:
             print(f"⚠️  Error: {e}")
             print("   Falling back to simple mode.")
-            barista = Barista(SimpleBarista(), keywords, prompts)
+            barista = Barista(SimpleBarista(), keywords, prompts, max_content_length, max_tokens)
     else:
-        barista = Barista(SimpleBarista(), keywords, prompts)
+        barista = Barista(SimpleBarista(), keywords, prompts, max_content_length, max_tokens)
     
     processed_articles = barista.brew(articles)
     print(f"✓ Brewed {len(processed_articles)} articles")
