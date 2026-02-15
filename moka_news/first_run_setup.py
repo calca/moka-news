@@ -12,7 +12,6 @@ from typing import Dict, Any, Optional
 from moka_news.opml_manager import OPMLManager
 from moka_news.constants import DEFAULT_TECH_FEEDS
 
-
 # Suggested tech feeds for moka-cafè (directly use from constants)
 SUGGESTED_TECH_FEEDS = DEFAULT_TECH_FEEDS
 
@@ -22,51 +21,51 @@ AI_PROVIDERS = {
         "name": "OpenAI (GPT models)",
         "requires_api_key": True,
         "env_var": "OPENAI_API_KEY",
-        "cli_required": False
+        "cli_required": False,
     },
     "anthropic": {
         "name": "Anthropic (Claude models)",
         "requires_api_key": True,
         "env_var": "ANTHROPIC_API_KEY",
-        "cli_required": False
+        "cli_required": False,
     },
     "gemini": {
         "name": "Google Gemini (API)",
         "requires_api_key": True,
         "env_var": "GEMINI_API_KEY",
-        "cli_required": False
+        "cli_required": False,
     },
     "mistral": {
         "name": "Mistral AI (API)",
         "requires_api_key": True,
         "env_var": "MISTRAL_API_KEY",
-        "cli_required": False
+        "cli_required": False,
     },
     "copilot-cli": {
         "name": "GitHub Copilot CLI",
         "requires_api_key": False,
         "cli_required": True,
-        "cli_command": "gh"
+        "cli_command": "gh",
     },
     "gemini-cli": {
         "name": "Gemini CLI (gcloud)",
         "requires_api_key": False,
         "cli_required": True,
-        "cli_command": "gcloud"
+        "cli_command": "gcloud",
     },
     "mistral-cli": {
         "name": "Mistral CLI",
         "requires_api_key": False,
         "cli_required": True,
-        "cli_command": "mistral"
-    }
+        "cli_command": "mistral",
+    },
 }
 
 
 def is_first_run() -> bool:
     """
     Check if this is the first run (no config file exists)
-    
+
     Returns:
         True if this is the first run, False otherwise
     """
@@ -76,21 +75,21 @@ def is_first_run() -> bool:
         Path.home() / ".config" / "moka-news" / "config.yaml",
         Path.home() / ".moka-news.yaml",
     ]
-    
+
     for location in config_locations:
         if location.exists():
             return False
-    
+
     return True
 
 
 def check_cli_available(command: str) -> bool:
     """
     Check if a CLI command is available in PATH
-    
+
     Args:
         command: Command to check
-        
+
     Returns:
         True if available, False otherwise
     """
@@ -100,7 +99,7 @@ def check_cli_available(command: str) -> bool:
 def prompt_ai_provider() -> Dict[str, Any]:
     """
     Prompt user to select an AI provider
-    
+
     Returns:
         Dictionary with provider selection and API key if needed
     """
@@ -109,7 +108,7 @@ def prompt_ai_provider() -> Dict[str, Any]:
     print("=" * 60)
     print("\nLet's set up your AI provider for news summaries.\n")
     print("Available AI providers:")
-    
+
     # Display available providers
     available_providers = []
     for i, (key, provider) in enumerate(AI_PROVIDERS.items(), 1):
@@ -118,43 +117,49 @@ def prompt_ai_provider() -> Dict[str, Any]:
             cli_cmd = provider.get("cli_command")
             if cli_cmd and not check_cli_available(cli_cmd):
                 continue  # Skip unavailable CLI providers
-        
+
         available_providers.append(key)
         print(f"  [{i}] {provider['name']}")
         if provider.get("requires_api_key"):
             print(f"      (requires {provider['env_var']} environment variable)")
         elif provider.get("cli_required"):
             print(f"      (uses '{provider.get('cli_command')}' CLI - detected)")
-    
+
     # Add demo/simple option
-    print(f"  [{len(available_providers) + 1}] Simple mode (no AI, for demo/testing only)")
-    
+    print(
+        f"  [{len(available_providers) + 1}] Simple mode (no AI, for demo/testing only)"
+    )
+
     # Get user choice
     while True:
         try:
-            choice_str = input(f"\nSelect provider [1-{len(available_providers) + 1}]: ").strip()
+            choice_str = input(
+                f"\nSelect provider [1-{len(available_providers) + 1}]: "
+            ).strip()
             choice = int(choice_str)
-            
+
             if choice == len(available_providers) + 1:
                 # Simple mode selected
-                print("\n⚠️  Note: Simple mode is for demo/testing only. No AI summaries will be generated.")
+                print(
+                    "\n⚠️  Note: Simple mode is for demo/testing only. No AI summaries will be generated."
+                )
                 confirm = input("Continue with simple mode? [y/N]: ").strip().lower()
-                if confirm == 'y':
+                if confirm == "y":
                     return {"provider": "simple", "api_key": None}
                 else:
                     continue
-            
+
             if 1 <= choice <= len(available_providers):
                 selected_provider = available_providers[choice - 1]
                 provider_info = AI_PROVIDERS[selected_provider]
-                
+
                 result = {"provider": selected_provider}
-                
+
                 # Check if API key is needed
                 if provider_info.get("requires_api_key"):
                     env_var = provider_info["env_var"]
                     existing_key = os.getenv(env_var)
-                    
+
                     if existing_key:
                         print(f"\n✓ {env_var} found in environment")
                         result["api_key"] = existing_key
@@ -163,10 +168,12 @@ def prompt_ai_provider() -> Dict[str, Any]:
                         print("   Please set it before running moka-news:")
                         print(f"   export {env_var}='your-api-key-here'")
                         result["api_key"] = None
-                
+
                 return result
             else:
-                print(f"Invalid choice. Please enter a number between 1 and {len(available_providers) + 1}.")
+                print(
+                    f"Invalid choice. Please enter a number between 1 and {len(available_providers) + 1}."
+                )
         except ValueError:
             print("Invalid input. Please enter a number.")
         except (KeyboardInterrupt, EOFError):
@@ -177,7 +184,7 @@ def prompt_ai_provider() -> Dict[str, Any]:
 def prompt_keywords() -> list:
     """
     Prompt user to configure keywords for summary focus
-    
+
     Returns:
         List of keywords (empty if user skips)
     """
@@ -187,18 +194,18 @@ def prompt_keywords() -> list:
     print("\nKeywords help focus AI summaries on topics you care about.")
     print("Examples: 'artificial intelligence', 'security', 'python', 'kubernetes'")
     print("\nYou can enter multiple keywords separated by commas.")
-    
+
     while True:
         choice = input("\nConfigure keywords now? [y/N]: ").strip().lower()
-        
-        if choice in ['n', 'no', '']:
+
+        if choice in ["n", "no", ""]:
             print("\n⏭️  Skipping keywords configuration.")
             print("  You can add keywords later in your config file.")
             return []
-        elif choice in ['y', 'yes']:
+        elif choice in ["y", "yes"]:
             keywords_input = input("\nEnter keywords (comma-separated): ").strip()
             if keywords_input:
-                keywords = [k.strip() for k in keywords_input.split(',') if k.strip()]
+                keywords = [k.strip() for k in keywords_input.split(",") if k.strip()]
                 if keywords:
                     print(f"\n✓ Keywords configured: {', '.join(keywords)}")
                     return keywords
@@ -215,7 +222,7 @@ def prompt_keywords() -> list:
 def prompt_prompts_customization() -> bool:
     """
     Prompt user if they want to customize AI prompts
-    
+
     Returns:
         True if user wants to customize prompts, False otherwise
     """
@@ -229,16 +236,16 @@ def prompt_prompts_customization() -> bool:
     print("  - {title}: Article title")
     print("  - {content}: Article content")
     print("  - {keywords}: Your configured keywords")
-    
+
     while True:
         choice = input("\nUse default prompts? [Y/n]: ").strip().lower()
-        
-        if choice in ['', 'y', 'yes']:
+
+        if choice in ["", "y", "yes"]:
             print("\n✓ Using default AI prompts.")
             print("  You can customize prompts later in your config file.")
             print("  See the 'ai.prompts' section in ~/.config/moka-news/config.yaml")
             return False
-        elif choice in ['n', 'no']:
+        elif choice in ["n", "no"]:
             print("\n✓ You can customize prompts after setup.")
             print("  Edit the 'ai.prompts' section in your config file:")
             print("  ~/.config/moka-news/config.yaml")
@@ -255,10 +262,10 @@ def prompt_prompts_customization() -> bool:
 def prompt_opml_setup(opml_manager: OPMLManager) -> bool:
     """
     Prompt user to set up OPML feeds with suggestions
-    
+
     Args:
         opml_manager: OPML manager instance
-        
+
     Returns:
         True if feeds were set up, False otherwise
     """
@@ -266,23 +273,23 @@ def prompt_opml_setup(opml_manager: OPMLManager) -> bool:
     print("📰 RSS Feed Configuration")
     print("=" * 60)
     print("\nWe recommend these 5 tech feeds for your moka-cafè:")
-    
+
     for i, feed in enumerate(SUGGESTED_TECH_FEEDS, 1):
         print(f"  [{i}] {feed['title']}")
         print(f"      {feed['url']}")
-    
+
     print(f"\nThese feeds will be saved to: {opml_manager.opml_path}")
-    
+
     while True:
         choice = input("\nUse these suggested feeds? [Y/n]: ").strip().lower()
-        
-        if choice in ['', 'y', 'yes']:
+
+        if choice in ["", "y", "yes"]:
             # Save suggested feeds
             opml_manager.save_feeds(SUGGESTED_TECH_FEEDS)
             print(f"\n✓ Feeds saved to: {opml_manager.opml_path}")
             print("  You can add more feeds later with: moka-news --add-feed URL")
             return True
-        elif choice in ['n', 'no']:
+        elif choice in ["n", "no"]:
             print("\n⚠️  No feeds configured.")
             print("  You can add feeds later with: moka-news --add-feed URL")
             print("  Or run with custom feeds: moka-news --feeds URL1 URL2")
@@ -291,26 +298,28 @@ def prompt_opml_setup(opml_manager: OPMLManager) -> bool:
             print("Please enter 'y' or 'n'.")
 
 
-def save_config(config_data: Dict[str, Any], config_path: Optional[Path] = None) -> Path:
+def save_config(
+    config_data: Dict[str, Any], config_path: Optional[Path] = None
+) -> Path:
     """
     Save configuration to YAML file
-    
+
     Args:
         config_data: Configuration dictionary
         config_path: Optional path to save config (defaults to ~/.config/moka-news/config.yaml)
-        
+
     Returns:
         Path where config was saved
     """
     if config_path is None:
         config_path = Path.home() / ".config" / "moka-news" / "config.yaml"
-    
+
     # Ensure directory exists
     config_path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     # Load default prompts
     from moka_news.config import DEFAULT_PROMPTS
-    
+
     # Prepare config content
     config_content = {
         "ai": {
@@ -322,46 +331,44 @@ def save_config(config_data: Dict[str, Any], config_path: Optional[Path] = None)
                 "mistral": None,
             },
             "keywords": config_data.get("keywords", []),
-            "prompts": DEFAULT_PROMPTS  # Include default prompts
+            "prompts": DEFAULT_PROMPTS,  # Include default prompts
         },
-        "ui": {
-            "use_tui": True
-        }
+        "ui": {"use_tui": True},
     }
-    
+
     # Save to file
-    with open(config_path, 'w') as f:
+    with open(config_path, "w") as f:
         yaml.dump(config_content, f, default_flow_style=False, sort_keys=False)
-    
+
     return config_path
 
 
 def run_first_run_setup(opml_manager: OPMLManager) -> Dict[str, Any]:
     """
     Run the complete first-run setup wizard
-    
+
     Args:
         opml_manager: OPML manager instance
-        
+
     Returns:
         Dictionary with setup configuration
     """
     # Prompt for AI provider
     provider_config = prompt_ai_provider()
-    
+
     # Prompt for keywords
     keywords = prompt_keywords()
     provider_config["keywords"] = keywords
-    
+
     # Prompt for prompts customization
     will_customize_prompts = prompt_prompts_customization()
-    
+
     # Prompt for OPML setup
     feeds_configured = prompt_opml_setup(opml_manager)
-    
+
     # Save configuration
     config_path = save_config(provider_config)
-    
+
     print("\n" + "=" * 60)
     print("✓ Setup complete!")
     print("=" * 60)
@@ -376,10 +383,10 @@ def run_first_run_setup(opml_manager: OPMLManager) -> Dict[str, Any]:
         print("AI prompts: Using defaults (can customize later)")
     print("\nYou can now run: moka-news")
     print("=" * 60 + "\n")
-    
+
     return {
         "provider": provider_config["provider"],
         "keywords": keywords,
         "config_path": config_path,
-        "feeds_configured": feeds_configured
+        "feeds_configured": feeds_configured,
     }

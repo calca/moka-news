@@ -7,28 +7,28 @@ DEFAULT_TECH_FEEDS = [
     {
         "url": "https://news.ycombinator.com/rss",
         "title": "Hacker News",
-        "htmlUrl": "https://news.ycombinator.com"
+        "htmlUrl": "https://news.ycombinator.com",
     },
     {
         "url": "https://github.blog/feed/",
         "title": "GitHub Blog",
-        "htmlUrl": "https://github.blog"
+        "htmlUrl": "https://github.blog",
     },
     {
         "url": "https://www.theverge.com/rss/index.xml",
         "title": "The Verge - Tech",
-        "htmlUrl": "https://www.theverge.com"
+        "htmlUrl": "https://www.theverge.com",
     },
     {
         "url": "https://techcrunch.com/feed/",
         "title": "TechCrunch",
-        "htmlUrl": "https://techcrunch.com"
+        "htmlUrl": "https://techcrunch.com",
     },
     {
         "url": "https://feeds.arstechnica.com/arstechnica/index",
         "title": "Ars Technica",
-        "htmlUrl": "https://arstechnica.com"
-    }
+        "htmlUrl": "https://arstechnica.com",
+    },
 ]
 
 # AI model names
@@ -36,7 +36,7 @@ DEFAULT_AI_MODELS = {
     "openai": "gpt-3.5-turbo",
     "anthropic": "claude-3-haiku-20240307",
     "gemini": "gemini-pro",
-    "mistral": "mistral-tiny"
+    "mistral": "mistral-tiny",
 }
 
 # Content processing limits

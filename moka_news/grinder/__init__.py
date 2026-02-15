@@ -47,7 +47,7 @@ class Grinder:
                     # Parse published date if available
                     published_str = entry.get("published", entry.get("updated", ""))
                     published_dt = None
-                    
+
                     if published_str:
                         try:
                             # Try to parse the date using email.utils (handles RFC 2822 format)
@@ -55,17 +55,23 @@ class Grinder:
                         except Exception:
                             try:
                                 # Fallback: try feedparser's parsed date
-                                if hasattr(entry, 'published_parsed') and entry.published_parsed:
+                                if (
+                                    hasattr(entry, "published_parsed")
+                                    and entry.published_parsed
+                                ):
                                     import time
-                                    published_dt = datetime.fromtimestamp(time.mktime(entry.published_parsed))
+
+                                    published_dt = datetime.fromtimestamp(
+                                        time.mktime(entry.published_parsed)
+                                    )
                             except Exception:
                                 pass
-                    
+
                     # Filter by date if since parameter is provided
                     if self.since and published_dt:
                         if published_dt < self.since:
                             continue  # Skip articles older than the since timestamp
-                    
+
                     article = {
                         "title": entry.get("title", "No Title"),
                         "link": entry.get("link", ""),
@@ -84,7 +90,7 @@ class Grinder:
 def get_default_feeds() -> List[str]:
     """
     Get a list of default RSS feeds
-    
+
     Returns:
         List of default RSS feed URLs
     """

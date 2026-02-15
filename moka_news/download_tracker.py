@@ -10,11 +10,11 @@ from typing import Optional
 
 class DownloadTracker:
     """Tracks last download timestamp for filtering new articles"""
-    
+
     def __init__(self, tracker_file: Optional[Path] = None):
         """
         Initialize the Download Tracker
-        
+
         Args:
             tracker_file: Path to tracker file (defaults to ~/.config/moka-news/last_download.json)
         """
@@ -24,17 +24,17 @@ class DownloadTracker:
             config_dir = Path.home() / ".config" / "moka-news"
             config_dir.mkdir(parents=True, exist_ok=True)
             self.tracker_file = config_dir / "last_download.json"
-    
+
     def get_last_download(self) -> Optional[datetime]:
         """
         Get the timestamp of last download
-        
+
         Returns:
             datetime of last download, or None if never downloaded
         """
         if not self.tracker_file.exists():
             return None
-        
+
         try:
             with open(self.tracker_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
@@ -43,23 +43,21 @@ class DownloadTracker:
                     return datetime.fromisoformat(timestamp_str)
         except Exception as e:
             print(f"Warning: Could not read download tracker: {e}")
-        
+
         return None
-    
+
     def update_last_download(self, timestamp: Optional[datetime] = None):
         """
         Update the last download timestamp
-        
+
         Args:
             timestamp: Timestamp to save (defaults to now)
         """
         if timestamp is None:
             timestamp = datetime.now()
-        
-        data = {
-            "last_download": timestamp.isoformat()
-        }
-        
+
+        data = {"last_download": timestamp.isoformat()}
+
         try:
             with open(self.tracker_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)

@@ -6,7 +6,7 @@ Orchestrates The Grinder, The Barista, and The Cup
 import argparse
 from dotenv import load_dotenv
 from moka_news.grinder import Grinder
-from moka_news.barista import create_barista, create_ai_provider, SimpleBarista, Barista
+from moka_news.barista import create_ai_provider, SimpleBarista, Barista
 from moka_news.cup import serve
 from moka_news.config import load_config, create_sample_config
 from moka_news.opml_manager import OPMLManager
@@ -23,13 +23,13 @@ logger = get_logger(__name__)
 def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
     """
     Fetch RSS feeds and brew articles with AI summaries.
-    
+
     Args:
         feed_urls: List of RSS feed URLs
         config: Configuration dictionary
         ai_provider: AI provider name
         download_tracker: Optional DownloadTracker instance for date filtering
-    
+
     Returns:
         Tuple of (processed_articles, last_update_time)
     """
@@ -38,40 +38,44 @@ def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
     if download_tracker:
         since = download_tracker.get_last_download()
         if since:
-            logger.info(f"Filtering articles since {since.strftime('%Y-%m-%d %H:%M:%S')}")
-    
+            logger.info(
+                f"Filtering articles since {since.strftime('%Y-%m-%d %H:%M:%S')}"
+            )
+
     logger.info(f"Grinding {len(feed_urls)} feeds...")
-    
+
     # Step 1: The Grinder - Extract articles from RSS feeds
     grinder = Grinder(feed_urls, since=since)
     articles, last_update = grinder.grind()
-    
+
     logger.info(f"Ground {len(articles)} articles")
-    
+
     if not articles:
         logger.warning("No articles found. Please check your RSS feeds.")
         return [], last_update
-    
+
     # Update download tracker
     if download_tracker:
         download_tracker.update_last_download(last_update)
-    
+
     # Get keywords and prompts from config
     keywords = config["ai"].get("keywords", [])
     prompts = config["ai"].get("prompts", None)
     max_content_length = config["ai"].get("max_content_length", 1500)
     max_tokens = config["ai"].get("max_tokens", 250)
-    
+
     # Step 2: Prepare articles (no AI processing on individual articles)
     # AI will be focused only on the editorial generation
     logger.info(f"Preparing {len(articles)} articles...")
-    
+
     # Use SimpleBarista to add ai_title and ai_summary fields without AI processing
     # This maintains compatibility with the rest of the codebase
-    barista = Barista(SimpleBarista(), keywords, prompts, max_content_length, max_tokens)
+    barista = Barista(
+        SimpleBarista(), keywords, prompts, max_content_length, max_tokens
+    )
     processed_articles = barista.brew(articles)
     logger.info(f"Prepared {len(processed_articles)} articles")
-    
+
     return processed_articles, last_update
 
 
@@ -169,12 +173,9 @@ Feed Management:
     # Check for first run and run setup wizard if needed
     # Skip setup wizard for specific commands that don't need it
     skip_setup = (
-        args.create_config or 
-        args.add_feed or 
-        args.remove_feed or 
-        args.list_feeds
+        args.create_config or args.add_feed or args.remove_feed or args.list_feeds
     )
-    
+
     if is_first_run() and not skip_setup:
         run_first_run_setup(opml_manager)
         # After setup, user needs to run moka-news again
@@ -222,7 +223,7 @@ Feed Management:
 
     # CLI arguments override config file
     ai_provider = args.ai if args.ai else config["ai"]["provider"]
-    
+
     # Get feeds from: CLI args > OPML manager > config file
     if args.feeds:
         feed_urls = args.feeds
@@ -232,17 +233,19 @@ Feed Management:
             feed_urls = [feed["url"] for feed in opml_feeds]
         else:
             feed_urls = config["feeds"]["urls"]
-    
+
     use_tui = not args.no_tui if args.no_tui else config["ui"]["use_tui"]
 
     logger.info("Brewing your morning news...")
-    
+
     # Initialize download tracker
     download_tracker = DownloadTracker()
-    
+
     # Fetch and brew articles
-    processed_articles, last_update = fetch_and_brew(feed_urls, config, ai_provider, download_tracker)
-    
+    processed_articles, last_update = fetch_and_brew(
+        feed_urls, config, ai_provider, download_tracker
+    )
+
     if not processed_articles:
         logger.warning("No articles to display.")
         return
@@ -250,18 +253,20 @@ Feed Management:
     # Generate editorial
     logger.info("Generating morning editorial...")
     editorial_content = None
-    
+
     # Get AI provider instance for editorial generation
     keywords = config["ai"].get("keywords", [])
     editorial_prompts = config["ai"].get("editorial_prompts", None)
-    
+
     # Try to get the AI provider, fall back to SimpleBarista if it fails
     ai_instance = create_ai_provider(ai_provider, config)
     if ai_instance is None:
         ai_instance = SimpleBarista()
-    
-    editorial_generator = EditorialGenerator(ai_instance, keywords, editorial_prompts=editorial_prompts)
-    
+
+    editorial_generator = EditorialGenerator(
+        ai_instance, keywords, editorial_prompts=editorial_prompts
+    )
+
     try:
         editorial = editorial_generator.generate_editorial(processed_articles)
         editorial_path = editorial_generator.save_editorial(editorial)
@@ -280,7 +285,7 @@ Feed Management:
             print(f"    {article.get('ai_summary', article['summary'][:200])}")
             print(f"    Link: {article.get('link', 'N/A')}")
         print("\n" + "=" * 80)
-        
+
         # Print editorial if available
         if editorial_content:
             print("\n📰 MORNING EDITORIAL")
@@ -289,16 +294,16 @@ Feed Management:
             print("=" * 80)
     else:
         logger.info("Serving your news...\n")
-        
+
         # Create refresh callback for the TUI
         def refresh_callback():
             return fetch_and_brew(feed_urls, config, ai_provider, download_tracker)
-        
+
         # Get theme configuration
         theme = config["ui"].get("theme", "rose-pine")
         theme_light = config["ui"].get("theme_light", "rose-pine-dawn")
         theme_dark = config["ui"].get("theme_dark", "rose-pine")
-        
+
         serve(
             processed_articles,
             last_update,
