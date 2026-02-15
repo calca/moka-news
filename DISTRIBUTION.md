@@ -79,11 +79,13 @@ The project includes a GitHub Actions workflow that automatically publishes to P
 3. Create a new release on GitHub with a version tag (e.g., `v0.1.0`)
 4. The workflow will automatically build and publish to PyPI
 
-The workflow uses trusted publishing (OIDC), which doesn't require API tokens.
+**Authentication**: The workflow uses **OIDC trusted publishing** (OpenID Connect), which doesn't require API tokens or secrets. This is the recommended and most secure method for publishing to PyPI from GitHub Actions.
+
+**One-time setup**: Configure trusted publishing in your PyPI project settings to authorize this GitHub repository.
 
 ### Manual Publishing
 
-If you need to publish manually:
+If you need to publish manually (e.g., from your local machine):
 
 ```bash
 # Activate your virtual environment
@@ -99,7 +101,13 @@ twine upload --repository testpypi dist/*
 twine upload dist/*
 ```
 
-You'll need to configure PyPI credentials. See [PyPI's documentation](https://pypi.org/help/#apitoken) for details.
+**Authentication for manual publishing**: 
+- Create a PyPI API token from your PyPI account settings
+- Store the token as a **GitHub secret** named `PYPI_API_TOKEN` if using in workflows
+- For local manual publishing, configure the token in `~/.pypirc` or use the `TWINE_USERNAME` and `TWINE_PASSWORD` environment variables
+- Never commit API tokens to the repository
+
+See [PyPI's documentation](https://pypi.org/help/#apitoken) for creating and managing API tokens.
 
 ## GitHub Actions Workflows
 
@@ -107,19 +115,21 @@ The project includes two workflows:
 
 ### CI Workflow (`.github/workflows/ci.yml`)
 
-Runs on every push and pull request to `main` and `develop` branches:
+Runs on pull requests to `main` and `develop` branches, or manually via workflow_dispatch:
 - Tests on Python 3.8, 3.9, 3.10, 3.11, and 3.12
 - Lints with `ruff`
 - Checks formatting with `black`
 - Runs the test suite
 - Builds the package and uploads artifacts
 
+**Note**: CI does not run automatically on push to main/develop branches. Use pull requests or trigger manually when needed.
+
 ### Publish Workflow (`.github/workflows/publish.yml`)
 
 Runs when a GitHub release is published:
 - Builds the package in a clean virtual environment
 - Verifies the package with `twine check`
-- Publishes to PyPI using trusted publishing (OIDC)
+- Publishes to PyPI using **OIDC trusted publishing** (no API tokens required)
 
 Can also be manually triggered to publish to Test PyPI for testing.
 

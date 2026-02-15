@@ -107,16 +107,32 @@ Quick reference for releasing a new version of MoKa News.
 
 ### Manual (If Needed)
 
-If automatic publishing fails:
+If automatic publishing fails, you can publish manually:
 
 ```bash
-# Ensure you have PyPI credentials configured
-# Build the package
+# Build the package in a virtual environment
+python -m venv venv
+source venv/bin/activate
+pip install build twine
+
+# Build
 python -m build
 
 # Upload to PyPI
+# Option 1: Using API token stored in environment variables
+export TWINE_USERNAME=__token__
+export TWINE_PASSWORD=your-pypi-api-token
+twine upload dist/*
+
+# Option 2: Using .pypirc configuration file
 twine upload dist/*
 ```
+
+**Important**: 
+- Never commit PyPI API tokens to the repository
+- Store tokens as **GitHub secrets** (e.g., `PYPI_API_TOKEN`) if using in workflows
+- For local publishing, use environment variables or `~/.pypirc` file
+- Create API tokens from PyPI account settings: https://pypi.org/help/#apitoken
 
 ## Post-Release
 
@@ -210,10 +226,16 @@ Version 1.0.0 defines the first stable public API. After this:
 - Review test output for specific failures
 
 ### Upload Fails
-- Verify PyPI credentials
-- Check package version doesn't already exist
-- Ensure twine check passes
-- For trusted publishing: verify GitHub Actions permissions
+- **For automated publishing (GitHub Actions)**:
+  - Verify OIDC trusted publishing is configured in PyPI project settings
+  - Check GitHub Actions permissions (should have `id-token: write`)
+  - Ensure workflow is triggered from a release event
+- **For manual publishing**:
+  - Verify PyPI API token is valid
+  - Ensure token is stored as GitHub secret if using in workflows
+  - Never commit tokens to repository
+  - Check package version doesn't already exist on PyPI
+  - Ensure `twine check dist/*` passes before uploading
 
 ### Installation Fails
 - Check PyPI package page for issues
@@ -224,13 +246,15 @@ Version 1.0.0 defines the first stable public API. After this:
 ## GitHub Actions Workflows
 
 ### CI Workflow
-- **Trigger**: Push or PR to main/develop branches
+- **Trigger**: Pull requests to main/develop branches, or manual trigger (workflow_dispatch)
 - **Actions**: Test, lint, build, upload artifacts
+- **Note**: Does not run automatically on push to main/develop
 - **View**: https://github.com/calca/moka-news/actions/workflows/ci.yml
 
 ### Publish Workflow
-- **Trigger**: GitHub release created
-- **Actions**: Build and publish to PyPI
+- **Trigger**: GitHub release created, or manual trigger
+- **Actions**: Build and publish to PyPI using OIDC trusted publishing
+- **Authentication**: No API tokens required (uses OIDC)
 - **View**: https://github.com/calca/moka-news/actions/workflows/publish.yml
 
 ## Resources
