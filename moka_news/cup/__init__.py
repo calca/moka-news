@@ -18,9 +18,11 @@ from textual.widgets import (
 from textual.binding import Binding
 from textual.screen import Screen, ModalScreen
 from typing import List, Dict, Any, Callable, Optional
+from pathlib import Path
 from datetime import datetime, time
 import webbrowser
 import asyncio
+import subprocess
 
 
 class ConfirmationDialog(ModalScreen):
@@ -261,6 +263,7 @@ class Cup(App):
         Binding("q", "quit", "Quit", priority=True),
         Binding("r", "refresh", "Refresh"),
         Binding("h", "show_history", "History"),
+        Binding("o", "open_external", "Open External"),
         Binding("t", "toggle_theme", "Toggle Theme"),
         ("ctrl+c", "quit", "Quit"),
     ]
@@ -279,6 +282,8 @@ class Cup(App):
         theme_light: str = "rose-pine-dawn",
         theme_dark: str = "rose-pine",
         refresh_manager: Optional[Any] = None,
+        opener_command: Optional[str] = None,
+        current_editorial_path: Optional[Path] = None,
     ):
         super().__init__()
         self.articles = articles or []
@@ -295,6 +300,8 @@ class Cup(App):
         self.theme_dark = theme_dark
         self.theme = theme
         self.refresh_manager = refresh_manager
+        self.opener_command = opener_command
+        self.current_editorial_path = current_editorial_path  # Track current editorial path
 
     def _format_subtitle(self) -> str:
         """Format the subtitle with last update time"""
@@ -402,6 +409,7 @@ class Cup(App):
             try:
                 editorial = self.editorial_generator.generate_editorial(new_articles)
                 editorial_path = self.editorial_generator.save_editorial(editorial)
+                self.current_editorial_path = editorial_path  # Track current editorial
                 self.editorial_content = self.editorial_generator.load_editorial(
                     editorial_path
                 )
@@ -515,6 +523,36 @@ class Cup(App):
             f"Switched to {theme_name} theme: {new_theme}", severity="information"
         )
 
+    def action_open_external(self) -> None:
+        """Open current editorial in external application"""
+        if not self.opener_command:
+            self.notify(
+                "No opener command configured. Set 'editorial.opener_command' in config.",
+                severity="warning"
+            )
+            return
+        
+        if not self.current_editorial_path:
+            self.notify("No editorial available to open", severity="warning")
+            return
+        
+        try:
+            subprocess.Popen([self.opener_command, str(self.current_editorial_path)])
+            self.notify(
+                f"Opening editorial with {self.opener_command}",
+                severity="information"
+            )
+        except FileNotFoundError:
+            self.notify(
+                f"Command '{self.opener_command}' not found. Please check your configuration.",
+                severity="error"
+            )
+        except Exception as e:
+            self.notify(
+                f"Error opening editorial: {e}",
+                severity="error"
+            )
+
     async def action_show_history(self) -> None:
         """Show past editorials"""
         if not self.editorial_generator:
@@ -537,6 +575,7 @@ class Cup(App):
             try:
                 content = self.editorial_generator.load_editorial(editorial_path)
                 self.editorial_content = content
+                self.current_editorial_path = editorial_path  # Track current editorial
                 self.sub_title = self._format_subtitle()
                 self._rebuild_view()
                 self.notify(
@@ -577,6 +616,8 @@ def serve(
     theme_light: str = "rose-pine-dawn",
     theme_dark: str = "rose-pine",
     refresh_manager: Optional[Any] = None,
+    opener_command: Optional[str] = None,
+    current_editorial_path: Optional[Path] = None,
 ):
     """
     Display articles in the TUI
@@ -592,6 +633,8 @@ def serve(
         theme_light: Light theme option (default: rose-pine-dawn)
         theme_dark: Dark theme option (default: rose-pine)
         refresh_manager: Optional RefreshManager instance for controlling refresh times
+        opener_command: Optional command to open editorials in external app
+        current_editorial_path: Path to the current editorial file
     """
     app = Cup(
         articles,
@@ -604,5 +647,7 @@ def serve(
         theme_light,
         theme_dark,
         refresh_manager,
+        opener_command,
+        current_editorial_path,
     )
     app.run()

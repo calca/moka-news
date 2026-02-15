@@ -246,6 +246,10 @@ Feed Management:
     # Get AI provider instance for editorial generation
     keywords = config["ai"].get("keywords", [])
     editorial_prompts = config["ai"].get("editorial_prompts", None)
+    
+    # Get editorial configuration
+    editorial_config = config.get("editorial", {})
+    editorials_dir = editorial_config.get("editorials_dir", None)
 
     # Try to get the AI provider, fall back to SimpleBarista if it fails
     ai_instance = create_ai_provider(ai_provider, config)
@@ -253,9 +257,12 @@ Feed Management:
         ai_instance = SimpleBarista()
 
     editorial_generator = EditorialGenerator(
-        ai_instance, keywords, editorial_prompts=editorial_prompts
+        ai_instance, keywords, 
+        editorials_dir=editorials_dir,
+        editorial_prompts=editorial_prompts
     )
 
+    editorial_path = None
     try:
         editorial = editorial_generator.generate_editorial(articles)
         editorial_path = editorial_generator.save_editorial(editorial)
@@ -314,6 +321,9 @@ Feed Management:
             if parsed_times:
                 refresh_manager.allowed_refresh_times = parsed_times
 
+        # Get editorial opener command
+        opener_command = editorial_config.get("opener_command", None)
+
         serve(
             articles,
             last_update,
@@ -324,6 +334,8 @@ Feed Management:
             theme_light=theme_light,
             theme_dark=theme_dark,
             refresh_manager=refresh_manager,
+            opener_command=opener_command,
+            current_editorial_path=editorial_path,
         )
 
 

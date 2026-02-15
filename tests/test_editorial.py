@@ -160,3 +160,39 @@ def test_format_editorial_markdown():
         assert "https://example.com/1" in markdown
         assert "Article 2" in markdown
         assert "Editorial generated from 2 articles" in markdown
+
+
+def test_editorial_generator_custom_directory():
+    """Test EditorialGenerator with custom directory"""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        custom_dir = Path(tmpdir) / "custom" / "editorials"
+        generator = EditorialGenerator(
+            ai_provider=SimpleBarista(),
+            editorials_dir=custom_dir
+        )
+        
+        assert generator.editorials_dir == custom_dir
+        assert generator.editorials_dir.exists()
+        
+        # Test saving to custom directory
+        editorial = {
+            "title": "Test Editorial",
+            "content": "Test content",
+            "timestamp": datetime.now(),
+            "sources": [],
+            "article_count": 0
+        }
+        
+        filepath = generator.save_editorial(editorial)
+        assert filepath.parent == custom_dir
+        assert filepath.exists()
+
+
+def test_editorial_generator_default_directory():
+    """Test EditorialGenerator uses default directory when none specified"""
+    generator = EditorialGenerator(
+        ai_provider=SimpleBarista()
+    )
+    
+    expected_dir = Path.home() / ".config" / "moka-news" / "editorials"
+    assert generator.editorials_dir == expected_dir

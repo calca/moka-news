@@ -85,6 +85,10 @@ DEFAULT_CONFIG = {
         "max_daily_refreshes": 2,  # Maximum refreshes per day
         "require_confirmation_outside_hours": True,  # Ask for confirmation outside allowed times
     },
+    "editorial": {
+        "editorials_dir": None,  # Directory to save editorials (defaults to ~/.config/moka-news/editorials)
+        "opener_command": None,  # Optional command to open editorials externally (e.g., "code", "vim", "nano")
+    },
 }
 
 
@@ -276,6 +280,23 @@ refresh:
     - "20:00"  # Evening refresh time
   max_daily_refreshes: 2  # Maximum number of refreshes per day
   require_confirmation_outside_hours: true  # Require confirmation for manual refresh outside allowed times
+
+# Editorial Configuration
+editorial:
+  # Directory to save editorials (defaults to ~/.config/moka-news/editorials if not specified)
+  editorials_dir: null
+    # Example: ~/Documents/editorials
+    # Example: /path/to/custom/editorials
+  
+  # Optional command to open editorials in external app
+  # Press 'o' in TUI to open current editorial with this command
+  opener_command: null
+    # Examples:
+    # opener_command: "code"        # Open with VS Code
+    # opener_command: "vim"         # Open with Vim
+    # opener_command: "nano"        # Open with Nano
+    # opener_command: "open"        # Open with default app (macOS)
+    # opener_command: "xdg-open"    # Open with default app (Linux)
 """
 
     with open(path, "w") as f:

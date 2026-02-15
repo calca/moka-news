@@ -104,3 +104,36 @@ def test_merge_configs_preserves_keywords():
     assert result["ai"]["provider"] == "openai"
     assert result["ai"]["keywords"] == ["technology", "AI"]
     assert result["ai"]["api_keys"]["openai"] is None  # Preserved from default
+
+
+def test_default_config_includes_editorial():
+    """Test that default config includes editorial configuration"""
+    assert "editorial" in DEFAULT_CONFIG
+    assert "editorials_dir" in DEFAULT_CONFIG["editorial"]
+    assert "opener_command" in DEFAULT_CONFIG["editorial"]
+    assert DEFAULT_CONFIG["editorial"]["editorials_dir"] is None
+    assert DEFAULT_CONFIG["editorial"]["opener_command"] is None
+
+
+def test_merge_configs_preserves_editorial_settings():
+    """Test merging configurations preserves editorial settings"""
+    default = {
+        "editorial": {
+            "editorials_dir": None,
+            "opener_command": None,
+        },
+        "ai": {"provider": "simple"},
+    }
+
+    user = {
+        "editorial": {
+            "editorials_dir": "/custom/path",
+            "opener_command": "code",
+        },
+    }
+
+    result = merge_configs(default, user)
+
+    assert result["editorial"]["editorials_dir"] == "/custom/path"
+    assert result["editorial"]["opener_command"] == "code"
+    assert result["ai"]["provider"] == "simple"  # Preserved from default
