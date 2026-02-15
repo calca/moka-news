@@ -3,28 +3,21 @@ MoKa News - Main Entry Point
 Orchestrates The Grinder, The Barista, and The Cup
 """
 
-import os
 import argparse
 from dotenv import load_dotenv
 from moka_news.grinder import Grinder
-from moka_news.barista import (
-    Barista,
-    OpenAIBarista,
-    AnthropicBarista,
-    SimpleBarista,
-    GeminiBarista,
-    MistralBarista,
-    GitHubCopilotCLIBarista,
-    GeminiCLIBarista,
-    MistralCLIBarista,
-)
+from moka_news.barista import create_barista, create_ai_provider, SimpleBarista
 from moka_news.cup import serve
 from moka_news.config import load_config, create_sample_config
 from moka_news.opml_manager import OPMLManager
 from moka_news.first_run_setup import is_first_run, run_first_run_setup
 from moka_news.download_tracker import DownloadTracker
 from moka_news.editorial import EditorialGenerator
-from datetime import datetime, time
+from moka_news.logger import get_logger, setup_logger
+
+# Setup logger for console output
+setup_logger("moka_news")
+logger = get_logger(__name__)
 
 
 def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
@@ -45,18 +38,18 @@ def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
     if download_tracker:
         since = download_tracker.get_last_download()
         if since:
-            print(f"📅 Filtering articles since {since.strftime('%Y-%m-%d %H:%M:%S')}")
+            logger.info(f"Filtering articles since {since.strftime('%Y-%m-%d %H:%M:%S')}")
     
-    print(f"📡 Grinding {len(feed_urls)} feeds...")
+    logger.info(f"Grinding {len(feed_urls)} feeds...")
     
     # Step 1: The Grinder - Extract articles from RSS feeds
     grinder = Grinder(feed_urls, since=since)
     articles, last_update = grinder.grind()
     
-    print(f"✓ Ground {len(articles)} articles")
+    logger.info(f"Ground {len(articles)} articles")
     
     if not articles:
-        print("No articles found. Please check your RSS feeds.")
+        logger.warning("No articles found. Please check your RSS feeds.")
         return [], last_update
     
     # Update download tracker
@@ -70,101 +63,13 @@ def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
     max_tokens = config["ai"].get("max_tokens", 250)
     
     # Step 2: The Barista - Process articles with AI
-    print(f"🤖 Brewing summaries with {ai_provider}...")
+    logger.info(f"Brewing summaries with {ai_provider}...")
     
-    if ai_provider == "openai":
-        api_key = config["ai"]["api_keys"].get("openai") or os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            print("⚠️  Warning: OPENAI_API_KEY not found. Falling back to simple mode.")
-            print(
-                "   Set your API key in config file or: export OPENAI_API_KEY='your-key'"
-            )
-            barista = Barista(SimpleBarista(), keywords, prompts, max_content_length, max_tokens)
-        else:
-            try:
-                barista = Barista(OpenAIBarista(api_key=api_key), keywords, prompts, max_content_length, max_tokens)
-            except ImportError as e:
-                print(f"⚠️  Error: {e}")
-                barista = Barista(SimpleBarista(), keywords, prompts, max_content_length, max_tokens)
-    elif ai_provider == "anthropic":
-        api_key = config["ai"]["api_keys"].get("anthropic") or os.getenv(
-            "ANTHROPIC_API_KEY"
-        )
-        if not api_key:
-            print(
-                "⚠️  Warning: ANTHROPIC_API_KEY not found. Falling back to simple mode."
-            )
-            print(
-                "   Set your API key in config file or: export ANTHROPIC_API_KEY='your-key'"
-            )
-            barista = Barista(SimpleBarista(), keywords, prompts, max_content_length, max_tokens)
-        else:
-            try:
-                barista = Barista(AnthropicBarista(api_key=api_key), keywords, prompts, max_content_length, max_tokens)
-            except ImportError as e:
-                print(f"⚠️  Error: {e}")
-                barista = Barista(SimpleBarista(), keywords, prompts, max_content_length, max_tokens)
-    elif ai_provider == "gemini":
-        api_key = config["ai"]["api_keys"].get("gemini") or os.getenv("GEMINI_API_KEY")
-        if not api_key:
-            print("⚠️  Warning: GEMINI_API_KEY not found. Falling back to simple mode.")
-            print(
-                "   Set your API key in config file or: export GEMINI_API_KEY='your-key'"
-            )
-            barista = Barista(SimpleBarista(), keywords, prompts, max_content_length, max_tokens)
-        else:
-            try:
-                barista = Barista(GeminiBarista(api_key=api_key), keywords, prompts, max_content_length, max_tokens)
-            except ImportError as e:
-                print(f"⚠️  Error: {e}")
-                barista = Barista(SimpleBarista(), keywords, prompts, max_content_length, max_tokens)
-    elif ai_provider == "mistral":
-        api_key = config["ai"]["api_keys"].get("mistral") or os.getenv(
-            "MISTRAL_API_KEY"
-        )
-        if not api_key:
-            print(
-                "⚠️  Warning: MISTRAL_API_KEY not found. Falling back to simple mode."
-            )
-            print(
-                "   Set your API key in config file or: export MISTRAL_API_KEY='your-key'"
-            )
-            barista = Barista(SimpleBarista(), keywords, prompts, max_content_length, max_tokens)
-        else:
-            try:
-                barista = Barista(MistralBarista(api_key=api_key), keywords, prompts, max_content_length, max_tokens)
-            except ImportError as e:
-                print(f"⚠️  Error: {e}")
-                barista = Barista(SimpleBarista(), keywords, prompts, max_content_length, max_tokens)
-    elif ai_provider == "copilot-cli":
-        print("ℹ️  Using GitHub Copilot CLI (requires 'gh' CLI installed)")
-        try:
-            barista = Barista(GitHubCopilotCLIBarista(), keywords, prompts, max_content_length, max_tokens)
-        except RuntimeError as e:
-            print(f"⚠️  Error: {e}")
-            print("   Falling back to simple mode.")
-            barista = Barista(SimpleBarista(), keywords, prompts, max_content_length, max_tokens)
-    elif ai_provider == "gemini-cli":
-        print("ℹ️  Using Gemini CLI (requires 'gcloud' CLI installed)")
-        try:
-            barista = Barista(GeminiCLIBarista(), keywords, prompts, max_content_length, max_tokens)
-        except RuntimeError as e:
-            print(f"⚠️  Error: {e}")
-            print("   Falling back to simple mode.")
-            barista = Barista(SimpleBarista(), keywords, prompts, max_content_length, max_tokens)
-    elif ai_provider == "mistral-cli":
-        print("ℹ️  Using Mistral CLI (requires 'mistral' CLI installed)")
-        try:
-            barista = Barista(MistralCLIBarista(), keywords, prompts, max_content_length, max_tokens)
-        except RuntimeError as e:
-            print(f"⚠️  Error: {e}")
-            print("   Falling back to simple mode.")
-            barista = Barista(SimpleBarista(), keywords, prompts, max_content_length, max_tokens)
-    else:
-        barista = Barista(SimpleBarista(), keywords, prompts, max_content_length, max_tokens)
+    # Use factory to create barista with appropriate provider
+    barista = create_barista(ai_provider, config, keywords, prompts, max_content_length, max_tokens)
     
     processed_articles = barista.brew(articles)
-    print(f"✓ Brewed {len(processed_articles)} articles")
+    logger.info(f"Brewed {len(processed_articles)} articles")
     
     return processed_articles, last_update
 
@@ -344,48 +249,17 @@ Feed Management:
     # Generate editorial
     print("📝 Generating morning editorial...")
     editorial_content = None
-    editorial_generator = None
     
     # Get AI provider instance for editorial generation
     keywords = config["ai"].get("keywords", [])
     editorial_prompts = config["ai"].get("editorial_prompts", None)
     
-    if ai_provider == "openai":
-        api_key = config["ai"]["api_keys"].get("openai") or os.getenv("OPENAI_API_KEY")
-        if api_key:
-            try:
-                ai_instance = OpenAIBarista(api_key=api_key)
-                editorial_generator = EditorialGenerator(ai_instance, keywords, editorial_prompts=editorial_prompts)
-            except ImportError:
-                pass
-    elif ai_provider == "anthropic":
-        api_key = config["ai"]["api_keys"].get("anthropic") or os.getenv("ANTHROPIC_API_KEY")
-        if api_key:
-            try:
-                ai_instance = AnthropicBarista(api_key=api_key)
-                editorial_generator = EditorialGenerator(ai_instance, keywords, editorial_prompts=editorial_prompts)
-            except ImportError:
-                pass
-    elif ai_provider == "gemini":
-        api_key = config["ai"]["api_keys"].get("gemini") or os.getenv("GEMINI_API_KEY")
-        if api_key:
-            try:
-                ai_instance = GeminiBarista(api_key=api_key)
-                editorial_generator = EditorialGenerator(ai_instance, keywords, editorial_prompts=editorial_prompts)
-            except ImportError:
-                pass
-    elif ai_provider == "mistral":
-        api_key = config["ai"]["api_keys"].get("mistral") or os.getenv("MISTRAL_API_KEY")
-        if api_key:
-            try:
-                ai_instance = MistralBarista(api_key=api_key)
-                editorial_generator = EditorialGenerator(ai_instance, keywords, editorial_prompts=editorial_prompts)
-            except ImportError:
-                pass
+    # Try to get the AI provider, fall back to SimpleBarista if it fails
+    ai_instance = create_ai_provider(ai_provider, config)
+    if ai_instance is None:
+        ai_instance = SimpleBarista()
     
-    # Fallback to simple barista if no AI provider available
-    if not editorial_generator:
-        editorial_generator = EditorialGenerator(SimpleBarista(), keywords, editorial_prompts=editorial_prompts)
+    editorial_generator = EditorialGenerator(ai_instance, keywords, editorial_prompts=editorial_prompts)
     
     try:
         editorial = editorial_generator.generate_editorial(processed_articles)
