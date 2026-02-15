@@ -143,14 +143,14 @@ def test_config_includes_prompts():
 
 
 def test_build_prompt_truncates_long_content():
-    """Test that build_prompt truncates content to 500 characters"""
+    """Test that build_prompt truncates content to 1500 characters"""
     article = {
         "title": "Test",
-        "summary": "A" * 1000  # Very long content
+        "summary": "A" * 2000  # Very long content
     }
     
     prompt = _build_prompt(article)
     
-    # Check that content was truncated (should be 500 chars)
-    assert "A" * 500 in prompt
-    assert "A" * 501 not in prompt
+    # Check that content was truncated (should be 1500 chars)
+    assert "A" * 1500 in prompt
+    assert "A" * 1501 not in prompt

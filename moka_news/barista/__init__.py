@@ -27,7 +27,7 @@ def _build_prompt(article: Dict[str, Any], keywords: list = None, prompts: Dict[
         prompts = DEFAULT_PROMPTS
     
     # Build the base prompt using the template with placeholders
-    # Increased from 500 to 1500 characters for better context while still being token-efficient
+    # Increased from 500 to 1500 characters for better context and higher quality summaries
     base_prompt = prompts.get("user_prompt", "").format(
         title=article['title'],
         content=article['summary'][:1500]

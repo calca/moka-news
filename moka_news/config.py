@@ -16,7 +16,7 @@ Content: {content}
 
 Generate:
 1. A concise, engaging title (max 80 characters)
-2. A brief summary (max 250 characters)""",
+2. A brief summary (approximately 200-250 characters)""",
     "keywords_section": """
 
 Focus on these keywords/topics if relevant: {keywords}""",
@@ -206,7 +206,7 @@ ai:
 
       Generate:
       1. A concise, engaging title (max 80 characters)
-      2. A brief summary (max 250 characters)
+      2. A brief summary (approximately 200-250 characters)
     keywords_section: |
 
       Focus on these keywords/topics if relevant: {keywords}
