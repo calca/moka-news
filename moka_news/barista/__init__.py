@@ -7,6 +7,9 @@ import os
 import subprocess
 from typing import Dict, Any, Optional
 from abc import ABC, abstractmethod
+from moka_news.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def _build_prompt(article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = 1500) -> str:
@@ -47,6 +50,29 @@ def _build_prompt(article: Dict[str, Any], keywords: list = None, prompts: Dict[
         base_prompt += format_template
     
     return base_prompt
+
+
+def _parse_ai_response(content: str, article: Dict[str, Any]) -> Dict[str, str]:
+    """
+    Parse AI response to extract title and summary
+    
+    Args:
+        content: AI response content with TITLE: and SUMMARY: markers
+        article: Original article dict for fallback values
+        
+    Returns:
+        Dictionary with 'title' and 'summary' keys
+    """
+    lines = content.strip().split("\n")
+    result = {"title": article["title"], "summary": article["summary"][:200]}
+    
+    for line in lines:
+        if line.startswith("TITLE:"):
+            result["title"] = line.replace("TITLE:", "").strip()
+        elif line.startswith("SUMMARY:"):
+            result["summary"] = line.replace("SUMMARY:", "").strip()
+    
+    return result
 
 
 class AIProvider(ABC):
@@ -115,18 +141,12 @@ class OpenAIBarista(AIProvider):
             )
 
             content = response.choices[0].message.content
-            lines = content.strip().split("\n")
-
-            result = {"title": article["title"], "summary": article["summary"][:200]}
-            for line in lines:
-                if line.startswith("TITLE:"):
-                    result["title"] = line.replace("TITLE:", "").strip()
-                elif line.startswith("SUMMARY:"):
-                    result["summary"] = line.replace("SUMMARY:", "").strip()
-
-            return result
+            return _parse_ai_response(content, article)
+        except ImportError as e:
+            logger.error(f"OpenAI library not installed: {e}")
+            return {"title": article["title"], "summary": article["summary"][:200]}
         except Exception as e:
-            print(f"Error generating summary: {e}")
+            logger.error(f"Error generating summary with OpenAI: {e}", exc_info=True)
             return {"title": article["title"], "summary": article["summary"][:200]}
 
 
@@ -163,18 +183,12 @@ class AnthropicBarista(AIProvider):
             )
 
             content = response.content[0].text
-            lines = content.strip().split("\n")
-
-            result = {"title": article["title"], "summary": article["summary"][:200]}
-            for line in lines:
-                if line.startswith("TITLE:"):
-                    result["title"] = line.replace("TITLE:", "").strip()
-                elif line.startswith("SUMMARY:"):
-                    result["summary"] = line.replace("SUMMARY:", "").strip()
-
-            return result
+            return _parse_ai_response(content, article)
+        except ImportError as e:
+            logger.error(f"Anthropic library not installed: {e}")
+            return {"title": article["title"], "summary": article["summary"][:200]}
         except Exception as e:
-            print(f"Error generating summary: {e}")
+            logger.error(f"Error generating summary with Anthropic: {e}", exc_info=True)
             return {"title": article["title"], "summary": article["summary"][:200]}
 
 
@@ -205,18 +219,12 @@ class GeminiBarista(AIProvider):
 
             response = self.model.generate_content(prompt)
             content = response.text
-            lines = content.strip().split("\n")
-
-            result = {"title": article["title"], "summary": article["summary"][:200]}
-            for line in lines:
-                if line.startswith("TITLE:"):
-                    result["title"] = line.replace("TITLE:", "").strip()
-                elif line.startswith("SUMMARY:"):
-                    result["summary"] = line.replace("SUMMARY:", "").strip()
-
-            return result
+            return _parse_ai_response(content, article)
+        except ImportError as e:
+            logger.error(f"Google Gemini library not installed: {e}")
+            return {"title": article["title"], "summary": article["summary"][:200]}
         except Exception as e:
-            print(f"Error generating summary: {e}")
+            logger.error(f"Error generating summary with Gemini: {e}", exc_info=True)
             return {"title": article["title"], "summary": article["summary"][:200]}
 
 
@@ -252,18 +260,12 @@ class MistralBarista(AIProvider):
             )
 
             content = response.choices[0].message.content
-            lines = content.strip().split("\n")
-
-            result = {"title": article["title"], "summary": article["summary"][:200]}
-            for line in lines:
-                if line.startswith("TITLE:"):
-                    result["title"] = line.replace("TITLE:", "").strip()
-                elif line.startswith("SUMMARY:"):
-                    result["summary"] = line.replace("SUMMARY:", "").strip()
-
-            return result
+            return _parse_ai_response(content, article)
+        except ImportError as e:
+            logger.error(f"Mistral library not installed: {e}")
+            return {"title": article["title"], "summary": article["summary"][:200]}
         except Exception as e:
-            print(f"Error generating summary: {e}")
+            logger.error(f"Error generating summary with Mistral: {e}", exc_info=True)
             return {"title": article["title"], "summary": article["summary"][:200]}
 
 
@@ -328,24 +330,12 @@ class GitHubCopilotCLIBarista(AIProvider):
                 raise RuntimeError(f"GitHub Copilot CLI error: {result.stderr}")
 
             content = result.stdout
-            lines = content.strip().split("\n")
-
-            result_dict = {
-                "title": article["title"],
-                "summary": article["summary"][:200],
-            }
-            for line in lines:
-                if line.startswith("TITLE:"):
-                    result_dict["title"] = line.replace("TITLE:", "").strip()
-                elif line.startswith("SUMMARY:"):
-                    result_dict["summary"] = line.replace("SUMMARY:", "").strip()
-
-            return result_dict
+            return _parse_ai_response(content, article)
         except subprocess.TimeoutExpired:
-            print("GitHub Copilot CLI timeout")
+            logger.error("GitHub Copilot CLI timeout")
             return {"title": article["title"], "summary": article["summary"][:200]}
         except Exception as e:
-            print(f"Error generating summary with GitHub Copilot CLI: {e}")
+            logger.error(f"Error generating summary with GitHub Copilot CLI: {e}", exc_info=True)
             return {"title": article["title"], "summary": article["summary"][:200]}
 
 
@@ -393,24 +383,12 @@ class GeminiCLIBarista(AIProvider):
                 raise RuntimeError(f"Gemini CLI error: {result.stderr}")
 
             content = result.stdout
-            lines = content.strip().split("\n")
-
-            result_dict = {
-                "title": article["title"],
-                "summary": article["summary"][:200],
-            }
-            for line in lines:
-                if line.startswith("TITLE:"):
-                    result_dict["title"] = line.replace("TITLE:", "").strip()
-                elif line.startswith("SUMMARY:"):
-                    result_dict["summary"] = line.replace("SUMMARY:", "").strip()
-
-            return result_dict
+            return _parse_ai_response(content, article)
         except subprocess.TimeoutExpired:
-            print("Gemini CLI timeout")
+            logger.error("Gemini CLI timeout")
             return {"title": article["title"], "summary": article["summary"][:200]}
         except Exception as e:
-            print(f"Error generating summary with Gemini CLI: {e}")
+            logger.error(f"Error generating summary with Gemini CLI: {e}", exc_info=True)
             return {"title": article["title"], "summary": article["summary"][:200]}
 
 
@@ -458,24 +436,12 @@ class MistralCLIBarista(AIProvider):
                 raise RuntimeError(f"Mistral CLI error: {result.stderr}")
 
             content = result.stdout
-            lines = content.strip().split("\n")
-
-            result_dict = {
-                "title": article["title"],
-                "summary": article["summary"][:200],
-            }
-            for line in lines:
-                if line.startswith("TITLE:"):
-                    result_dict["title"] = line.replace("TITLE:", "").strip()
-                elif line.startswith("SUMMARY:"):
-                    result_dict["summary"] = line.replace("SUMMARY:", "").strip()
-
-            return result_dict
+            return _parse_ai_response(content, article)
         except subprocess.TimeoutExpired:
-            print("Mistral CLI timeout")
+            logger.error("Mistral CLI timeout")
             return {"title": article["title"], "summary": article["summary"][:200]}
         except Exception as e:
-            print(f"Error generating summary with Mistral CLI: {e}")
+            logger.error(f"Error generating summary with Mistral CLI: {e}", exc_info=True)
             return {"title": article["title"], "summary": article["summary"][:200]}
 
 

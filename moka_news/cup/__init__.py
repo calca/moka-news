@@ -10,7 +10,6 @@ from textual.binding import Binding
 from textual.screen import Screen
 from typing import List, Dict, Any, Callable, Optional
 from datetime import datetime, time
-from pathlib import Path
 import webbrowser
 import asyncio
 
@@ -38,7 +37,7 @@ class ArticleCard(Static):
             yield Label(f"\n[dim]{published}[/dim]")
         if link:
             # Display simplified link - click the article card to open
-            yield Label(f"[dim]🔗 Click card to open link[/dim]")
+            yield Label("[dim]🔗 Click card to open link[/dim]")
 
     def on_click(self) -> None:
         """Open article link in browser when clicked"""

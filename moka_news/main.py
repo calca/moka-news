@@ -24,7 +24,6 @@ from moka_news.opml_manager import OPMLManager
 from moka_news.first_run_setup import is_first_run, run_first_run_setup
 from moka_news.download_tracker import DownloadTracker
 from moka_news.editorial import EditorialGenerator
-from datetime import datetime, time
 
 
 def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
