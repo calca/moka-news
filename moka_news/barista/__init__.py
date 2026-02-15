@@ -506,3 +506,100 @@ class Barista:
                 processed.append(article)
 
         return processed
+
+
+def create_ai_provider(provider_name: str, config: Dict[str, Any]) -> Optional[AIProvider]:
+    """
+    Create an AI provider instance
+    
+    Args:
+        provider_name: Name of AI provider ('openai', 'anthropic', 'gemini', 'mistral', 
+                      'copilot-cli', 'gemini-cli', 'mistral-cli', 'simple')
+        config: Configuration dictionary with api_keys section
+    
+    Returns:
+        AI provider instance, or None if provider cannot be initialized
+    """
+    # Map of provider names to their env var names
+    api_providers = {
+        "openai": ("OPENAI_API_KEY", OpenAIBarista),
+        "anthropic": ("ANTHROPIC_API_KEY", AnthropicBarista),
+        "gemini": ("GEMINI_API_KEY", GeminiBarista),
+        "mistral": ("MISTRAL_API_KEY", MistralBarista)
+    }
+    
+    cli_providers = {
+        "copilot-cli": GitHubCopilotCLIBarista,
+        "gemini-cli": GeminiCLIBarista,
+        "mistral-cli": MistralCLIBarista
+    }
+    
+    # Handle simple mode
+    if provider_name == "simple":
+        return SimpleBarista()
+    
+    # Handle CLI-based providers
+    if provider_name in cli_providers:
+        try:
+            provider_class = cli_providers[provider_name]
+            return provider_class()
+        except RuntimeError as e:
+            logger.warning(f"{provider_name} not available: {e}")
+            return None
+    
+    # Handle API-based providers
+    if provider_name in api_providers:
+        env_var, provider_class = api_providers[provider_name]
+        
+        # Get API key from config or environment
+        api_key = config.get("ai", {}).get("api_keys", {}).get(provider_name) or os.getenv(env_var)
+        
+        if not api_key:
+            logger.warning(f"{env_var} not found")
+            return None
+        
+        try:
+            return provider_class(api_key=api_key)
+        except ImportError as e:
+            logger.error(f"Failed to initialize {provider_name}: {e}")
+            return None
+    
+    # Unknown provider
+    logger.warning(f"Unknown AI provider: {provider_name}")
+    return None
+
+
+def create_barista(
+    provider_name: str,
+    config: Dict[str, Any],
+    keywords: list = None,
+    prompts: Dict[str, str] = None,
+    max_content_length: int = MAX_CONTENT_LENGTH,
+    max_tokens: int = MAX_TOKENS
+) -> Barista:
+    """
+    Factory function to create a Barista with the appropriate AI provider
+    
+    Args:
+        provider_name: Name of AI provider ('openai', 'anthropic', 'gemini', 'mistral', 
+                      'copilot-cli', 'gemini-cli', 'mistral-cli', 'simple')
+        config: Configuration dictionary with api_keys section
+        keywords: Optional list of keywords for summary generation
+        prompts: Optional dictionary with custom prompts
+        max_content_length: Maximum characters of content to include
+        max_tokens: Maximum tokens for AI response
+    
+    Returns:
+        Configured Barista instance
+    """
+    logger.info(f"Creating barista with {provider_name} provider")
+    
+    # Get AI provider instance
+    provider = create_ai_provider(provider_name, config)
+    
+    # Fall back to SimpleBarista if provider creation failed
+    if provider is None:
+        logger.warning("Falling back to simple mode")
+        provider = SimpleBarista()
+    
+    return Barista(provider, keywords, prompts, max_content_length, max_tokens)
