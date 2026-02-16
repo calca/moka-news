@@ -799,13 +799,13 @@ class Cup(App):
         except Exception as e:
             self.notify(f"Error accessing editorial history: {e}", severity="error")
 
-    async def action_show_info(self) -> None:
+    def action_show_info(self) -> None:
         """Show application information dialog"""
         info_dialog = InfoDialog(
             config_path=self.config_path,
             editorials_dir=self.editorials_dir
         )
-        await self.push_screen_wait(info_dialog)
+        self.push_screen(info_dialog)
 
     def _rebuild_view(self) -> None:
         """Rebuild the view to show the editorial"""
