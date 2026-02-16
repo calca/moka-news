@@ -10,6 +10,7 @@ from moka_news.grinder import Grinder
 from moka_news.barista import create_ai_provider, SimpleBarista
 from moka_news.cup import serve
 from moka_news.config import load_config, create_sample_config, get_config_path
+from moka_news.constants import SUPPORTED_LANGUAGES
 from moka_news.opml_manager import OPMLManager
 from moka_news.first_run_setup import is_first_run, run_first_run_setup
 from moka_news.download_tracker import DownloadTracker
@@ -137,6 +138,13 @@ Feed Management:
     )
 
     parser.add_argument(
+        "--language",
+        choices=list(SUPPORTED_LANGUAGES.keys()),
+        default=None,
+        help="Language for editorial generation (default: from config or 'en')",
+    )
+
+    parser.add_argument(
         "--add-feed", metavar="URL", help="Add a new RSS feed URL to OPML storage"
     )
 
@@ -252,6 +260,7 @@ Feed Management:
     # Get AI provider instance for editorial generation
     keywords = config["ai"].get("keywords", [])
     editorial_prompts = config["ai"].get("editorial_prompts", None)
+    language = args.language if args.language else config["ai"].get("language", "en")
     
     # Get editorial configuration
     editorial_config = config.get("editorial", {})
@@ -265,7 +274,8 @@ Feed Management:
     editorial_generator = EditorialGenerator(
         ai_instance, keywords, 
         editorials_dir=editorials_dir,
-        editorial_prompts=editorial_prompts
+        editorial_prompts=editorial_prompts,
+        language=language
     )
 
     editorial_path = None

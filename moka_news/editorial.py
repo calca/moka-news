@@ -7,6 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from moka_news.barista import AIProvider
+from moka_news.constants import SUPPORTED_LANGUAGES
 
 
 class EditorialGenerator:
@@ -17,7 +18,8 @@ class EditorialGenerator:
         ai_provider: AIProvider,
         keywords: Optional[List[str]] = None,
         editorials_dir: Optional[Path] = None,
-        editorial_prompts: Optional[Dict[str, str]] = None
+        editorial_prompts: Optional[Dict[str, str]] = None,
+        language: str = "en"
     ):
         """
         Initialize the Editorial Generator
@@ -27,10 +29,12 @@ class EditorialGenerator:
             keywords: Optional list of keywords to focus the editorial on
             editorials_dir: Directory to save editorials (defaults to ~/.config/moka-news/editorials)
             editorial_prompts: Optional dictionary of custom prompts for editorial generation
+            language: Language code for editorial output (en, it, es, fr)
         """
         self.ai_provider = ai_provider
         self.keywords = keywords or []
         self.editorial_prompts = editorial_prompts
+        self.language = language
         
         # Set editorials directory
         if editorials_dir:
@@ -132,18 +136,30 @@ class EditorialGenerator:
     
     def _get_editorial_prompts(self) -> Dict[str, str]:
         """
-        Get custom prompts for editorial generation
+        Get custom prompts for editorial generation, with language instruction injected.
         
         Returns:
             Dictionary of custom prompts for editorial generation
         """
         # Use configured prompts if provided, otherwise use defaults
         if self.editorial_prompts:
-            return self.editorial_prompts
+            prompts = dict(self.editorial_prompts)
+        else:
+            # Default prompts
+            from moka_news.config import DEFAULT_EDITORIAL_PROMPTS
+            prompts = dict(DEFAULT_EDITORIAL_PROMPTS)
         
-        # Default prompts
-        from moka_news.config import DEFAULT_EDITORIAL_PROMPTS
-        return DEFAULT_EDITORIAL_PROMPTS
+        # Inject language instruction into system_message
+        language_name = SUPPORTED_LANGUAGES.get(self.language, "English")
+        if self.language != "en":
+            language_instruction = (
+                f" IMPORTANT: Write the ENTIRE editorial in {language_name}. "
+                f"The title, all paragraphs, transitions, and closing remarks "
+                f"must be written in {language_name}."
+            )
+            prompts["system_message"] = prompts.get("system_message", "") + language_instruction
+        
+        return prompts
     
     def _create_simple_editorial(self, articles: List[Dict[str, Any]]) -> str:
         """

@@ -196,3 +196,64 @@ def test_editorial_generator_default_directory():
     
     expected_dir = Path.home() / ".config" / "moka-news" / "editorials"
     assert generator.editorials_dir == expected_dir
+
+
+def test_editorial_generator_default_language():
+    """Test EditorialGenerator defaults to English"""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        generator = EditorialGenerator(
+            ai_provider=SimpleBarista(),
+            editorials_dir=tmpdir
+        )
+        assert generator.language == "en"
+
+
+def test_editorial_generator_custom_language():
+    """Test EditorialGenerator with custom language"""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        generator = EditorialGenerator(
+            ai_provider=SimpleBarista(),
+            editorials_dir=tmpdir,
+            language="it"
+        )
+        assert generator.language == "it"
+
+
+def test_editorial_prompts_language_injection():
+    """Test that non-English language is injected into prompts"""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        generator = EditorialGenerator(
+            ai_provider=SimpleBarista(),
+            editorials_dir=tmpdir,
+            language="it"
+        )
+        prompts = generator._get_editorial_prompts()
+        assert "Italian" in prompts["system_message"]
+
+
+def test_editorial_prompts_english_no_injection():
+    """Test that English language does not add extra instruction"""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        generator = EditorialGenerator(
+            ai_provider=SimpleBarista(),
+            editorials_dir=tmpdir,
+            language="en"
+        )
+        prompts = generator._get_editorial_prompts()
+        # Should not contain the IMPORTANT language instruction
+        assert "IMPORTANT: Write the ENTIRE editorial" not in prompts["system_message"]
+
+
+def test_editorial_prompts_all_supported_languages():
+    """Test that all supported languages inject correctly"""
+    from moka_news.constants import SUPPORTED_LANGUAGES
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for code, name in SUPPORTED_LANGUAGES.items():
+            generator = EditorialGenerator(
+                ai_provider=SimpleBarista(),
+                editorials_dir=tmpdir,
+                language=code
+            )
+            prompts = generator._get_editorial_prompts()
+            if code != "en":
+                assert name in prompts["system_message"]

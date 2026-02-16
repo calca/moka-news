@@ -3,6 +3,7 @@
 
 ai:
   provider: openai
+  language: en  # Editorial language: en, it, es, fr
   
   # Set via environment variable: export OPENAI_API_KEY="your-key-here"
   api_keys:

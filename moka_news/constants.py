@@ -45,6 +45,14 @@ MAX_TOKENS = 250  # Maximum tokens for AI response
 SUMMARY_TRUNCATE_LENGTH = 200  # Length to truncate summaries for fallback
 TITLE_MAX_LENGTH = 80  # Maximum length for titles
 
+# Supported languages for editorial generation
+SUPPORTED_LANGUAGES = {
+    "en": "English",
+    "it": "Italian",
+    "es": "Spanish",
+    "fr": "French",
+}
+
 # Subprocess timeouts
 CLI_VERSION_CHECK_TIMEOUT = 5  # Seconds to wait for CLI version checks
 CLI_GENERATION_TIMEOUT = 30  # Seconds to wait for AI generation via CLI

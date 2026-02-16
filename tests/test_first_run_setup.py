@@ -142,6 +142,43 @@ def test_save_config_defaults_empty_keywords(tmp_path):
     assert saved_config["ai"]["keywords"] == []
 
 
+def test_save_config_includes_language(tmp_path):
+    """Test that save_config includes language when provided"""
+    config_path = tmp_path / "config.yaml"
+    
+    config_data = {
+        "provider": "openai",
+        "language": "it"
+    }
+    
+    result_path = save_config(config_data, config_path)
+    
+    assert config_path.exists()
+    
+    # Read and verify content
+    with open(config_path, 'r') as f:
+        saved_config = yaml.safe_load(f)
+    
+    assert "language" in saved_config["ai"]
+    assert saved_config["ai"]["language"] == "it"
+
+
+def test_save_config_defaults_language_to_en(tmp_path):
+    """Test that save_config defaults language to en"""
+    config_path = tmp_path / "config.yaml"
+    
+    config_data = {
+        "provider": "gemini"
+    }
+    
+    result_path = save_config(config_data, config_path)
+    
+    with open(config_path, 'r') as f:
+        saved_config = yaml.safe_load(f)
+    
+    assert saved_config["ai"]["language"] == "en"
+
+
 def test_save_config_excludes_article_prompts(tmp_path):
     """Test that save_config does not include prompts for individual articles (editorial-only AI)"""
     config_path = tmp_path / "config.yaml"

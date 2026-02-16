@@ -3,6 +3,7 @@
 
 ai:
   provider: gemini-cli  # Uses Google Cloud CLI (free tier available)
+  language: en  # Editorial language: en, it, es, fr
 
 feeds:
   urls:

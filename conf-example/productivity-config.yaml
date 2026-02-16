@@ -3,6 +3,7 @@
 
 ai:
   provider: gemini-cli
+  language: en  # Editorial language: en, it, es, fr
   max_content_length: 1200  # Shorter for efficiency
   max_tokens: 200           # Concise summaries
   

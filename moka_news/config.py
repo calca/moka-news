@@ -7,7 +7,7 @@ import os
 import yaml
 from typing import Dict, Any, Optional
 from pathlib import Path
-from moka_news.constants import DEFAULT_TECH_FEEDS, MAX_CONTENT_LENGTH, MAX_TOKENS
+from moka_news.constants import DEFAULT_TECH_FEEDS, MAX_CONTENT_LENGTH, MAX_TOKENS, SUPPORTED_LANGUAGES
 from moka_news.logger import get_logger
 
 logger = get_logger(__name__)
@@ -67,6 +67,7 @@ SUMMARY: <the full editorial content in Markdown, written in flowing prose with 
 DEFAULT_CONFIG = {
     "ai": {
         "provider": "gemini-cli",  # Default AI provider - requires gcloud CLI
+        "language": "en",  # Editorial language: en, it, es, fr
         "api_keys": {
             "openai": None,
             "anthropic": None,
@@ -199,6 +200,9 @@ def create_sample_config(path: str = "moka-news.yaml"):
 ai:
   provider: gemini-cli  # Options: openai, anthropic, gemini, mistral, copilot-cli, gemini-cli, mistral-cli
                         # Note: 'simple' mode is for demo/testing only (no AI summaries)
+  
+  # Editorial language (en = English, it = Italian, es = Spanish, fr = French)
+  language: en
   
   # API Keys (can also be set via environment variables)
   # Only needed for API-based providers (not CLI providers)

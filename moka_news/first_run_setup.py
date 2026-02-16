@@ -10,7 +10,7 @@ import yaml
 from pathlib import Path
 from typing import Dict, Any, Optional
 from moka_news.opml_manager import OPMLManager
-from moka_news.constants import DEFAULT_TECH_FEEDS
+from moka_news.constants import DEFAULT_TECH_FEEDS, SUPPORTED_LANGUAGES
 
 
 # Suggested tech feeds for moka-cafè (directly use from constants)
@@ -263,6 +263,43 @@ def prompt_keywords() -> list:
             print("Please enter 'y' or 'n'.")
 
 
+def prompt_language() -> str:
+    """
+    Prompt user to select the editorial language
+    
+    Returns:
+        Language code (e.g. 'en', 'it', 'es', 'fr')
+    """
+    print("\n" + "=" * 60)
+    print("🌍 Editorial Language")
+    print("=" * 60)
+    print("\nSelect the language for your morning editorials:\n")
+    
+    lang_list = list(SUPPORTED_LANGUAGES.items())
+    for i, (code, name) in enumerate(lang_list, 1):
+        default_marker = " (default)" if code == "en" else ""
+        print(f"  [{i}] {name} ({code}){default_marker}")
+    
+    while True:
+        try:
+            choice_str = input(f"\nSelect language [1-{len(lang_list)}] (default: 1): ").strip()
+            if choice_str == "":
+                print("\n✓ Language set to: English")
+                return "en"
+            choice = int(choice_str)
+            if 1 <= choice <= len(lang_list):
+                code, name = lang_list[choice - 1]
+                print(f"\n✓ Language set to: {name}")
+                return code
+            else:
+                print(f"Invalid choice. Please enter a number between 1 and {len(lang_list)}.")
+        except ValueError:
+            print("Invalid input. Please enter a number.")
+        except (KeyboardInterrupt, EOFError):
+            print("\n\n❌ Setup cancelled.")
+            sys.exit(1)
+
+
 def prompt_prompts_customization() -> bool:
     """
     Prompt user if they want to customize editorial AI prompts
@@ -362,6 +399,7 @@ def save_config(config_data: Dict[str, Any], config_path: Optional[Path] = None)
     config_content = {
         "ai": {
             "provider": config_data["provider"],
+            "language": config_data.get("language", "en"),
             "api_keys": {
                 "openai": None,
                 "anthropic": None,
@@ -478,6 +516,7 @@ def launch_moka_news():
         keywords=ai_config.get("keywords", []),
         editorial_prompts=ai_config.get("editorial_prompts", {}),
         editorials_dir=editorial_config.get("editorials_dir"),
+        language=ai_config.get("language", "en"),
     )
     
     try:
@@ -546,6 +585,10 @@ def run_first_run_setup(opml_manager: OPMLManager) -> Dict[str, Any]:
     # Prompt for AI provider
     provider_config = prompt_ai_provider()
     
+    # Prompt for language
+    language = prompt_language()
+    provider_config["language"] = language
+    
     # Prompt for keywords
     keywords = prompt_keywords()
     provider_config["keywords"] = keywords
@@ -567,6 +610,8 @@ def run_first_run_setup(opml_manager: OPMLManager) -> Dict[str, Any]:
         print(f"Feeds saved to: {opml_manager.opml_path}")
     if keywords:
         print(f"Keywords configured: {', '.join(keywords)}")
+    lang_name = SUPPORTED_LANGUAGES.get(language, "English")
+    print(f"Editorial language: {lang_name}")
     if will_customize_prompts:
         print("Editorial AI prompts: Can be customized in config file")
     else:

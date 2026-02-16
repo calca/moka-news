@@ -3,6 +3,7 @@
 
 ai:
   provider: gemini-cli  # Use CLI for easy setup (or 'gemini' for API)
+  language: en  # Editorial language: en, it, es, fr
   
   # For API access, set: export GEMINI_API_KEY="your-key-here"
   api_keys:

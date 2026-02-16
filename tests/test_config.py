@@ -106,6 +106,34 @@ def test_merge_configs_preserves_keywords():
     assert result["ai"]["api_keys"]["openai"] is None  # Preserved from default
 
 
+def test_default_config_includes_language():
+    """Test that default config includes language field"""
+    assert "language" in DEFAULT_CONFIG["ai"]
+    assert DEFAULT_CONFIG["ai"]["language"] == "en"
+
+
+def test_merge_configs_preserves_language():
+    """Test merging configurations preserves language setting"""
+    default = {
+        "ai": {
+            "provider": "simple",
+            "language": "en",
+            "api_keys": {"openai": None},
+        },
+    }
+
+    user = {
+        "ai": {
+            "language": "it",
+        },
+    }
+
+    result = merge_configs(default, user)
+
+    assert result["ai"]["language"] == "it"
+    assert result["ai"]["provider"] == "simple"  # Preserved from default
+
+
 def test_default_config_includes_editorial():
     """Test that default config includes editorial configuration"""
     assert "editorial" in DEFAULT_CONFIG

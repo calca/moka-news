@@ -4,6 +4,7 @@
 # AI Provider Configuration
 ai:
   provider: gemini-cli  # Options: openai, anthropic, gemini, mistral, copilot-cli, gemini-cli, mistral-cli, simple
+  language: en  # Editorial language: en (English), it (Italian), es (Spanish), fr (French)
   
   # API Keys (recommended: use environment variables instead)
   api_keys:
