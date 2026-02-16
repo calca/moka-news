@@ -81,10 +81,10 @@ class RefreshManager:
         hours_until = self._hours_until(check_time, next_refresh)
 
         message = (
-            f"Manual refresh is only allowed during scheduled times:\n"
+            f"You are refreshing outside of scheduled automatic refresh times:\n"
             f"• Morning: {self.allowed_refresh_times[0].strftime('%H:%M')}\n"
             f"• Evening: {self.allowed_refresh_times[1].strftime('%H:%M')}\n\n"
-            f"Next scheduled refresh: {next_refresh.strftime('%H:%M')} "
+            f"Next automatic refresh: {next_refresh.strftime('%H:%M')} "
             f"({hours_until:.1f} hours from now)"
         )
 
