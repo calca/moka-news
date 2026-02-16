@@ -36,7 +36,7 @@ class AIProvider(ABC):
     """Abstract base class for AI providers"""
 
     @abstractmethod
-    def generate_summary(self, article: Dict[str, Any], max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS, **kwargs) -> Dict[str, str]:
         """
         Generate a simple copy of article (no AI processing)
 
@@ -44,6 +44,7 @@ class AIProvider(ABC):
             article: Article dictionary with title, link, summary
             max_content_length: Maximum characters of content to include
             max_tokens: Maximum tokens for AI response (unused)
+            **kwargs: Additional keyword arguments (e.g., keywords, prompts)
 
         Returns:
             Dictionary with 'title' and 'summary' keys
@@ -70,7 +71,7 @@ class OpenAIBarista(AIProvider):
                 "openai package is required. Install with: pip install openai"
             )
 
-    def generate_summary(self, article: Dict[str, Any], max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS, **kwargs) -> Dict[str, str]:
         """Return article as-is (no AI processing for individual articles)"""
         return {
             "title": article["title"][:TITLE_MAX_LENGTH], 
@@ -99,7 +100,7 @@ class AnthropicBarista(AIProvider):
                 "anthropic package is required. Install with: pip install anthropic"
             )
 
-    def generate_summary(self, article: Dict[str, Any], max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS, **kwargs) -> Dict[str, str]:
         """Return article as-is (no AI processing for individual articles)"""
         return {
             "title": article["title"][:TITLE_MAX_LENGTH], 
@@ -127,7 +128,7 @@ class GeminiBarista(AIProvider):
                 "google-generativeai package is required. Install with: pip install google-generativeai"
             )
 
-    def generate_summary(self, article: Dict[str, Any], max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS, **kwargs) -> Dict[str, str]:
         """Return article as-is (no AI processing for individual articles)"""
         return {
             "title": article["title"][:TITLE_MAX_LENGTH], 
@@ -154,7 +155,7 @@ class MistralBarista(AIProvider):
                 "mistralai package is required. Install with: pip install mistralai"
             )
 
-    def generate_summary(self, article: Dict[str, Any], max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS, **kwargs) -> Dict[str, str]:
         """Return article as-is (no AI processing for individual articles)"""
         return {
             "title": article["title"][:TITLE_MAX_LENGTH], 
@@ -165,7 +166,7 @@ class MistralBarista(AIProvider):
 class SimpleBarista(AIProvider):
     """Simple non-AI processor for testing without API keys"""
 
-    def generate_summary(self, article: Dict[str, Any], max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS, **kwargs) -> Dict[str, str]:
         """Generate a simple summary by truncating the content"""
         return {
             "title": article.get("title", "No Title")[:TITLE_MAX_LENGTH],
@@ -184,7 +185,7 @@ class GitHubCopilotCLIBarista(AIProvider):
         """Initialize GitHub Copilot CLI provider"""
         pass
 
-    def generate_summary(self, article: Dict[str, Any], max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS, **kwargs) -> Dict[str, str]:
         """Return article as-is (no AI processing for individual articles)"""
         return {
             "title": article["title"][:TITLE_MAX_LENGTH], 
@@ -199,7 +200,7 @@ class GeminiCLIBarista(AIProvider):
         """Initialize Gemini CLI provider"""
         pass
 
-    def generate_summary(self, article: Dict[str, Any], max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS, **kwargs) -> Dict[str, str]:
         """Return article as-is (no AI processing for individual articles)"""
         return {
             "title": article["title"][:TITLE_MAX_LENGTH], 
@@ -214,7 +215,7 @@ class MistralCLIBarista(AIProvider):
         """Initialize Mistral CLI provider"""
         pass
 
-    def generate_summary(self, article: Dict[str, Any], max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS) -> Dict[str, str]:
+    def generate_summary(self, article: Dict[str, Any], max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS, **kwargs) -> Dict[str, str]:
         """Return article as-is (no AI processing for individual articles)"""
         return {
             "title": article["title"][:TITLE_MAX_LENGTH], 
@@ -225,16 +226,18 @@ class MistralCLIBarista(AIProvider):
 class Barista:
     """Main Barista class that coordinates AI processing"""
 
-    def __init__(self, provider: Optional[AIProvider] = None, max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS):
+    def __init__(self, provider: Optional[AIProvider] = None, keywords: Optional[list] = None, max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS):
         """
         Initialize the Barista (articles are no longer AI-processed)
 
         Args:
             provider: AI provider instance (defaults to SimpleBarista)
+            keywords: Optional list of keywords for editorial generation
             max_content_length: Maximum characters of content to include (unused)
             max_tokens: Maximum tokens for AI response (unused)
         """
         self.provider = provider or SimpleBarista()
+        self.keywords = keywords or []
         self.max_content_length = max_content_length
         self.max_tokens = max_tokens
 
