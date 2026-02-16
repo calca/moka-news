@@ -1,0 +1,62 @@
+# MoKa News - Google Gemini Configuration  
+# Optimized for Gemini models (CLI and API)
+
+ai:
+  provider: gemini-cli  # Use CLI for easy setup (or 'gemini' for API)
+  
+  # For API access, set: export GEMINI_API_KEY="your-key-here"
+  api_keys:
+    gemini: null  # Use environment variable for security
+  
+  keywords:
+    - artificial intelligence
+    - machine learning
+    - google
+    - cloud computing  
+    - android
+    - technology
+  
+  # Gemini-optimized prompts
+  prompts:
+    system_message: "You are a tech-focused news editor creating clear, informative summaries."
+    user_prompt: |
+      Article Information:
+      Title: {title}
+      Content: {content}
+      
+      Generate:
+      1. An improved title (80 characters max)
+      2. A clear summary (200-250 characters)
+      
+      Focus on technical accuracy and key takeaways.
+    format_section: |
+
+      Response format:
+      TITLE: <improved title>
+      SUMMARY: <summary>
+  
+  # Gemini settings
+  max_content_length: 1800
+  max_tokens: 275
+
+feeds:
+  urls:
+    - https://blog.google/technology/ai/rss/
+    - https://ai.googleblog.com/feeds/posts/default
+    - https://cloud.google.com/blog/rss/
+    - https://developers.googleblog.com/feeds/posts/default
+    - https://news.ycombinator.com/rss
+    - https://techcrunch.com/category/artificial-intelligence/feed/
+
+ui:
+  use_tui: true
+  theme: rose-pine  # Google-friendly colors
+
+editorial:
+  editorials_dir: ~/Documents/gemini-news
+  opener_command: "open"  # macOS default
+
+refresh:
+  allowed_times: ["08:00", "20:00"]
+  max_daily_refreshes: 2
+  require_confirmation_outside_hours: true

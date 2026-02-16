@@ -1,0 +1,61 @@
+# MoKa News - Anthropic Claude Configuration
+# Optimized for Claude models
+
+ai:
+  provider: anthropic
+  
+  # Set via environment variable: export ANTHROPIC_API_KEY="your-key-here"
+  api_keys:
+    anthropic: null  # Use environment variable for security
+  
+  keywords:
+    - technology
+    - science
+    - business
+    - innovation
+  
+  # Claude-optimized prompts (works well with detailed instructions)
+  prompts:
+    system_message: |
+      You are a thoughtful technology journalist who creates insightful news summaries. 
+      Focus on accuracy, context, and reader value.
+    user_prompt: |
+      Please analyze this article and create a summary:
+      
+      Title: {title}
+      Content: {content}
+      
+      Provide:
+      1. A refined, attention-grabbing title (maximum 80 characters)
+      2. A comprehensive yet concise summary (200-250 characters)
+      
+      Ensure the summary captures the key insights and implications.
+    format_section: |
+
+      Present your response as:
+      TITLE: <your refined title>
+      SUMMARY: <your summary>
+  
+  # Claude handles longer context very well
+  max_content_length: 2500
+  max_tokens: 300
+
+feeds:
+  urls:
+    - https://news.ycombinator.com/rss
+    - https://www.wired.com/feed/rss
+    - https://www.nature.com/nature.rss
+    - https://feeds.bbci.co.uk/news/science_and_environment/rss.xml
+    - https://www.scientificamerican.com/rss/news/
+
+ui:
+  use_tui: true
+  theme: dracula  # Elegant theme
+
+editorial:
+  editorials_dir: ~/Documents/claude-editorials
+  opener_command: "code"
+
+refresh:
+  allowed_times: ["09:00", "18:00"]
+  max_daily_refreshes: 2

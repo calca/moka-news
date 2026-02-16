@@ -1,0 +1,80 @@
+# MoKa News - Technology News Configuration
+# Perfect for developers and tech enthusiasts
+
+ai:
+  provider: gemini-cli
+  
+  keywords:
+    - programming
+    - software development
+    - artificial intelligence
+    - machine learning
+    - web development
+    - mobile development
+    - devops
+    - cloud computing
+    - cybersecurity
+    - blockchain
+    - startups
+    - open source
+  
+  prompts:
+    system_message: "You are a technical news editor writing for software developers and tech professionals."
+    user_prompt: |
+      Technical Article: {title}
+      Content: {content}
+      
+      Create:
+      1. A developer-focused title (≤80 chars)
+      2. Technical summary highlighting key points (200-250 chars)
+      
+      Emphasize technical details, tools, and implications for developers.
+    keywords_section: |
+
+      Focus on technical aspects related to: {keywords}
+
+# Curated tech news feeds
+feeds:
+  urls:
+    # Core Tech News
+    - https://news.ycombinator.com/rss
+    - https://www.reddit.com/r/programming/.rss
+    - https://stackoverflow.blog/feed/
+    
+    # Development Blogs
+    - https://github.blog/feed/
+    - https://blog.jetbrains.com/feed/
+    - https://code.visualstudio.com/feed.xml
+    
+    # AI & ML
+    - https://blog.openai.com/rss/
+    - https://ai.googleblog.com/feeds/posts/default
+    - https://research.fb.com/feed/
+    
+    # Cloud & DevOps
+    - https://cloud.google.com/blog/rss/
+    - https://aws.amazon.com/blogs/aws/feed/
+    - https://azure.microsoft.com/en-us/blog/feed/
+    
+    # Security
+    - https://krebsonsecurity.com/feed/
+    - https://www.schneier.com/blog/atom.xml
+    
+    # Industry News
+    - https://techcrunch.com/category/startups/feed/
+    - https://www.theverge.com/rss/index.xml
+
+ui:
+  use_tui: true
+  theme: monokai  # Developer-friendly dark theme
+  theme_light: github-light
+  theme_dark: monokai
+
+editorial:
+  editorials_dir: ~/Documents/tech-news
+  opener_command: "code"  # VS Code for developers
+
+refresh:
+  allowed_times: ["09:00", "17:00"]  # Start of day and end of work
+  max_daily_refreshes: 2
+  require_confirmation_outside_hours: false  # Devs work odd hours

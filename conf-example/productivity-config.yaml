@@ -1,0 +1,83 @@
+# MoKa News - Productivity-Focused Configuration
+# Optimized for efficient morning news consumption
+
+ai:
+  provider: gemini-cli
+  
+  keywords:
+    - business
+    - productivity    
+    - technology
+    - innovation
+    - leadership
+    - management
+    - finance
+  
+  # Prompts optimized for quick, actionable insights
+  prompts:
+    system_message: "You are a business news editor creating concise, actionable summaries for busy professionals."
+    user_prompt: |
+      Article: {title}
+      Content: {content}
+      
+      Create:
+      1. Action-oriented headline (≤80 chars)
+      2. Executive summary with key takeaways (200-250 chars)
+      
+      Focus on insights, trends, and actionable information.
+  
+  editorial_prompts:
+    system_message: "You are a business briefing editor creating efficient morning updates."
+    user_prompt: |
+      Create a focused morning briefing from these articles:
+
+      {content}
+
+      Write a concise briefing (250-400 words) that:
+      1. Highlights the most important business/tech developments
+      2. Identifies trends and implications
+      3. Is structured for quick scanning
+      4. Includes actionable insights
+
+      Structure with clear sections and bullet points where appropriate.
+
+# Curated for professional relevance
+feeds:
+  urls:
+    # Business News
+    - https://feeds.bloomberg.com/news/us/
+    - https://www.ft.com/rss/home/us
+    - https://hbr.org/feed
+    
+    # Technology & Innovation
+    - https://news.ycombinator.com/rss
+    - https://techcrunch.com/feed/
+    - https://www.wired.com/feed/rss
+    
+    # Productivity & Management
+    - https://feeds.wsj.com/wsj/xml/rss/US-Business.xml
+    - https://www.fastcompany.com/rss
+    
+    # Startups & Venture
+    - https://venturebeat.com/feed/
+    - https://techcrunch.com/category/startups/feed/
+
+ui:
+  use_tui: true
+  theme: github-light  # Clean, professional appearance
+  theme_light: github-light
+  theme_dark: github-dark
+
+editorial:
+  editorials_dir: ~/Documents/morning-briefings
+  opener_command: "open"
+
+refresh:
+  allowed_times: ["07:00"]  # Single morning briefing
+  max_daily_refreshes: 1    # Focus on morning routine
+  require_confirmation_outside_hours: true
+
+# Optimized for quick reading
+ai:
+  max_content_length: 1200  # Shorter for efficiency
+  max_tokens: 200           # Concise summaries

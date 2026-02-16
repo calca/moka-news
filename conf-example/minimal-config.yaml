@@ -1,0 +1,13 @@
+# MoKa News - Minimal Configuration
+# Perfect for quick start and testing
+
+ai:
+  provider: gemini-cli  # Uses Google Cloud CLI (free tier available)
+
+feeds:
+  urls:
+    - https://news.ycombinator.com/rss
+    - https://feeds.bbci.co.uk/news/technology/rss.xml
+
+ui:
+  use_tui: true

@@ -1,0 +1,78 @@
+#!/bin/bash
+
+# MoKa News - Launch Script
+# Automatically sets up environment and launches the application
+
+set -e  # Exit on any error
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+echo -e "${BLUE}🚀 MoKa News Launcher${NC}"
+echo "=================================="
+
+# Function to check if command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Check Python installation
+if ! command_exists python3; then
+    echo -e "${RED}❌ Python 3 is not installed. Please install Python 3.8 or later.${NC}"
+    exit 1
+fi
+
+# Check Python version
+PYTHON_VERSION=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+MIN_VERSION="3.8"
+
+if [[ $(echo -e "$PYTHON_VERSION\n$MIN_VERSION" | sort -V | head -n1) != "$MIN_VERSION" ]]; then
+    echo -e "${RED}❌ Python $PYTHON_VERSION detected. Python 3.8 or later is required.${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✅ Python $PYTHON_VERSION detected${NC}"
+
+# Check if virtual environment exists
+if [ ! -d "venv" ]; then
+    echo -e "${YELLOW}📦 Creating virtual environment...${NC}"
+    python3 -m venv venv
+fi
+
+# Activate virtual environment
+echo -e "${BLUE}🔧 Activating virtual environment...${NC}"
+source venv/bin/activate
+
+# Check if package is installed in development mode
+if ! pip show moka-news >/dev/null 2>&1; then
+    echo -e "${YELLOW}📦 Installing MoKa News in development mode...${NC}"
+    pip install -e .
+else
+    echo -e "${GREEN}✅ MoKa News package found${NC}"
+fi
+
+# Check for .env file
+if [ ! -f ".env" ]; then
+    echo -e "${YELLOW}⚠️  No .env file found. Make sure to configure your AI provider credentials.${NC}"
+    echo -e "${BLUE}💡 You can create a .env file with your API keys (OpenAI, Anthropic, etc.)${NC}"
+fi
+
+# Launch the application
+echo -e "${GREEN}🚀 Launching MoKa News...${NC}"
+echo "=================================="
+
+# Pass all arguments to the application
+python3 -m moka_news.main "$@"
+
+# Alternative way using the console script (if preferred):
+# moka-news "$@"
+
+echo -e "${BLUE}👋 MoKa News session ended.${NC}"

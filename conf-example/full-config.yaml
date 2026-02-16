@@ -1,0 +1,120 @@
+# MoKa News - Complete Configuration Example
+# This file demonstrates all available configuration options
+
+# AI Provider Configuration
+ai:
+  provider: gemini-cli  # Options: openai, anthropic, gemini, mistral, copilot-cli, gemini-cli, mistral-cli, simple
+  
+  # API Keys (recommended: use environment variables instead)
+  api_keys:
+    openai: null      # Set OPENAI_API_KEY env var
+    anthropic: null   # Set ANTHROPIC_API_KEY env var  
+    gemini: null      # Set GEMINI_API_KEY env var
+    mistral: null     # Set MISTRAL_API_KEY env var
+  
+  # Keywords for AI to focus on (optional)
+  keywords:
+    - technology
+    - artificial intelligence
+    - programming
+    - startups
+    - software development
+    - machine learning
+  
+  # Custom prompts for article processing (optional)
+  prompts:
+    system_message: "You are a skilled news editor creating engaging titles and summaries for a tech-savvy audience."
+    user_prompt: |
+      Given this article:
+      Title: {title}
+      Content: {content}
+
+      Create:
+      1. An engaging, clickable title (max 80 characters)
+      2. A concise, informative summary (200-250 characters)
+      
+      Focus on technical accuracy and reader interest.
+    keywords_section: |
+
+      Pay special attention to these topics: {keywords}
+    format_section: |
+
+      Format as:
+      TITLE: <title>
+      SUMMARY: <summary>
+  
+  # Custom prompts for editorial generation (optional)
+  editorial_prompts:
+    system_message: "You are an experienced tech journalist creating an insightful morning briefing."
+    user_prompt: |
+      Create a compelling morning tech briefing from these articles:
+
+      {content}
+
+      Write an editorial that:
+      1. Highlights the most significant tech developments
+      2. Connects related stories into a coherent narrative
+      3. Provides context and implications for readers
+      4. Is engaging and informative (300-500 words)
+      5. Has a professional yet conversational tone
+    keywords_section: |
+
+      Focus especially on developments in: {keywords}
+    format_section: |
+
+      Format as:
+      TITLE: <compelling editorial title>
+      SUMMARY: <the complete editorial content>
+  
+  # Performance and cost optimization
+  max_content_length: 1500  # Max characters sent to AI (balance detail vs cost)
+  max_tokens: 300           # Max AI response tokens (balance quality vs cost)
+
+# RSS Feed Sources
+feeds:
+  urls:
+    # Technology News
+    - https://news.ycombinator.com/rss
+    - https://www.reddit.com/r/programming/.rss
+    - https://github.blog/feed/
+    - https://feeds.bbci.co.uk/news/technology/rss.xml
+    - https://techcrunch.com/feed/
+    - https://www.theverge.com/rss/index.xml
+    
+    # Development & AI
+    - https://blog.openai.com/rss/
+    - https://ai.googleblog.com/feeds/posts/default
+    - https://stackoverflow.blog/feed/
+    
+    # Business & Startups
+    - https://feeds.feedburner.com/venturebeat/SZYF
+    - https://www.wired.com/feed/rss
+
+# User Interface Configuration  
+ui:
+  use_tui: true            # Enable beautiful Terminal UI
+  theme: rose-pine         # Default theme (dark, easy on eyes)
+  theme_light: rose-pine-dawn   # Light theme for day reading
+  theme_dark: rose-pine    # Dark theme for evening/night
+
+# Refresh Behavior
+refresh:
+  allowed_times:
+    - "08:00"  # Morning briefing time
+    - "13:00"  # Lunch update
+    - "18:00"  # Evening wrap-up
+  max_daily_refreshes: 3   # Reasonable limit to avoid spam
+  require_confirmation_outside_hours: true  # Prevent accidental refreshes
+
+# Editorial Configuration
+editorial:
+  # Custom directory for saved editorials
+  editorials_dir: ~/Documents/moka-news-editorials
+  
+  # Command to open editorials in external editor (press 'o' in TUI)
+  opener_command: "code"   # VS Code
+  # Other options:
+  # opener_command: "vim"      # Vim
+  # opener_command: "nano"     # Nano
+  # opener_command: "open"     # Default app (macOS)
+  # opener_command: "xdg-open" # Default app (Linux)

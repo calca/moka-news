@@ -1,0 +1,74 @@
+# MoKa News - General News Configuration
+# Comprehensive news coverage for general readers
+
+ai:
+  provider: gemini-cli
+  
+  keywords:
+    - politics
+    - business
+    - world news
+    - economy
+    - health
+    - science
+    - environment
+    - technology
+    - culture
+    - education
+  
+  prompts:
+    system_message: "You are a professional news editor creating accessible summaries for general readers."
+    user_prompt: |
+      News Article: {title}
+      Content: {content}
+      
+      Provide:
+      1. A clear, engaging headline (≤80 characters)
+      2. An informative summary covering who, what, when, where, why (200-250 chars)
+      
+      Write for a general audience seeking to stay informed.
+
+# Diverse news sources
+feeds:
+  urls:
+    # International News
+    - https://feeds.bbci.co.uk/news/world/rss.xml
+    - https://rss.cnn.com/rss/edition.rss
+    - https://www.reuters.com/rssFeed/worldNews
+    
+    # Business & Economy  
+    - https://feeds.bloomberg.com/news/us/
+    - https://www.ft.com/rss/home/us
+    - https://feeds.wsj.com/wsj/xml/rss/US-Business.xml
+    
+    # Technology
+    - https://www.wired.com/feed/rss
+    - https://www.theverge.com/rss/index.xml
+    
+    # Science & Health
+    - https://www.nature.com/nature.rss
+    - https://www.scientificamerican.com/rss/news/
+    - https://feeds.reuters.com/reuters/health
+    
+    # Politics
+    - https://feeds.reuters.com/Global/Politics
+    - https://www.politico.com/rss/politics08.xml
+    
+    # Culture & Society
+    - https://www.npr.org/rss/rss.php?id=1001
+    - https://www.theatlantic.com/feed/all/
+
+ui:
+  use_tui: true
+  theme: rose-pine-dawn  # Comfortable reading theme
+  theme_light: rose-pine-dawn
+  theme_dark: rose-pine
+
+editorial:
+  editorials_dir: ~/Documents/daily-news
+  opener_command: "open"  # System default
+
+refresh:
+  allowed_times: ["07:30", "12:00", "19:00"]  # Morning, lunch, evening
+  max_daily_refreshes: 3
+  require_confirmation_outside_hours: true
