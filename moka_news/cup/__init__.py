@@ -340,7 +340,6 @@ class Cup(App):
     }
     
     #editorial-container {
-        height: 100%;
         padding: 1;
     }
     
