@@ -734,9 +734,6 @@ class Cup(App):
                     self.notify(f"Error loading editorial: {e}", severity="error")
         except Exception as e:
             self.notify(f"Error accessing editorial history: {e}", severity="error")
-                )
-            except Exception as e:
-                self.notify(f"Error loading editorial: {e}", severity="error")
 
     def _rebuild_view(self) -> None:
         """Rebuild the view to show the editorial"""
