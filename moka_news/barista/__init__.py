@@ -34,10 +34,9 @@ def _build_prompt(article: Dict[str, Any], keywords: list = None, prompts: Dict[
     Returns:
         Formatted prompt string
     """
-    # Use default prompts if not provided
+    # Single articles are no longer processed by AI in MoKa News
     if prompts is None:
-        from moka_news.config import DEFAULT_PROMPTS
-        prompts = DEFAULT_PROMPTS
+        return f"Article: {article['title']}\n{article['summary'][:max_content_length]}"
     
     # Build the base prompt using the template with placeholders
     # Configurable content truncation for better context and higher quality summaries
@@ -134,10 +133,9 @@ class OpenAIBarista(AIProvider):
             
             # Get system message from prompts or use default
             if prompts is None:
-                from moka_news.config import DEFAULT_PROMPTS
-                prompts = DEFAULT_PROMPTS
-            
-            system_message = prompts.get("system_message", "You are a news editor creating engaging titles and summaries.")
+                system_message = "You are a news editor."
+            else:
+                system_message = prompts.get("system_message", "You are a news editor.")
 
             response = self.client.chat.completions.create(
                 model=DEFAULT_AI_MODELS["openai"],

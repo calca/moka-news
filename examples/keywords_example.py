@@ -114,31 +114,27 @@ prompt_with_keywords = _build_prompt(test_article, test_keywords)
 print("\n--- Prompt WITH keywords ---")
 print(prompt_with_keywords)
 
-# With custom prompts
-custom_prompts = {
-    "user_prompt": "Article: {title}\nContent: {content}\n\nCreate a summary:",
-    "keywords_section": "\nFocus areas: {keywords}",
-    "format_section": "\nOutput: TITLE and SUMMARY"
-}
-prompt_custom = _build_prompt(test_article, test_keywords, custom_prompts)
-print("\n--- Prompt WITH custom prompts ---")
-print(prompt_custom)
+# Note: Single article prompts are no longer used in MoKa News
+# AI processing is now focused on editorial generation only
+print("\n--- NOTE ---")
+print("Custom prompts for individual articles are no longer supported.")
+print("MoKa News now focuses AI processing only on editorial generation.")
 
 print("\n" + "=" * 80)
 print("Summary")
 print("=" * 80)
 print("""
-Keywords and prompts help customize AI behavior:
+Keywords help customize editorial AI behavior:
 1. Add keywords to your moka-news.yaml configuration file
-2. Keywords are passed to all AI providers (OpenAI, Anthropic, Gemini, etc.)
-3. The AI will prioritize these topics when generating summaries
+2. Keywords are used during editorial generation (not individual articles)
+3. The AI will prioritize these topics when generating editorials
 4. Keywords are optional - the system works fine without them
-5. Great for customizing news summaries to your interests!
+5. Great for customizing editorial content to your interests!
 
-Prompts customization (NEW):
-6. Prompts are now external and can be customized in config files
-7. Use placeholders: {title}, {content}, {keywords}
+Editorial Prompts customization:
+6. Editorial prompts can be customized in config files  
+7. Use placeholders: {content}, {keywords}
 8. Customize system_message, user_prompt, keywords_section, format_section
-9. Edit the 'ai.prompts' section in ~/.config/moka-news/config.yaml
-10. Default prompts work great for most users
+9. Edit the 'ai.editorial_prompts' section in ~/.config/moka-news/config.yaml
+10. Default editorial prompts work great for most users
 """)

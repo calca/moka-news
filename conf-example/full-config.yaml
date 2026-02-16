@@ -21,28 +21,6 @@ ai:
     - software development
     - machine learning
   
-  # Custom prompts for article processing (optional)
-  prompts:
-    system_message: "You are a skilled news editor creating engaging titles and summaries for a tech-savvy audience."
-    user_prompt: |
-      Given this article:
-      Title: {title}
-      Content: {content}
-
-      Create:
-      1. An engaging, clickable title (max 80 characters)
-      2. A concise, informative summary (200-250 characters)
-      
-      Focus on technical accuracy and reader interest.
-    keywords_section: |
-
-      Pay special attention to these topics: {keywords}
-    format_section: |
-
-      Format as:
-      TITLE: <title>
-      SUMMARY: <summary>
-  
   # Custom prompts for editorial generation (optional)
   editorial_prompts:
     system_message: "You are an experienced tech journalist creating an insightful morning briefing."

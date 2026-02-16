@@ -14,28 +14,6 @@ ai:
     - business
     - innovation
   
-  # Claude-optimized prompts (works well with detailed instructions)
-  prompts:
-    system_message: |
-      You are a thoughtful technology journalist who creates insightful news summaries. 
-      Focus on accuracy, context, and reader value.
-    user_prompt: |
-      Please analyze this article and create a summary:
-      
-      Title: {title}
-      Content: {content}
-      
-      Provide:
-      1. A refined, attention-grabbing title (maximum 80 characters)
-      2. A comprehensive yet concise summary (200-250 characters)
-      
-      Ensure the summary captures the key insights and implications.
-    format_section: |
-
-      Present your response as:
-      TITLE: <your refined title>
-      SUMMARY: <your summary>
-  
   # Claude handles longer context very well
   max_content_length: 2500
   max_tokens: 300

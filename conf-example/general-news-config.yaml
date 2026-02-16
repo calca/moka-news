@@ -15,18 +15,6 @@ ai:
     - technology
     - culture
     - education
-  
-  prompts:
-    system_message: "You are a professional news editor creating accessible summaries for general readers."
-    user_prompt: |
-      News Article: {title}
-      Content: {content}
-      
-      Provide:
-      1. A clear, engaging headline (≤80 characters)
-      2. An informative summary covering who, what, when, where, why (200-250 chars)
-      
-      Write for a general audience seeking to stay informed.
 
 # Diverse news sources
 feeds:

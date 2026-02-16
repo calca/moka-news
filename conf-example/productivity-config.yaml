@@ -15,19 +15,6 @@ ai:
     - management
     - finance
   
-  # Prompts optimized for quick, actionable insights
-  prompts:
-    system_message: "You are a business news editor creating concise, actionable summaries for busy professionals."
-    user_prompt: |
-      Article: {title}
-      Content: {content}
-      
-      Create:
-      1. Action-oriented headline (≤80 chars)
-      2. Executive summary with key takeaways (200-250 chars)
-      
-      Focus on insights, trends, and actionable information.
-  
   editorial_prompts:
     system_message: "You are a business briefing editor creating efficient morning updates."
     user_prompt: |

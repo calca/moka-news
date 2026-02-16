@@ -1,22 +1,26 @@
-# Customizing AI Prompts in MoKa News
+# Customizing Editorial Prompts in MoKa News
 
-MoKa News now supports external, customizable AI prompts! This guide will help you understand and customize the prompts used for generating article summaries.
+> **⚠️ IMPORTANT NOTICE**: As of the latest version, MoKa News only processes editorials with AI, not individual articles. This document has been updated to reflect editorial prompt customization. Legacy examples referring to individual article prompts are kept for reference but are no longer functional.
 
-## What Are AI Prompts?
+MoKa News supports customizable AI prompts for editorial generation! This guide will help you understand and customize the prompts used for generating morning editorials.
 
-AI prompts are the instructions sent to AI models (OpenAI, Anthropic, Gemini, Mistral, etc.) to generate article titles and summaries. By customizing these prompts, you can control how the AI interprets and summarizes your news articles.
+## What Are Editorial Prompts?
 
-## Default Prompts
+Editorial prompts are the instructions sent to AI models (OpenAI, Anthropic, Gemini, Mistral, etc.) to generate daily editorial summaries from collected news articles. By customizing these prompts, you can control how the AI creates your morning briefing.
 
-MoKa News comes with well-tested default prompts that work great for most users. You don't need to customize them unless you want specific behavior.
+**Important Note**: Individual article processing has been removed from MoKa News. AI processing now focuses exclusively on editorial generation to provide you with a cohesive morning briefing.
 
-The default prompts include:
-- **system_message**: Instructions that set the AI's role
-- **user_prompt**: The main prompt template for processing articles
-- **keywords_section**: How to integrate your configured keywords
-- **format_section**: Instructions for output formatting
+## Default Editorial Prompts
 
-## How to Customize Prompts
+MoKa News comes with well-tested default editorial prompts that work great for most users. You don't need to customize them unless you want specific behavior.
+
+The default editorial prompts include:
+- **system_message**: Instructions that set the AI's role as an editorial writer
+- **user_prompt**: The main prompt template for creating editorials from multiple articles  
+- **keywords_section**: How to integrate your configured keywords into editorial generation
+- **format_section**: Instructions for editorial output formatting
+
+## How to Customize Editorial Prompts
 
 ### 1. First-Run Setup
 
@@ -45,43 +49,61 @@ After setup, you can customize prompts by editing your configuration file at:
 - `~/.config/moka-news/config.yaml` (Linux/Mac)
 - Or your current directory: `moka-news.yaml`
 
-Here's the prompts section in the config file:
+Here's the editorial prompts section in the config file:
 
 ```yaml
 ai:
-  prompts:
-    system_message: "You are a news editor creating engaging titles and summaries."
+  editorial_prompts:
+    system_message: "You are a skilled news editor creating an engaging morning editorial."
     user_prompt: |
-      Given this article:
-      Title: {title}
-      Content: {content}
+      Create a cohesive morning news editorial from these articles:
 
-      Generate:
-      1. A concise, engaging title (max 80 characters)
-      2. A brief summary (max 200 characters)
+      {content}
+
+      Write an engaging editorial that:
+      1. Highlights the most important and relevant news
+      2. Connects related topics into a coherent narrative
+      3. Is enjoyable to read over morning coffee
+      4. Is approximately 300-500 words
     keywords_section: |
 
-      Focus on these keywords/topics if relevant: {keywords}
+      Pay special attention to topics related to: {keywords}
     format_section: |
 
       Format as:
-      TITLE: <title>
-      SUMMARY: <summary>
+      TITLE: <engaging editorial title>
+      SUMMARY: <the editorial content>
 ```
 
 ## Available Placeholders
 
-When customizing prompts, you can use these placeholders:
+When customizing editorial prompts, you can use these placeholders:
 
-- `{title}` - The original article title
-- `{content}` - The article content (automatically truncated to 500 characters)
+- `{content}` - The combined content of all collected articles
 - `{keywords}` - Your configured keywords (comma-separated)
 
-These placeholders will be automatically replaced with actual values when processing articles.
+These placeholders will be automatically replaced with actual values when generating editorials.
 
-## Customization Examples
+## Current Editorial Configuration
 
-### Example 1: More Concise Summaries
+To customize editorial prompts, edit your config file and use the `editorial_prompts` section:
+
+```yaml
+ai:
+  editorial_prompts:
+    system_message: "Your custom editorial role"
+    user_prompt: "Your custom editorial generation instructions with {content} and {keywords}"
+    keywords_section: "How to handle {keywords} in editorials"
+    format_section: "Editorial output format"
+```
+
+---
+
+## Legacy Examples (No Longer Functional)
+
+> **Note**: The following examples are from when MoKa News processed individual articles. These are kept for historical reference but are no longer functional as MoKa News now focuses exclusively on editorial generation.
+
+### Example 1: More Concise Summaries (LEGACY)
 
 ```yaml
 ai:
@@ -95,7 +117,7 @@ ai:
       - Ultra-brief summary (max 100 chars)
 ```
 
-### Example 2: Technical Focus
+### Example 2: Technical Focus (LEGACY)
 
 ```yaml
 ai:
@@ -111,7 +133,7 @@ ai:
       2. Summary focusing on technical details and impact
 ```
 
-### Example 3: Business News Focus
+### Example 3: Business News Focus (LEGACY)
 
 ```yaml
 ai:

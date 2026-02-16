@@ -12,24 +12,7 @@ from moka_news.logger import get_logger
 
 logger = get_logger(__name__)
 
-DEFAULT_PROMPTS = {
-    "system_message": "You are a news editor creating engaging titles and summaries.",
-    "user_prompt": """Given this article:
-Title: {title}
-Content: {content}
 
-Generate:
-1. A concise, engaging title (max 80 characters)
-2. A brief summary (approximately 200-250 characters)""",
-    "keywords_section": """
-
-Focus on these keywords/topics if relevant: {keywords}""",
-    "format_section": """
-
-Format as:
-TITLE: <title>
-SUMMARY: <summary>""",
-}
 
 DEFAULT_EDITORIAL_PROMPTS = {
     "system_message": "You are a skilled news editor creating an engaging morning editorial.",
@@ -64,7 +47,6 @@ DEFAULT_CONFIG = {
             "mistral": None,
         },
         "keywords": [],  # Optional keywords for summary generation
-        "prompts": DEFAULT_PROMPTS,  # External prompts with placeholders
         "editorial_prompts": DEFAULT_EDITORIAL_PROMPTS,  # Prompts for editorial generation
         "max_content_length": MAX_CONTENT_LENGTH,  # Maximum characters to send to AI for context
         "max_tokens": MAX_TOKENS,  # Maximum tokens for AI response

@@ -3,38 +3,25 @@ Tests for external prompts functionality
 """
 
 import pytest
-from moka_news.config import DEFAULT_PROMPTS, load_config
+from moka_news.config import load_config
 from moka_news.barista import _build_prompt, Barista, SimpleBarista
 
 
-def test_default_prompts_structure():
-    """Test that default prompts have the expected structure"""
-    assert "system_message" in DEFAULT_PROMPTS
-    assert "user_prompt" in DEFAULT_PROMPTS
-    assert "keywords_section" in DEFAULT_PROMPTS
-    assert "format_section" in DEFAULT_PROMPTS
+# Note: DEFAULT_PROMPTS removed as individual articles are no longer AI-processed
 
 
-def test_default_prompts_contain_placeholders():
-    """Test that default prompts contain required placeholders"""
-    assert "{title}" in DEFAULT_PROMPTS["user_prompt"]
-    assert "{content}" in DEFAULT_PROMPTS["user_prompt"]
-    assert "{keywords}" in DEFAULT_PROMPTS["keywords_section"]
-
-
-def test_build_prompt_with_default_prompts():
-    """Test building a prompt with default prompts"""
+def test_build_prompt_with_fallback_prompts():
+    """Test building a prompt with fallback prompts when none provided"""
     article = {
         "title": "Test Article",
         "summary": "This is a test summary."
     }
     
+    # Should work without prompts (uses internal fallback)
     prompt = _build_prompt(article)
     
     assert "Test Article" in prompt
     assert "This is a test summary." in prompt
-    assert "TITLE:" in prompt
-    assert "SUMMARY:" in prompt
 
 
 def test_build_prompt_with_keywords():
@@ -71,14 +58,15 @@ def test_build_prompt_with_custom_prompts():
     assert "Output format here" in prompt
 
 
-def test_build_prompt_with_custom_prompts_and_keywords():
-    """Test building a prompt with both custom prompts and keywords"""
+def test_build_prompt_with_custom_prompts_compatibility():
+    """Test building a prompt with custom prompts (compatibility only)"""
     article = {
         "title": "Test Article",
         "summary": "This is a test summary."
     }
     keywords = ["python", "programming"]
     
+    # Custom prompts still work for compatibility but are not used in main system flow
     custom_prompts = {
         "user_prompt": "Analyze: {title} | {content}",
         "keywords_section": " Focus: {keywords}",
@@ -107,7 +95,7 @@ def test_barista_with_prompts():
 
 
 def test_barista_processes_articles_with_custom_prompts():
-    """Test that Barista processes articles with custom prompts"""
+    """Test that Barista processes articles with custom prompts (compatibility only)"""
     custom_prompts = {
         "user_prompt": "Summarize: {title} - {content}",
         "keywords_section": "",
@@ -133,13 +121,15 @@ def test_barista_processes_articles_with_custom_prompts():
     assert "ai_summary" in processed[0]
 
 
-def test_config_includes_prompts():
-    """Test that loaded config includes prompts"""
+def test_config_excludes_article_prompts():
+    """Test that loaded config no longer includes prompts for individual articles"""
     config = load_config()
     
-    assert "prompts" in config["ai"]
-    assert "system_message" in config["ai"]["prompts"]
-    assert "user_prompt" in config["ai"]["prompts"]
+    # Individual article prompts should not be present
+    assert "prompts" not in config["ai"]
+    
+    # But editorial prompts should still be there
+    assert "editorial_prompts" in config["ai"]
 
 
 def test_build_prompt_truncates_long_content():

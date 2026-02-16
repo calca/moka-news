@@ -14,24 +14,6 @@ ai:
     - software
     - programming
   
-  # Optimized prompts for GPT models
-  prompts:
-    system_message: "You are an expert tech journalist creating concise, engaging news summaries."
-    user_prompt: |
-      Article: {title}
-      Content: {content}
-
-      Create:
-      1. Compelling headline (≤80 chars)
-      2. Clear summary (200-250 chars)
-      
-      Be precise and engaging.
-    format_section: |
-
-      Format:
-      TITLE: <headline>
-      SUMMARY: <summary>
-  
   # GPT-optimized settings
   max_content_length: 2000  # GPT handles longer context well
   max_tokens: 250           # Good balance for summaries

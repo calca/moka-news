@@ -16,25 +16,6 @@ ai:
     - android
     - technology
   
-  # Gemini-optimized prompts
-  prompts:
-    system_message: "You are a tech-focused news editor creating clear, informative summaries."
-    user_prompt: |
-      Article Information:
-      Title: {title}
-      Content: {content}
-      
-      Generate:
-      1. An improved title (80 characters max)
-      2. A clear summary (200-250 characters)
-      
-      Focus on technical accuracy and key takeaways.
-    format_section: |
-
-      Response format:
-      TITLE: <improved title>
-      SUMMARY: <summary>
-  
   # Gemini settings
   max_content_length: 1800
   max_tokens: 275

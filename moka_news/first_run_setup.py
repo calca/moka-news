@@ -360,9 +360,6 @@ def save_config(config_data: Dict[str, Any], config_path: Optional[Path] = None)
     # Ensure directory exists
     config_path.parent.mkdir(parents=True, exist_ok=True)
     
-    # Load default prompts
-    from moka_news.config import DEFAULT_PROMPTS
-    
     # Prepare config content
     config_content = {
         "ai": {
@@ -374,7 +371,6 @@ def save_config(config_data: Dict[str, Any], config_path: Optional[Path] = None)
                 "mistral": None,
             },
             "keywords": config_data.get("keywords", []),
-            "prompts": DEFAULT_PROMPTS  # Include default prompts
         },
         "ui": {
             "use_tui": True
