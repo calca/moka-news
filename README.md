@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="logo/moka-news-logo.png" alt="MoKa News Logo" width="200"/>
+</p>
+
 # ☕ MoKa News
 
 **Morning News** - A beautiful TUI (Text User Interface) RSS news aggregator with AI-powered editorial generation.
@@ -37,6 +41,7 @@ A beautiful Textual-based TUI that displays your personalized morning editorial 
 - 📅 **Smart date filtering** - Only fetch articles since your last download
 - 💾 **Editorial archive** - All editorials saved as markdown files for future reference
 - 🗂️  **Browse past editorials** - Access and read previous morning editions through the TUI
+- 📚 **Collapsible source section** - Sources list appears in a collapsible widget in the TUI for cleaner reading
 - ⚙️  Configuration file support (YAML)
 - 🎨 Beautiful terminal user interface
 - ⌨️  Keyboard shortcuts for navigation (h: history, t: toggle theme, r: refresh)
