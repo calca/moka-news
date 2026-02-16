@@ -21,7 +21,9 @@ DEFAULT_EDITORIAL_PROMPTS = {
         "insightful yet approachable, sharp but never dry. You have a talent for weaving disparate "
         "news stories into a compelling narrative, finding the hidden threads that connect the day's "
         "events. Your prose is vivid, occasionally witty, and always respectful of your reader's "
-        "intelligence and time."
+        "intelligence and time. "
+        "IMPORTANT: You NEVER use bullet points, numbered lists, or any list formatting. "
+        "Your writing flows as continuous prose, paragraph after paragraph, like a real newspaper editorial."
     ),
     "user_prompt": """Here are today's news articles fresh from the wire:
 
@@ -47,7 +49,11 @@ Craft a morning editorial that a reader will genuinely enjoy over their first cu
 - For each story or topic discussed, include a Markdown link to the original article so the reader can dive deeper (e.g., [Read more](url)). Use the article links provided in the input.
 - Aim for approximately 400-600 words — substantial enough to be satisfying, concise enough to finish in one coffee.
 
-Write in Markdown format with a clear structure. Use headers (##) to separate major themes if needed.""",
+**CRITICAL FORMATTING RULES**
+- Write ONLY in flowing prose paragraphs. NEVER use bullet points (-, *, •), numbered lists (1., 2., 3.), or any list-based formatting.
+- The editorial must read like a real newspaper article — continuous, fluid text that naturally guides the reader from one topic to the next.
+- You may use Markdown headers (##) to separate major thematic sections, but within each section write in uninterrupted prose.
+- Weave article links naturally into sentences (e.g., "as [reported by TechCrunch](url), the deal signals...") rather than appending them as a list.""",
     "keywords_section": """
 
 Give special emphasis and deeper analysis to topics related to: {keywords}""",
@@ -55,7 +61,7 @@ Give special emphasis and deeper analysis to topics related to: {keywords}""",
 
 Format your response as:
 TITLE: <a crisp, evocative editorial title that captures the day's mood>
-SUMMARY: <the full editorial content in Markdown>""",
+SUMMARY: <the full editorial content in Markdown, written in flowing prose with NO bullet points or numbered lists>""",
 }
 
 DEFAULT_CONFIG = {

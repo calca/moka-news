@@ -147,26 +147,36 @@ class EditorialGenerator:
     
     def _create_simple_editorial(self, articles: List[Dict[str, Any]]) -> str:
         """
-        Create a simple editorial without AI (fallback)
+        Create a simple editorial without AI (fallback).
+
+        Produces flowing prose rather than a numbered list so the output
+        reads like a real newspaper editorial.
         
         Args:
             articles: List of articles
             
         Returns:
-            Simple editorial text
+            Simple editorial text in Markdown
         """
-        content = "## Your Morning News Digest\n\n"
-        content += f"Here are the top stories from {len(articles)} articles:\n\n"
-        
-        for i, article in enumerate(articles[:5], 1):
+        top = articles[:8]
+        content = "Good morning — here's what's making headlines today.\n\n"
+
+        for article in top:
             title = article.get("ai_title", article.get("title", "Untitled"))
-            summary = article.get("ai_summary", article.get("summary", ""))[:150]
+            summary = article.get("ai_summary", article.get("summary", ""))[:200]
             link = article.get("link", "")
+            source = article.get("source", "")
+
             if link:
-                content += f"**{i}. [{title}]({link})**\n{summary}\n\n"
+                content += f"**{title}** — {summary} [Read more]({link})"
             else:
-                content += f"**{i}. {title}**\n{summary}\n\n"
-        
+                content += f"**{title}** — {summary}"
+
+            if source:
+                content += f" *({source})*"
+            content += "\n\n"
+
+        content += "That's all for now — enjoy your coffee and have a great day.\n"
         return content
     
     def save_editorial(self, editorial: Dict[str, Any]) -> Path:

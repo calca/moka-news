@@ -115,33 +115,18 @@ def test_mistral_barista_initialization_without_key():
 
 
 def test_github_copilot_cli_barista_checks_gh():
-    """Test that GitHubCopilotCLIBarista checks for gh CLI"""
-    # This should succeed if gh is installed, which it is in this environment
-    try:
-        barista = GitHubCopilotCLIBarista()
-        assert isinstance(barista, AIProvider)
-    except RuntimeError as e:
-        # If gh is not available, that's also acceptable for testing
-        assert "gh" in str(e).lower()
+    """Test that GitHubCopilotCLIBarista can be instantiated"""
+    barista = GitHubCopilotCLIBarista()
+    assert isinstance(barista, AIProvider)
 
 
 def test_gemini_cli_barista_checks_gcloud():
-    """Test that GeminiCLIBarista checks for gcloud CLI"""
-    # This will likely fail unless gcloud is installed
-    try:
-        barista = GeminiCLIBarista()
-        assert isinstance(barista, AIProvider)
-    except RuntimeError as e:
-        # Expected if gcloud is not available
-        assert "gcloud" in str(e).lower()
+    """Test that GeminiCLIBarista can be instantiated"""
+    barista = GeminiCLIBarista()
+    assert isinstance(barista, AIProvider)
 
 
 def test_mistral_cli_barista_checks_mistral():
-    """Test that MistralCLIBarista checks for mistral CLI"""
-    # This will likely fail unless mistral CLI is installed
-    try:
-        barista = MistralCLIBarista()
-        assert isinstance(barista, AIProvider)
-    except RuntimeError as e:
-        # Expected if mistral CLI is not available
-        assert "mistral" in str(e).lower()
+    """Test that MistralCLIBarista can be instantiated"""
+    barista = MistralCLIBarista()
+    assert isinstance(barista, AIProvider)
