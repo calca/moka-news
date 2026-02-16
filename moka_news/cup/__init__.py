@@ -729,53 +729,10 @@ class Cup(App):
                 self.notify("No past editorials found", severity="information")
                 return
 
-            # Convert file list to proper format for EditorialListScreen
-            editorials = []
-            for filename in editorial_files:
-                try:
-                    # Extract date from filename (assuming format: editorial_YYYY-MM-DD_HHMM.md)
-                    if filename.startswith("editorial_") and filename.endswith(".md"):
-                        date_part = filename[10:-3]  # Remove "editorial_" prefix and ".md" suffix
-                        # Parse date parts
-                        if "_" in date_part:
-                            date_str, time_str = date_part.split("_", 1)
-                            # Parse YYYY-MM-DD format
-                            year, month, day = map(int, date_str.split("-"))
-                            # Parse HHMM format
-                            if len(time_str) >= 4:
-                                hour = int(time_str[:2])
-                                minute = int(time_str[2:4])
-                                timestamp = datetime(year, month, day, hour, minute)
-                            else:
-                                timestamp = datetime(year, month, day)
-                        else:
-                            # Fallback: just date
-                            year, month, day = map(int, date_part.split("-"))
-                            timestamp = datetime(year, month, day)
-                    else:
-                        # Fallback: use file modification time
-                        file_path = self.editorial_generator.editorials_dir / filename
-                        mod_time = file_path.stat().st_mtime
-                        timestamp = datetime.fromtimestamp(mod_time)
-                    
-                    # Create editorial data
-                    editorial_data = {
-                        "filename": filename,
-                        "filepath": self.editorial_generator.editorials_dir / filename,
-                        "timestamp": timestamp,
-                        "title": f"Editorial - {timestamp.strftime('%b %d, %Y')}"
-                    }
-                    editorials.append(editorial_data)
-                    
-                except Exception as e:
-                    # Skip problematic files but continue
-                    continue
-
-            if not editorials:
-                self.notify("No valid editorials found", severity="warning")
-                return
-
-            # Sort by timestamp (newest first)
+            # The list_editorials already returns properly formatted editorials
+            editorials = editorial_files  # Use the data directly
+            
+            # Sort by timestamp (newest first) - should already be sorted but ensure it
             editorials.sort(key=lambda x: x["timestamp"], reverse=True)
 
             # Show editorial list screen
