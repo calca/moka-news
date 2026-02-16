@@ -292,7 +292,8 @@ class EditorialListScreen(Screen):
 
         with VerticalScroll(id="editorial-list-container"):
             if self.editorials:
-                list_view = ListView()
+                # Create ListItems with attached data
+                items = []
                 for editorial in self.editorials:
                     timestamp = editorial["timestamp"]
                     date_str = timestamp.strftime("%A, %B %d, %Y at %H:%M")
@@ -301,8 +302,10 @@ class EditorialListScreen(Screen):
                         Label(f"[bold]{title}[/bold]\n[dim]{date_str}[/dim]")
                     )
                     item.editorial_data = editorial
-                    list_view.append(item)
-                yield list_view
+                    items.append(item)
+                
+                # Yield the ListView with all items
+                yield ListView(*items)
             else:
                 yield Static(
                     "[bold]No past editorials found[/bold]\n\n"
@@ -715,7 +718,7 @@ class Cup(App):
                 severity="error"
             )
 
-    async def action_show_history(self) -> None:
+    def action_show_history(self) -> None:
         """Show past editorials"""
         if not self.editorial_generator:
             self.notify("Editorial history not available", severity="warning")
@@ -737,24 +740,26 @@ class Cup(App):
 
             # Show editorial list screen
             screen = EditorialListScreen(editorials)
-            result = await self.push_screen_wait(screen)
-
-            if result:
-                # Load and display selected editorial
-                editorial_path = result["filepath"]
-                try:
-                    content = self.editorial_generator.load_editorial(editorial_path)
-                    self.editorial_content = content
-                    self.current_editorial_path = editorial_path  # Track current editorial
-                    self.sub_title = self._format_subtitle()
-                    self._rebuild_view()
-                    self.notify(
-                        f"Loaded editorial: {result['title']}", severity="information"
-                    )
-                except Exception as e:
-                    self.notify(f"Error loading editorial: {e}", severity="error")
+            self.push_screen(screen, callback=self._handle_editorial_selection)
         except Exception as e:
             self.notify(f"Error accessing editorial history: {e}", severity="error")
+
+    def _handle_editorial_selection(self, result) -> None:
+        """Handle the selection from editorial history screen"""
+        if result:
+            # Load and display selected editorial
+            editorial_path = result["filepath"]
+            try:
+                content = self.editorial_generator.load_editorial(editorial_path)
+                self.editorial_content = content
+                self.current_editorial_path = editorial_path  # Track current editorial
+                self.sub_title = self._format_subtitle()
+                self._rebuild_view()
+                self.notify(
+                    f"Loaded editorial: {result['title']}", severity="information"
+                )
+            except Exception as e:
+                self.notify(f"Error loading editorial: {e}", severity="error")
 
     def action_show_info(self) -> None:
         """Show application information dialog"""
@@ -767,8 +772,21 @@ class Cup(App):
     def _rebuild_view(self) -> None:
         """Rebuild the view to show the editorial"""
         container = self.query_one("#content-container")
-        container.remove_children()
-
+        
+        # Remove existing editorial widget if it exists to avoid ID conflicts
+        try:
+            existing_editorial = self.query_one("#editorial-container")
+            existing_editorial.remove()
+        except:
+            pass  # Widget doesn't exist, which is fine
+            
+        try:
+            existing_empty_state = self.query_one("#empty-state")
+            existing_empty_state.remove()
+        except:
+            pass  # Widget doesn't exist, which is fine
+        
+        # Mount the new content
         if self.editorial_content:
             container.mount(
                 EditorialView(self.editorial_content, id="editorial-container")
