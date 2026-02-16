@@ -110,7 +110,7 @@ def prompt_ai_provider() -> Dict[str, Any]:
     print("\n" + "=" * 60)
     print("☕ Welcome to MoKa News!")
     print("=" * 60)
-    print("\nLet's set up your AI provider for news summaries.\n")
+    print("\nLet's set up your AI provider for generating morning editorials.\n")
     
     # Separate available and unavailable providers
     available_providers = []
@@ -156,10 +156,9 @@ def prompt_ai_provider() -> Dict[str, Any]:
             print(f"      ('{cli_cmd}' not found - {install_info})")
             provider_index += 1
     
-    # Add demo/simple option
     print(f"\n🧪 Testing Option:")
     simple_index = len(available_providers) + 1
-    print(f"  [{simple_index}] Simple mode (no AI, for demo/testing only)")
+    print(f"  [{simple_index}] Simple mode (no AI editorials, for demo/testing only)")
     
     # Get user choice
     while True:
@@ -169,7 +168,7 @@ def prompt_ai_provider() -> Dict[str, Any]:
             
             if choice == simple_index:
                 # Simple mode selected
-                print("\n⚠️  Note: Simple mode is for demo/testing only. No AI summaries will be generated.")
+                print("\n⚠️  Note: Simple mode is for demo/testing only. No AI editorials will be generated.")
                 confirm = input("Continue with simple mode? [y/N]: ").strip().lower()
                 if confirm == 'y':
                     return {"provider": "simple", "api_key": None}
@@ -228,7 +227,7 @@ def prompt_ai_provider() -> Dict[str, Any]:
 
 def prompt_keywords() -> list:
     """
-    Prompt user to configure keywords for summary focus
+    Prompt user to configure keywords for editorial focus
     
     Returns:
         List of keywords (empty if user skips)
@@ -236,7 +235,7 @@ def prompt_keywords() -> list:
     print("\n" + "=" * 60)
     print("🔑 Keywords Configuration (Optional)")
     print("=" * 60)
-    print("\nKeywords help focus AI summaries on topics you care about.")
+    print("\nKeywords help focus AI editorial generation on topics you care about.")
     print("Examples: 'artificial intelligence', 'security', 'python', 'kubernetes'")
     print("\nYou can enter multiple keywords separated by commas.")
     
@@ -266,42 +265,41 @@ def prompt_keywords() -> list:
 
 def prompt_prompts_customization() -> bool:
     """
-    Prompt user if they want to customize AI prompts
+    Prompt user if they want to customize editorial AI prompts
     
     Returns:
-        True if user wants to customize prompts, False otherwise
+        True if user wants to customize editorial prompts, False otherwise
     """
     print("\n" + "=" * 60)
-    print("📝 AI Prompts Customization (Optional)")
+    print("📝 Editorial AI Prompts Customization (Optional)")
     print("=" * 60)
-    print("\nMoKa News uses AI prompts to generate article titles and summaries.")
-    print("You can use the default prompts or customize them later.")
-    print("\nDefault prompts are well-tested and work great for most users.")
-    print("Advanced users can customize prompts in the config file using placeholders:")
-    print("  - {title}: Article title")
-    print("  - {content}: Article content")
+    print("\nMoKa News uses AI to generate daily morning editorials from your collected articles.")
+    print("You can use the default editorial prompts or customize them later.")
+    print("\nDefault editorial prompts are well-tested and work great for most users.")
+    print("Advanced users can customize editorial prompts in the config file using placeholders:")
+    print("  - {content}: Combined content from all collected articles")
     print("  - {keywords}: Your configured keywords")
     
     while True:
-        choice = input("\nUse default prompts? [Y/n]: ").strip().lower()
+        choice = input("\nUse default editorial prompts? [Y/n]: ").strip().lower()
         
         if choice in ['', 'y', 'yes']:
-            print("\n✓ Using default AI prompts.")
-            print("  You can customize prompts later in your config file.")
-            print("  See the 'ai.prompts' section in ~/.config/moka-news/config.yaml")
+            print("\n✓ Using default editorial prompts.")
+            print("  You can customize editorial prompts later in your config file.")
+            print("  See the 'ai.editorial_prompts' section in ~/.config/moka-news/config.yaml")
             return False
         elif choice in ['n', 'no']:
-            print("\n✓ You can customize prompts after setup.")
-            print("  Edit the 'ai.prompts' section in your config file:")
+            print("\n✓ You can customize editorial prompts after setup.")
+            print("  Edit the 'ai.editorial_prompts' section in your config file:")
             print("  ~/.config/moka-news/config.yaml")
-            print("\n  Available prompts to customize:")
-            print("    - system_message: AI system instructions")
-            print("    - user_prompt: Main prompt template")
-            print("    - keywords_section: Keywords integration template")
-            print("    - format_section: Output format instructions")
+            print("\n  Available editorial prompts to customize:")
+            print("    - system_message: AI system instructions for editorial writing")
+            print("    - user_prompt: Main editorial generation template")
+            print("    - keywords_section: Keywords integration for editorials")
+            print("    - format_section: Editorial output format instructions")
             return True
         else:
-            print("Please enter 'y' or 'n'.")
+            print("Please enter 'y' or 'n'."))
 
 
 def prompt_opml_setup(opml_manager: OPMLManager) -> bool:
@@ -360,7 +358,7 @@ def save_config(config_data: Dict[str, Any], config_path: Optional[Path] = None)
     # Ensure directory exists
     config_path.parent.mkdir(parents=True, exist_ok=True)
     
-    # Prepare config content
+    # Prepare config content (editorial prompts are handled by default config)
     config_content = {
         "ai": {
             "provider": config_data["provider"],
@@ -404,8 +402,8 @@ def prompt_launch_now(provider_config: Dict[str, Any], feeds_configured: bool) -
         
     # Check provider readiness
     provider = provider_config.get("provider")
-    if provider == "simple":
-        print("ℹ️  Using simple mode (no AI summaries).")
+    elif provider == "simple":
+        print("ℹ️  Using simple mode (no AI editorials).")
     elif provider in ["copilot-cli", "gemini-cli", "mistral-cli"]:
         print(f"ℹ️  Using {provider}. Make sure the CLI is installed and authenticated.")
     elif provider_config.get("api_key") is None:
@@ -413,9 +411,8 @@ def prompt_launch_now(provider_config: Dict[str, Any], feeds_configured: bool) -
         
     print("\nMoKa News will:")
     print("  1. 📰 Fetch RSS feeds")
-    print("  2. 🤖 Process articles with AI (if configured)")  
-    print("  3. ✍️  Generate morning editorial")
-    print("  4. ☕ Launch beautiful TUI")
+    print("  2. ✍️  Generate morning editorial with AI")  
+    print("  3. ☕ Launch beautiful TUI")
     
     while True:
         choice = input("\nLaunch MoKa News now? [Y/n]: ").strip().lower()
@@ -571,9 +568,9 @@ def run_first_run_setup(opml_manager: OPMLManager) -> Dict[str, Any]:
     if keywords:
         print(f"Keywords configured: {', '.join(keywords)}")
     if will_customize_prompts:
-        print("AI prompts: Can be customized in config file")
+        print("Editorial AI prompts: Can be customized in config file")
     else:
-        print("AI prompts: Using defaults (can customize later)")
+        print("Editorial AI prompts: Using defaults (can customize later)"))
     
     # Ask if user wants to launch MoKa News now
     launch_now = prompt_launch_now(provider_config, feeds_configured)

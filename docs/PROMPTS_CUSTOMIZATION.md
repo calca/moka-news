@@ -24,24 +24,23 @@ The default editorial prompts include:
 
 ### 1. First-Run Setup
 
-During the first-run setup wizard, MoKa News will ask if you want to use default prompts or customize them:
+During the first-run setup wizard, MoKa News will ask if you want to use default editorial prompts or customize them:
 
 ```
-📝 AI Prompts Customization (Optional)
+📝 Editorial AI Prompts Customization (Optional)
 
-MoKa News uses AI prompts to generate article titles and summaries.
-You can use the default prompts or customize them later.
+MoKa News uses AI to generate daily morning editorials from your collected articles.
+You can use the default editorial prompts or customize them later.
 
-Default prompts are well-tested and work great for most users.
-Advanced users can customize prompts in the config file using placeholders:
-  - {title}: Article title
-  - {content}: Article content
+Default editorial prompts are well-tested and work great for most users.
+Advanced users can customize editorial prompts in the config file using placeholders:
+  - {content}: Combined content from all collected articles
   - {keywords}: Your configured keywords
 
-Use default prompts? [Y/n]:
+Use default editorial prompts? [Y/n]:
 ```
 
-Most users should choose "Yes" to use the default prompts.
+Most users should choose "Yes" to use the default editorial prompts.
 
 ### 2. Customizing in Config File
 

@@ -142,8 +142,8 @@ def test_save_config_defaults_empty_keywords(tmp_path):
     assert saved_config["ai"]["keywords"] == []
 
 
-def test_save_config_includes_prompts(tmp_path):
-    """Test that save_config includes default prompts"""
+def test_save_config_excludes_article_prompts(tmp_path):
+    """Test that save_config does not include prompts for individual articles (editorial-only AI)"""
     config_path = tmp_path / "config.yaml"
     
     config_data = {
@@ -157,13 +157,10 @@ def test_save_config_includes_prompts(tmp_path):
     with open(config_path, 'r') as f:
         saved_config = yaml.safe_load(f)
     
-    assert "prompts" in saved_config["ai"]
-    assert "system_message" in saved_config["ai"]["prompts"]
-    assert "user_prompt" in saved_config["ai"]["prompts"]
-    assert "keywords_section" in saved_config["ai"]["prompts"]
-    assert "format_section" in saved_config["ai"]["prompts"]
+    # Individual article prompts should NOT be present
+    assert "prompts" not in saved_config["ai"]
     
-    # Verify prompts have placeholders
-    assert "{title}" in saved_config["ai"]["prompts"]["user_prompt"]
-    assert "{content}" in saved_config["ai"]["prompts"]["user_prompt"]
-    assert "{keywords}" in saved_config["ai"]["prompts"]["keywords_section"]
+    # But other config should be there
+    assert saved_config["ai"]["provider"] == "openai"
+    assert "api_keys" in saved_config["ai"]
+    assert "keywords" in saved_config["ai"]
