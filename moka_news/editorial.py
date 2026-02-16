@@ -210,7 +210,7 @@ class EditorialGenerator:
             url = source['url']
             source_name = source['source']
             if url:
-                md += f"- **{title}** - *{source_name}*  \n  [{url}]({url})\n\n"
+                md += f"- [**{title}**]({url}) - *{source_name}*\n\n"
             else:
                 md += f"- **{title}** - *{source_name}*\n\n"
         
