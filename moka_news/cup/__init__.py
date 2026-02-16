@@ -14,6 +14,7 @@ from textual.widgets import (
     ListView,
     ListItem,
     Button,
+    ProgressBar,
 )
 from textual.binding import Binding
 from textual.screen import Screen, ModalScreen
@@ -87,6 +88,57 @@ class ConfirmationDialog(ModalScreen[bool]):
             self.dismiss(True)
         elif event.key == "n" or event.key == "escape":
             self.dismiss(False)
+
+
+class LoadingDialog(ModalScreen):
+    """Modal dialog showing loading progress"""
+
+    DEFAULT_CSS = """
+    LoadingDialog {
+        align: center middle;
+    }
+    
+    #loading-container {
+        width: 50;
+        height: auto;
+        border: thick $primary;
+        background: $panel;
+        padding: 2;
+    }
+    
+    #loading-message {
+        padding: 1 2;
+        width: 100%;
+        content-align: center middle;
+    }
+    
+    #progress-container {
+        width: 100%;
+        padding: 1 2;
+    }
+    
+    ProgressBar {
+        width: 100%;
+        margin: 1 0;
+    }
+    """
+
+    def __init__(self, message: str = "Loading..."):
+        super().__init__()
+        self.message = message
+
+    def compose(self) -> ComposeResult:
+        """Create the loading dialog layout"""
+        with Vertical(id="loading-container"):
+            yield Static(f"[bold]🔄 {self.message}[/bold]", id="loading-message")
+            with Vertical(id="progress-container"):
+                yield ProgressBar(show_eta=False, show_percentage=False)
+
+    def on_mount(self) -> None:
+        """Start the progress bar animation"""
+        progress_bar = self.query_one(ProgressBar)
+        # Set to indeterminate mode for infinite progress
+        progress_bar.update(progress=None)
 
 
 class ArticleCard(Static):
@@ -487,9 +539,39 @@ class Cup(App):
 
         self.notify("Refreshing news feeds...", severity="information")
 
+        # Show loading dialog
+        loading_dialog = LoadingDialog("Fetching RSS feeds...")
+        
         try:
-            # Call the refresh callback to fetch new articles
-            new_articles, new_update_time = self.refresh_callback()
+            # Push the loading dialog and start refresh in parallel
+            async def perform_refresh():
+                """Perform the refresh operation in a separate task"""
+                try:
+                    # Call the refresh callback to fetch new articles in executor
+                    # Since refresh_callback() might be synchronous, run it in thread pool
+                    import concurrent.futures
+                    loop = asyncio.get_event_loop()
+                    
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        new_articles, new_update_time = await loop.run_in_executor(
+                            executor, self.refresh_callback
+                        )
+                    
+                    return new_articles, new_update_time
+                except Exception as e:
+                    raise e
+
+            # Push loading dialog and perform refresh concurrently
+            loading_task = asyncio.create_task(self.push_screen(loading_dialog))
+            
+            # Give dialog time to appear
+            await asyncio.sleep(0.1)
+            
+            # Perform refresh
+            new_articles, new_update_time = await perform_refresh()
+            
+            # Dismiss loading dialog
+            loading_dialog.dismiss()
 
             if new_articles:
                 self._update_with_new_articles(
@@ -505,7 +587,13 @@ class Cup(App):
                 )
             else:
                 self.notify("No articles found during refresh", severity="warning")
+                
         except Exception as e:
+            # Make sure to dismiss dialog even on error
+            try:
+                loading_dialog.dismiss()
+            except:
+                pass
             self.notify(f"Error refreshing: {e}", severity="error")
 
     def action_quit(self) -> None:
@@ -569,27 +657,83 @@ class Cup(App):
             self.notify("Editorial history not available", severity="warning")
             return
 
-        editorials = self.editorial_generator.list_editorials()
+        try:
+            # Get list of editorial files
+            editorial_files = self.editorial_generator.list_editorials()
 
-        if not editorials:
-            self.notify("No past editorials found", severity="information")
-            return
+            if not editorial_files:
+                self.notify("No past editorials found", severity="information")
+                return
 
-        # Show editorial list screen
-        screen = EditorialListScreen(editorials)
-        result = await self.push_screen_wait(screen)
+            # Convert file list to proper format for EditorialListScreen
+            editorials = []
+            for filename in editorial_files:
+                try:
+                    # Extract date from filename (assuming format: editorial_YYYY-MM-DD_HHMM.md)
+                    if filename.startswith("editorial_") and filename.endswith(".md"):
+                        date_part = filename[10:-3]  # Remove "editorial_" prefix and ".md" suffix
+                        # Parse date parts
+                        if "_" in date_part:
+                            date_str, time_str = date_part.split("_", 1)
+                            # Parse YYYY-MM-DD format
+                            year, month, day = map(int, date_str.split("-"))
+                            # Parse HHMM format
+                            if len(time_str) >= 4:
+                                hour = int(time_str[:2])
+                                minute = int(time_str[2:4])
+                                timestamp = datetime(year, month, day, hour, minute)
+                            else:
+                                timestamp = datetime(year, month, day)
+                        else:
+                            # Fallback: just date
+                            year, month, day = map(int, date_part.split("-"))
+                            timestamp = datetime(year, month, day)
+                    else:
+                        # Fallback: use file modification time
+                        file_path = self.editorial_generator.editorials_dir / filename
+                        mod_time = file_path.stat().st_mtime
+                        timestamp = datetime.fromtimestamp(mod_time)
+                    
+                    # Create editorial data
+                    editorial_data = {
+                        "filename": filename,
+                        "filepath": self.editorial_generator.editorials_dir / filename,
+                        "timestamp": timestamp,
+                        "title": f"Editorial - {timestamp.strftime('%b %d, %Y')}"
+                    }
+                    editorials.append(editorial_data)
+                    
+                except Exception as e:
+                    # Skip problematic files but continue
+                    continue
 
-        if result:
-            # Load and display selected editorial
-            editorial_path = result["filepath"]
-            try:
-                content = self.editorial_generator.load_editorial(editorial_path)
-                self.editorial_content = content
-                self.current_editorial_path = editorial_path  # Track current editorial
-                self.sub_title = self._format_subtitle()
-                self._rebuild_view()
-                self.notify(
-                    f"Loaded editorial: {result['title']}", severity="information"
+            if not editorials:
+                self.notify("No valid editorials found", severity="warning")
+                return
+
+            # Sort by timestamp (newest first)
+            editorials.sort(key=lambda x: x["timestamp"], reverse=True)
+
+            # Show editorial list screen
+            screen = EditorialListScreen(editorials)
+            result = await self.push_screen_wait(screen)
+
+            if result:
+                # Load and display selected editorial
+                editorial_path = result["filepath"]
+                try:
+                    content = self.editorial_generator.load_editorial(editorial_path)
+                    self.editorial_content = content
+                    self.current_editorial_path = editorial_path  # Track current editorial
+                    self.sub_title = self._format_subtitle()
+                    self._rebuild_view()
+                    self.notify(
+                        f"Loaded editorial: {result['title']}", severity="information"
+                    )
+                except Exception as e:
+                    self.notify(f"Error loading editorial: {e}", severity="error")
+        except Exception as e:
+            self.notify(f"Error accessing editorial history: {e}", severity="error")
                 )
             except Exception as e:
                 self.notify(f"Error loading editorial: {e}", severity="error")
