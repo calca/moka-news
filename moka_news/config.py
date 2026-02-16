@@ -15,26 +15,46 @@ logger = get_logger(__name__)
 
 
 DEFAULT_EDITORIAL_PROMPTS = {
-    "system_message": "You are a skilled news editor creating an engaging morning editorial.",
-    "user_prompt": """Create a cohesive morning news editorial from these articles:
+    "system_message": (
+        "You are a brilliant morning newspaper editor with a warm, conversational voice. "
+        "You write editorials that feel like chatting with a well-informed friend over coffee — "
+        "insightful yet approachable, sharp but never dry. You have a talent for weaving disparate "
+        "news stories into a compelling narrative, finding the hidden threads that connect the day's "
+        "events. Your prose is vivid, occasionally witty, and always respectful of your reader's "
+        "intelligence and time."
+    ),
+    "user_prompt": """Here are today's news articles fresh from the wire:
 
 {content}
 
-Write an engaging editorial that:
-1. Highlights the most important and relevant news
-2. Connects related topics into a coherent narrative
-3. Is enjoyable to read over morning coffee
-4. Is approximately 300-500 words
+Craft a morning editorial that a reader will genuinely enjoy over their first cup of coffee. Follow these guidelines:
 
-Focus on creating a pleasant reading experience.""",
+**Structure & Flow**
+- Open with a strong, engaging hook — a striking detail, a bold observation, or a thought-provoking question that pulls the reader in immediately.
+- Group related stories into thematic threads rather than listing them one by one. Find the connections: what common trends, tensions, or ironies tie the day's news together?
+- Use smooth transitions between themes so the editorial reads as a single coherent piece, not a patchwork of summaries.
+- Close with a memorable reflection, a forward-looking thought, or a touch of wit that leaves the reader thinking.
+
+**Tone & Style**
+- Write in a warm, conversational tone — as if you're a knowledgeable friend sharing the morning's most interesting developments.
+- Be insightful and analytical: don't just report what happened, help the reader understand *why it matters*.
+- Sprinkle in personality — an apt metaphor, a dry observation, a dash of humor where appropriate — but keep it elegant, never forced.
+- Vary sentence rhythm: mix punchy short sentences with longer, flowing ones to keep the reading experience dynamic.
+
+**Content**
+- Prioritize the most significant and interesting stories; not every article needs equal coverage.
+- Provide enough context so readers feel informed without being overwhelmed.
+- Aim for approximately 400-600 words — substantial enough to be satisfying, concise enough to finish in one coffee.
+
+Write in Markdown format with a clear structure. Use headers (##) to separate major themes if needed.""",
     "keywords_section": """
 
-Pay special attention to topics related to: {keywords}""",
+Give special emphasis and deeper analysis to topics related to: {keywords}""",
     "format_section": """
 
-Format as:
-TITLE: <engaging editorial title>
-SUMMARY: <the editorial content>""",
+Format your response as:
+TITLE: <a crisp, evocative editorial title that captures the day's mood>
+SUMMARY: <the full editorial content in Markdown>""",
 }
 
 DEFAULT_CONFIG = {
@@ -215,27 +235,28 @@ ai:
   # Customize the prompts used for generating morning editorials
   # Use placeholders: {content}, {keywords}
   editorial_prompts:
-    system_message: "You are a skilled news editor creating an engaging morning editorial."
+    system_message: >
+      You are a brilliant morning newspaper editor with a warm, conversational voice.
+      You write editorials that feel like chatting with a well-informed friend over coffee —
+      insightful yet approachable, sharp but never dry. You weave disparate news stories
+      into a compelling narrative, finding the hidden threads that connect the day's events.
     user_prompt: |
-      Create a cohesive morning news editorial from these articles:
+      Here are today's news articles fresh from the wire:
 
       {content}
 
-      Write an engaging editorial that:
-      1. Highlights the most important and relevant news
-      2. Connects related topics into a coherent narrative
-      3. Is enjoyable to read over morning coffee
-      4. Is approximately 300-500 words
-
-      Focus on creating a pleasant reading experience.
+      Craft a morning editorial that a reader will genuinely enjoy over their first cup of coffee.
+      Open with a strong hook, group related stories into thematic threads, use smooth transitions,
+      and close with a memorable reflection. Write in a warm, conversational tone — be insightful
+      and analytical, with a touch of personality. Aim for 400-600 words in Markdown format.
     keywords_section: |
 
-      Pay special attention to topics related to: {keywords}
+      Give special emphasis and deeper analysis to topics related to: {keywords}
     format_section: |
 
-      Format as:
-      TITLE: <engaging editorial title>
-      SUMMARY: <the editorial content>
+      Format your response as:
+      TITLE: <a crisp, evocative editorial title that captures the day's mood>
+      SUMMARY: <the full editorial content in Markdown>
   
   # Token optimization settings
   max_content_length: 1500  # Maximum characters of article content to send to AI (default: 1500)
