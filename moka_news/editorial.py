@@ -230,7 +230,7 @@ class EditorialGenerator:
         if not self.editorials_dir.exists():
             return editorials
         
-        for filepath in sorted(self.editorials_dir.glob("*.md"), reverse=True):
+        for filepath in sorted(self.editorials_dir.glob("*.md"), reverse=False):
             try:
                 # Parse filename to get timestamp
                 filename = filepath.stem

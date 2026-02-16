@@ -281,7 +281,7 @@ Feed Management:
             recent_editorials = editorial_generator.list_editorials()
             if recent_editorials:
                 # Load the most recent editorial
-                most_recent = recent_editorials[0]  # list_editorials returns sorted by date (newest first)
+                most_recent = recent_editorials[-1]  # list_editorials returns sorted by date (oldest first)
                 editorial_path = most_recent["filepath"]  # Use the filepath from the dictionary
                 editorial_content = editorial_generator.load_editorial(editorial_path)  
                 print(f"✓ Loading most recent editorial: {editorial_path}")

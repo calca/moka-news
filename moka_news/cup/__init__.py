@@ -238,50 +238,13 @@ class ArticleCard(Static):
 class EditorialView(Static):
     """Widget to display the morning editorial"""
 
-    def __init__(
-        self, 
-        editorial_content: str, 
-        can_navigate_prev: bool = False,
-        can_navigate_next: bool = False,
-        on_prev_callback: Optional[Callable] = None,
-        on_next_callback: Optional[Callable] = None,
-        current_index: int = 0,
-        total_count: int = 0,
-        *args, **kwargs
-    ):
+    def __init__(self, editorial_content: str, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.editorial_content = editorial_content
-        self.can_navigate_prev = can_navigate_prev
-        self.can_navigate_next = can_navigate_next
-        self.on_prev_callback = on_prev_callback
-        self.on_next_callback = on_next_callback
-        self.current_index = current_index
-        self.total_count = total_count
 
     def compose(self) -> ComposeResult:
         """Create the editorial view layout"""
-        # Navigation buttons at the top
-        if self.total_count > 1:
-            with Horizontal(classes="navigation-bar"):
-                prev_btn = Button("← Prev", id="prev-btn", disabled=not self.can_navigate_prev)
-                next_btn = Button("Next →", id="next-btn", disabled=not self.can_navigate_next)
-                
-                yield prev_btn
-                yield Static(
-                    f"Editorial {self.current_index + 1} of {self.total_count}",
-                    classes="nav-info"
-                )
-                yield next_btn
-
-        # Editorial content
         yield Markdown(self.editorial_content)
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        """Handle button presses"""
-        if event.button.id == "prev-btn" and self.on_prev_callback:
-            self.on_prev_callback()
-        elif event.button.id == "next-btn" and self.on_next_callback:
-            self.on_next_callback()
 
 
 class EditorialListScreen(Screen):
@@ -399,23 +362,6 @@ class Cup(App):
         background: $panel;
     }
     
-    .navigation-bar {
-        height: auto;
-        padding: 0 0 1 0;
-        align: center middle;
-    }
-    
-    .navigation-bar Button {
-        width: auto;
-        margin: 0 2;
-    }
-    
-    .nav-info {
-        color: $text-muted;
-        text-align: center;
-        width: 1fr;
-    }
-    
     #empty-state {
         text-align: center;
         padding: 4;
@@ -436,8 +382,8 @@ class Cup(App):
         Binding("i", "show_info", "Info"),
         Binding("o", "open_external", "Open External"),
         Binding("t", "toggle_theme", "Toggle Theme"),
-        Binding("left", "navigate_prev", "Prev Editorial"),
-        Binding("right", "navigate_next", "Next Editorial"),
+        Binding("p", "navigate_prev", "Prev Editorial"),
+        Binding("n", "navigate_next", "Next Editorial"),
         ("ctrl+c", "quit", "Quit"),
     ]
 
@@ -560,21 +506,7 @@ class Cup(App):
         with ScrollableContainer(id="content-container"):
             # Always start with editorial if available, otherwise show empty state
             if self.editorial_content:
-                # Navigation parameters
-                total_editorials = len(self.editorial_list)
-                can_prev = self.current_editorial_index > 0
-                can_next = self.current_editorial_index < total_editorials - 1
-                
-                yield EditorialView(
-                    self.editorial_content, 
-                    can_navigate_prev=can_prev,
-                    can_navigate_next=can_next,
-                    on_prev_callback=self._navigate_prev_editorial,
-                    on_next_callback=self._navigate_next_editorial,
-                    current_index=self.current_editorial_index,
-                    total_count=total_editorials,
-                    id="editorial-container"
-                )
+                yield EditorialView(self.editorial_content, id="editorial-container")
             else:
                 yield Static(
                     "[bold]No editorial available[/bold]\n\n"
@@ -881,8 +813,8 @@ class Cup(App):
             # The list_editorials already returns properly formatted editorials
             editorials = editorial_files  # Use the data directly
             
-            # Sort by timestamp (newest first) - should already be sorted but ensure it
-            editorials.sort(key=lambda x: x["timestamp"], reverse=True)
+            # Sort by timestamp (oldest first) - should already be sorted but ensure it
+            editorials.sort(key=lambda x: x["timestamp"], reverse=False)
 
             # Show editorial list screen
             screen = EditorialListScreen(editorials)
@@ -948,21 +880,7 @@ class Cup(App):
         
         # Mount only the editorial
         if self.editorial_content:
-            # Navigation parameters
-            total_editorials = len(self.editorial_list)
-            can_prev = self.current_editorial_index > 0
-            can_next = self.current_editorial_index < total_editorials - 1
-            
-            editorial_view = EditorialView(
-                self.editorial_content,
-                can_navigate_prev=can_prev,
-                can_navigate_next=can_next,
-                on_prev_callback=self._navigate_prev_editorial,
-                on_next_callback=self._navigate_next_editorial,
-                current_index=self.current_editorial_index,
-                total_count=total_editorials,
-                id="editorial-container"
-            )
+            editorial_view = EditorialView(self.editorial_content, id="editorial-container")
             await container.mount(editorial_view)
         else:
             empty_state = Static(
