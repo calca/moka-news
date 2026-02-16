@@ -15,6 +15,7 @@ from textual.widgets import (
     ListItem,
     Button,
     ProgressBar,
+    Collapsible,
 )
 from textual.binding import Binding
 from textual.screen import Screen, ModalScreen
@@ -26,6 +27,9 @@ import webbrowser
 import asyncio
 import subprocess
 from moka_news import __version__
+from moka_news.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class ConfirmationDialog(ModalScreen[bool]):
@@ -249,15 +253,33 @@ class ArticleCard(Static):
 
 
 class EditorialView(Static):
-    """Widget to display the morning editorial"""
+    """Widget to display the morning editorial with collapsible sources"""
 
     def __init__(self, editorial_content: str, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.editorial_content = editorial_content
+        self._parse_editorial()
+
+    def _parse_editorial(self):
+        """Parse editorial content to separate main content from sources"""
+        # Split editorial at the Sources section
+        if "## Sources" in self.editorial_content:
+            parts = self.editorial_content.split("## Sources", 1)
+            self.main_content = parts[0].rstrip()
+            self.sources_content = parts[1].strip() if len(parts) > 1 else ""
+        else:
+            self.main_content = self.editorial_content
+            self.sources_content = ""
 
     def compose(self) -> ComposeResult:
-        """Create the editorial view layout"""
-        yield Markdown(self.editorial_content)
+        """Create the editorial view layout with collapsible sources"""
+        # Main editorial content
+        yield Markdown(self.main_content)
+        
+        # Sources section in a collapsible
+        if self.sources_content:
+            with Collapsible(title="📰 Sources", collapsed=True):
+                yield Markdown(self.sources_content)
 
 
 class EditorialListScreen(Screen):
