@@ -44,6 +44,7 @@ Craft a morning editorial that a reader will genuinely enjoy over their first cu
 **Content**
 - Prioritize the most significant and interesting stories; not every article needs equal coverage.
 - Provide enough context so readers feel informed without being overwhelmed.
+- For each story or topic discussed, include a Markdown link to the original article so the reader can dive deeper (e.g., [Read more](url)). Use the article links provided in the input.
 - Aim for approximately 400-600 words — substantial enough to be satisfying, concise enough to finish in one coffee.
 
 Write in Markdown format with a clear structure. Use headers (##) to separate major themes if needed.""",
@@ -248,7 +249,8 @@ ai:
       Craft a morning editorial that a reader will genuinely enjoy over their first cup of coffee.
       Open with a strong hook, group related stories into thematic threads, use smooth transitions,
       and close with a memorable reflection. Write in a warm, conversational tone — be insightful
-      and analytical, with a touch of personality. Aim for 400-600 words in Markdown format.
+      and analytical, with a touch of personality. For each story discussed, include a Markdown link
+      to the original article so the reader can dive deeper. Aim for 400-600 words in Markdown format.
     keywords_section: |
 
       Give special emphasis and deeper analysis to topics related to: {keywords}

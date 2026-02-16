@@ -120,9 +120,12 @@ class EditorialGenerator:
             title = article.get("ai_title", article.get("title", ""))
             summary = article.get("ai_summary", article.get("summary", ""))
             source = article.get("source", "Unknown")
+            link = article.get("link", "")
             
             articles_text += f"{i}. {title}\n"
             articles_text += f"   Source: {source}\n"
+            if link:
+                articles_text += f"   Link: {link}\n"
             articles_text += f"   {summary}\n\n"
         
         return articles_text
@@ -158,7 +161,11 @@ class EditorialGenerator:
         for i, article in enumerate(articles[:5], 1):
             title = article.get("ai_title", article.get("title", "Untitled"))
             summary = article.get("ai_summary", article.get("summary", ""))[:150]
-            content += f"**{i}. {title}**\n{summary}\n\n"
+            link = article.get("link", "")
+            if link:
+                content += f"**{i}. [{title}]({link})**\n{summary}\n\n"
+            else:
+                content += f"**{i}. {title}**\n{summary}\n\n"
         
         return content
     
