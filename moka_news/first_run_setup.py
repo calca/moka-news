@@ -46,19 +46,22 @@ AI_PROVIDERS = {
         "name": "GitHub Copilot CLI",
         "requires_api_key": False,
         "cli_required": True,
-        "cli_command": "gh"
+        "cli_command": "copilot",
+        "install_info": "Install: 'npm install -g @github/copilot-cli' then authenticate"
     },
     "gemini-cli": {
-        "name": "Gemini CLI (gcloud)",
+        "name": "Google Gemini CLI",
         "requires_api_key": False,
         "cli_required": True,
-        "cli_command": "gcloud"
+        "cli_command": "gemini",
+        "install_info": "Install: 'pip install google-generativeai-cli' then authenticate"
     },
     "mistral-cli": {
         "name": "Mistral CLI",
         "requires_api_key": False,
         "cli_required": True,
-        "cli_command": "mistral"
+        "cli_command": "mistral",
+        "install_info": "Install: 'pip install mistralai-cli' then authenticate"
     }
 }
 
@@ -108,34 +111,63 @@ def prompt_ai_provider() -> Dict[str, Any]:
     print("☕ Welcome to MoKa News!")
     print("=" * 60)
     print("\nLet's set up your AI provider for news summaries.\n")
-    print("Available AI providers:")
     
-    # Display available providers
+    # Separate available and unavailable providers
     available_providers = []
-    for i, (key, provider) in enumerate(AI_PROVIDERS.items(), 1):
-        # Check if CLI is available for CLI-based providers
+    unavailable_providers = []
+    
+    print("🤖 Available AI Providers:")
+    provider_index = 1
+    
+    for key, provider in AI_PROVIDERS.items():
         if provider.get("cli_required", False):
             cli_cmd = provider.get("cli_command")
-            if cli_cmd and not check_cli_available(cli_cmd):
-                continue  # Skip unavailable CLI providers
+            is_available = cli_cmd and check_cli_available(cli_cmd)
+            
+            if is_available:
+                available_providers.append(key)
+                print(f"  [{provider_index}] {provider['name']} ✅")
+                print(f"      (uses '{cli_cmd}' CLI - detected and ready)")
+                provider_index += 1
+            else:
+                unavailable_providers.append(key)
+        else:
+            # API-based provider
+            available_providers.append(key)
+            env_var = provider.get('env_var', '')
+            has_key = os.getenv(env_var) is not None
+            key_status = "✅ key found" if has_key else "⚠️ key needed"
+            print(f"  [{provider_index}] {provider['name']} ({key_status})")
+            print(f"      (requires {env_var} environment variable)")
+            provider_index += 1
+    
+    # Show unavailable CLI providers with installation instructions
+    if unavailable_providers:
+        print(f"\n📥 CLI Providers (require installation):")
+        start_index = len(available_providers) + 1
         
-        available_providers.append(key)
-        print(f"  [{i}] {provider['name']}")
-        if provider.get("requires_api_key"):
-            print(f"      (requires {provider['env_var']} environment variable)")
-        elif provider.get("cli_required"):
-            print(f"      (uses '{provider.get('cli_command')}' CLI - detected)")
+        for i, key in enumerate(unavailable_providers):
+            provider = AI_PROVIDERS[key]
+            cli_cmd = provider.get("cli_command")
+            install_info = provider.get("install_info", f"Install '{cli_cmd}' CLI")
+            
+            available_providers.append(key)  # Add to selectable list
+            print(f"  [{start_index + i}] {provider['name']} ❌")
+            print(f"      ('{cli_cmd}' not found - {install_info})")
+            provider_index += 1
     
     # Add demo/simple option
-    print(f"  [{len(available_providers) + 1}] Simple mode (no AI, for demo/testing only)")
+    print(f"\n🧪 Testing Option:")
+    simple_index = len(available_providers) + 1
+    print(f"  [{simple_index}] Simple mode (no AI, for demo/testing only)")
     
     # Get user choice
     while True:
         try:
-            choice_str = input(f"\nSelect provider [1-{len(available_providers) + 1}]: ").strip()
+            choice_str = input(f"\nSelect provider [1-{simple_index}]: ").strip()
             choice = int(choice_str)
             
-            if choice == len(available_providers) + 1:
+            if choice == simple_index:
                 # Simple mode selected
                 print("\n⚠️  Note: Simple mode is for demo/testing only. No AI summaries will be generated.")
                 confirm = input("Continue with simple mode? [y/N]: ").strip().lower()
@@ -147,6 +179,24 @@ def prompt_ai_provider() -> Dict[str, Any]:
             if 1 <= choice <= len(available_providers):
                 selected_provider = available_providers[choice - 1]
                 provider_info = AI_PROVIDERS[selected_provider]
+                
+                # Check if CLI is required but not available
+                if provider_info.get("cli_required", False):
+                    cli_cmd = provider_info.get("cli_command")
+                    if not check_cli_available(cli_cmd):
+                        print(f"\n❌ '{cli_cmd}' CLI is not installed.")
+                        print(f"   {provider_info.get('install_info', f'Please install {cli_cmd}')}")
+                        
+                        install_choice = input(f"\nInstall '{cli_cmd}' now and try again? [y/N]: ").strip().lower()
+                        if install_choice == 'y':
+                            print(f"\n📋 Installation instructions for {provider_info['name']}:")
+                            print(f"   {provider_info.get('install_info', f'Install {cli_cmd}')}")
+                            print("\n   After installation, restart moka-news to try again.")
+                            input("\nPress Enter when ready to continue setup...")
+                            continue
+                        else:
+                            print("   Please select a different provider or install the CLI.")
+                            continue
                 
                 result = {"provider": selected_provider}
                 
@@ -163,10 +213,12 @@ def prompt_ai_provider() -> Dict[str, Any]:
                         print("   Please set it before running moka-news:")
                         print(f"   export {env_var}='your-api-key-here'")
                         result["api_key"] = None
+                else:
+                    print(f"\n✓ {provider_info['name']} configured successfully")
                 
                 return result
             else:
-                print(f"Invalid choice. Please enter a number between 1 and {len(available_providers) + 1}.")
+                print(f"Invalid choice. Please enter a number between 1 and {simple_index}.")
         except ValueError:
             print("Invalid input. Please enter a number.")
         except (KeyboardInterrupt, EOFError):

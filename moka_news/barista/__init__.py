@@ -301,19 +301,19 @@ class GitHubCopilotCLIBarista(AIProvider):
 
     def __init__(self):
         """Initialize GitHub Copilot CLI provider"""
-        # Check if gh CLI is available
+        # Check if copilot CLI is available
         try:
             result = subprocess.run(
-                ["gh", "--version"],
+                ["copilot", "--version"],
                 capture_output=True,
                 text=True,
                 timeout=CLI_VERSION_CHECK_TIMEOUT,
             )
             if result.returncode != 0:
-                raise RuntimeError("GitHub CLI (gh) is not available")
+                raise RuntimeError("GitHub Copilot CLI is not available")
         except (subprocess.TimeoutExpired, FileNotFoundError):
             raise RuntimeError(
-                "GitHub CLI (gh) is not installed. Install from: https://cli.github.com/"
+                "GitHub Copilot CLI is not installed. Install with: npm install -g @github/copilot-cli"
             )
 
     def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS) -> Dict[str, str]:
@@ -321,17 +321,13 @@ class GitHubCopilotCLIBarista(AIProvider):
         try:
             prompt = _build_prompt(article, keywords, prompts, max_content_length)
 
-            # Run gh copilot with the prompt
-            # Note: --allow-all-tools is required for non-interactive mode.
-            # This allows the CLI to run without prompting for tool permissions.
-            # The prompt is read-only (text analysis) so this is safe.
+            # Run copilot CLI directly
             result = subprocess.run(
                 [
-                    "gh",
                     "copilot",
-                    "-p",
+                    "generate",
+                    "--prompt",
                     prompt,
-                    "--allow-all-tools",
                 ],
                 capture_output=True,
                 text=True,
@@ -356,35 +352,35 @@ class GeminiCLIBarista(AIProvider):
 
     def __init__(self):
         """Initialize Gemini CLI provider"""
-        # Check if gcloud CLI is available
+        # Check if gemini CLI is available
         try:
             result = subprocess.run(
-                ["gcloud", "--version"],
+                ["gemini", "--version"],
                 capture_output=True,
                 text=True,
                 timeout=CLI_VERSION_CHECK_TIMEOUT,
             )
             if result.returncode != 0:
-                raise RuntimeError("gcloud CLI is not available")
+                raise RuntimeError("Gemini CLI is not available")
         except (subprocess.TimeoutExpired, FileNotFoundError):
             raise RuntimeError(
-                "gcloud CLI is not installed. Install from: https://cloud.google.com/sdk/docs/install"
+                "Gemini CLI is not installed. Install with: pip install google-generativeai-cli"
             )
 
     def generate_summary(self, article: Dict[str, Any], keywords: list = None, prompts: Dict[str, str] = None, max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS) -> Dict[str, str]:
-        """Generate summary using gcloud CLI with Gemini"""
+        """Generate summary using gemini CLI"""
         try:
             prompt = _build_prompt(article, keywords, prompts, max_content_length)
 
-            # Run gcloud with Gemini
+            # Run gemini CLI directly 
             result = subprocess.run(
                 [
-                    "gcloud",
-                    "ai",
-                    "models",
-                    "generate-content",
-                    f"--model={DEFAULT_AI_MODELS['gemini']}",
-                    f"--prompt={prompt}",
+                    "gemini",
+                    "generate",
+                    "--prompt",
+                    prompt,
+                    "--max-tokens",
+                    str(max_tokens),
                 ],
                 capture_output=True,
                 text=True,
