@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo/moka-news-logo.png" alt="MoKa News Logo" width="200"/>
+  <img src="assets/moka-news-logo.png" alt="MoKa News Logo" width="200"/>
 </p>
 
 # ☕ MoKa News
@@ -51,6 +51,12 @@ A beautiful Textual-based TUI that displays your personalized morning editorial 
 - 🔗 Source links in editorial markdown for easy access
 - 🚀 Fast and lightweight
 - 💾 RSS feed management with OPML storage
+
+## TUI
+
+<p align="center">
+  <img src="assets/screenshot.png" alt="MoKa News TUI" width="500"/>
+</p>
 
 ## Installation
 
