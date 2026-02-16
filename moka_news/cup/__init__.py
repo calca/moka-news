@@ -238,13 +238,50 @@ class ArticleCard(Static):
 class EditorialView(Static):
     """Widget to display the morning editorial"""
 
-    def __init__(self, editorial_content: str, *args, **kwargs):
+    def __init__(
+        self, 
+        editorial_content: str, 
+        can_navigate_prev: bool = False,
+        can_navigate_next: bool = False,
+        on_prev_callback: Optional[Callable] = None,
+        on_next_callback: Optional[Callable] = None,
+        current_index: int = 0,
+        total_count: int = 0,
+        *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
         self.editorial_content = editorial_content
+        self.can_navigate_prev = can_navigate_prev
+        self.can_navigate_next = can_navigate_next
+        self.on_prev_callback = on_prev_callback
+        self.on_next_callback = on_next_callback
+        self.current_index = current_index
+        self.total_count = total_count
 
     def compose(self) -> ComposeResult:
         """Create the editorial view layout"""
+        # Navigation buttons at the top
+        if self.total_count > 1:
+            with Horizontal(classes="navigation-bar"):
+                prev_btn = Button("← Prev", id="prev-btn", disabled=not self.can_navigate_prev)
+                next_btn = Button("Next →", id="next-btn", disabled=not self.can_navigate_next)
+                
+                yield prev_btn
+                yield Static(
+                    f"Editorial {self.current_index + 1} of {self.total_count}",
+                    classes="nav-info"
+                )
+                yield next_btn
+
+        # Editorial content
         yield Markdown(self.editorial_content)
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle button presses"""
+        if event.button.id == "prev-btn" and self.on_prev_callback:
+            self.on_prev_callback()
+        elif event.button.id == "next-btn" and self.on_next_callback:
+            self.on_next_callback()
 
 
 class EditorialListScreen(Screen):
@@ -362,6 +399,23 @@ class Cup(App):
         background: $panel;
     }
     
+    .navigation-bar {
+        height: auto;
+        padding: 0 0 1 0;
+        align: center middle;
+    }
+    
+    .navigation-bar Button {
+        width: auto;
+        margin: 0 2;
+    }
+    
+    .nav-info {
+        color: $text-muted;
+        text-align: center;
+        width: 1fr;
+    }
+    
     #empty-state {
         text-align: center;
         padding: 4;
@@ -382,6 +436,8 @@ class Cup(App):
         Binding("i", "show_info", "Info"),
         Binding("o", "open_external", "Open External"),
         Binding("t", "toggle_theme", "Toggle Theme"),
+        Binding("left", "navigate_prev", "Prev Editorial"),
+        Binding("right", "navigate_next", "Next Editorial"),
         ("ctrl+c", "quit", "Quit"),
     ]
 
@@ -423,12 +479,79 @@ class Cup(App):
         self.current_editorial_path = current_editorial_path  # Track current editorial path
         self.config_path = config_path
         self.editorials_dir = editorials_dir
+        
+        # Navigation properties for editorials
+        self.editorial_list: List[Dict[str, Any]] = []
+        self.current_editorial_index: int = 0
+        self._load_editorial_list()
+
+    def _load_editorial_list(self) -> None:
+        """Load the list of available editorials"""
+        if self.editorial_generator:
+            try:
+                self.editorial_list = self.editorial_generator.list_editorials()
+                # Find current editorial index if a path is provided
+                if self.current_editorial_path and self.editorial_list:
+                    for i, editorial in enumerate(self.editorial_list):
+                        if editorial["filepath"] == self.current_editorial_path:
+                            self.current_editorial_index = i
+                            break
+            except Exception as e:
+                logger.warning(f"Could not load editorial list: {e}")
+                self.editorial_list = []
+                self.current_editorial_index = 0
+
+    def _navigate_prev_editorial(self) -> None:
+        """Navigate to the previous editorial"""
+        if not self.editorial_list or len(self.editorial_list) <= 1:
+            return
+        
+        if self.current_editorial_index > 0:
+            self.current_editorial_index -= 1
+            self._load_current_editorial()
+    
+    def _navigate_next_editorial(self) -> None:
+        """Navigate to the next editorial"""
+        if not self.editorial_list or len(self.editorial_list) <= 1:
+            return
+        
+        if self.current_editorial_index < len(self.editorial_list) - 1:
+            self.current_editorial_index += 1
+            self._load_current_editorial()
+    
+    def _load_current_editorial(self) -> None:
+        """Load and display the current editorial based on index"""
+        if not self.editorial_list or self.current_editorial_index >= len(self.editorial_list):
+            return
+        
+        try:
+            current_editorial = self.editorial_list[self.current_editorial_index]
+            editorial_path = current_editorial["filepath"]
+            
+            # Load editorial content
+            content = self.editorial_generator.load_editorial(editorial_path)
+            self.editorial_content = content
+            self.current_editorial_path = editorial_path
+            
+            # Update subtitle
+            self.sub_title = self._format_subtitle()
+            
+            # Rebuild the view with new content
+            self._rebuild_view()
+            
+            # Notify user
+            self.notify(
+                f"Loaded editorial: {current_editorial.get('title', 'Untitled')}",
+                severity="information"
+            )
+        except Exception as e:
+            self.notify(f"Error loading editorial: {e}", severity="error")
 
     def _format_subtitle(self) -> str:
         """Format the subtitle with last update time"""
         time_str = self.last_update.strftime("%H:%M:%S")
         date_str = self.last_update.strftime("%d/%m/%Y")
-        return f"Your Morning Persona News | Editorial View | Last update: {date_str} at {time_str}"
+        return f"Your Morning News | Editorial View | Last update: {date_str} at {time_str}"
 
     def compose(self) -> ComposeResult:
         """Create the application layout"""
@@ -437,7 +560,21 @@ class Cup(App):
         with ScrollableContainer(id="content-container"):
             # Always start with editorial if available, otherwise show empty state
             if self.editorial_content:
-                yield EditorialView(self.editorial_content, id="editorial-container")
+                # Navigation parameters
+                total_editorials = len(self.editorial_list)
+                can_prev = self.current_editorial_index > 0
+                can_next = self.current_editorial_index < total_editorials - 1
+                
+                yield EditorialView(
+                    self.editorial_content, 
+                    can_navigate_prev=can_prev,
+                    can_navigate_next=can_next,
+                    on_prev_callback=self._navigate_prev_editorial,
+                    on_next_callback=self._navigate_next_editorial,
+                    current_index=self.current_editorial_index,
+                    total_count=total_editorials,
+                    id="editorial-container"
+                )
             else:
                 yield Static(
                     "[bold]No editorial available[/bold]\n\n"
@@ -689,6 +826,14 @@ class Cup(App):
             f"Switched to {theme_name} theme: {new_theme}", severity="information"
         )
 
+    def action_navigate_prev(self) -> None:
+        """Navigate to previous editorial using keyboard shortcut"""
+        self._navigate_prev_editorial()
+
+    def action_navigate_next(self) -> None:
+        """Navigate to next editorial using keyboard shortcut"""
+        self._navigate_next_editorial()
+
     def action_open_external(self) -> None:
         """Open current editorial in external application"""
         if not self.opener_command:
@@ -757,6 +902,16 @@ class Cup(App):
                 content = self.editorial_generator.load_editorial(editorial_path)
                 self.editorial_content = content
                 self.current_editorial_path = editorial_path  # Track current editorial
+                
+                # Reload editorial list and update current index for navigation
+                self._load_editorial_list()
+                
+                # Find the index of the selected editorial
+                for i, editorial in enumerate(self.editorial_list):
+                    if editorial["filepath"] == editorial_path:
+                        self.current_editorial_index = i
+                        break
+                
                 self.sub_title = self._format_subtitle()
                 
                 # Force complete rebuild by clearing and remounting everything
@@ -793,7 +948,21 @@ class Cup(App):
         
         # Mount only the editorial
         if self.editorial_content:
-            editorial_view = EditorialView(self.editorial_content, id="editorial-container")
+            # Navigation parameters
+            total_editorials = len(self.editorial_list)
+            can_prev = self.current_editorial_index > 0
+            can_next = self.current_editorial_index < total_editorials - 1
+            
+            editorial_view = EditorialView(
+                self.editorial_content,
+                can_navigate_prev=can_prev,
+                can_navigate_next=can_next,
+                on_prev_callback=self._navigate_prev_editorial,
+                on_next_callback=self._navigate_next_editorial,
+                current_index=self.current_editorial_index,
+                total_count=total_editorials,
+                id="editorial-container"
+            )
             await container.mount(editorial_view)
         else:
             empty_state = Static(

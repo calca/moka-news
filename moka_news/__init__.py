@@ -1,5 +1,5 @@
 """
-MoKa News - Morning Persona News
+MoKa News - Morning News
 A TUI RSS news aggregator with AI summaries
 """
 

@@ -1,6 +1,6 @@
 # ☕ MoKa News
 
-**Morning Persona News** - A beautiful TUI (Text User Interface) RSS news aggregator with AI-powered editorial generation.
+**Morning News** - A beautiful TUI (Text User Interface) RSS news aggregator with AI-powered editorial generation.
 
 ## Architecture
 

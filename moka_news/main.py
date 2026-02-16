@@ -75,7 +75,7 @@ def main():
 
     # Parse command line arguments
     parser = argparse.ArgumentParser(
-        description="☕ MoKa News - Your Morning Persona News",
+        description="☕ MoKa News - Your Morning News",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
