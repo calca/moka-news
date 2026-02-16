@@ -299,7 +299,7 @@ def prompt_prompts_customization() -> bool:
             print("    - format_section: Editorial output format instructions")
             return True
         else:
-            print("Please enter 'y' or 'n'."))
+            print("Please enter 'y' or 'n'.")
 
 
 def prompt_opml_setup(opml_manager: OPMLManager) -> bool:
@@ -402,7 +402,7 @@ def prompt_launch_now(provider_config: Dict[str, Any], feeds_configured: bool) -
         
     # Check provider readiness
     provider = provider_config.get("provider")
-    elif provider == "simple":
+    if provider == "simple":
         print("ℹ️  Using simple mode (no AI editorials).")
     elif provider in ["copilot-cli", "gemini-cli", "mistral-cli"]:
         print(f"ℹ️  Using {provider}. Make sure the CLI is installed and authenticated.")
@@ -476,7 +476,7 @@ def launch_moka_news():
     editorial_generator = EditorialGenerator(
         ai_provider=ai_provider,
         keywords=ai_config.get("keywords", []),
-        prompts=ai_config.get("editorial_prompts", {}),
+        editorial_prompts=ai_config.get("editorial_prompts", {}),
         editorials_dir=editorial_config.get("editorials_dir"),
     )
     
@@ -570,7 +570,7 @@ def run_first_run_setup(opml_manager: OPMLManager) -> Dict[str, Any]:
     if will_customize_prompts:
         print("Editorial AI prompts: Can be customized in config file")
     else:
-        print("Editorial AI prompts: Using defaults (can customize later)"))
+        print("Editorial AI prompts: Using defaults (can customize later)")
     
     # Ask if user wants to launch MoKa News now
     launch_now = prompt_launch_now(provider_config, feeds_configured)
