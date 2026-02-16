@@ -321,7 +321,10 @@ class Cup(App):
             else:
                 yield Static(
                     "[bold]No editorial available[/bold]\n\n"
-                    "An editorial will be generated from your RSS feeds.",
+                    "No new articles found from your RSS feeds.\n"
+                    "• Press 'r' to refresh feeds manually\n"
+                    "• Press 'h' to view past editorials\n"
+                    "• Check your feed configuration if this persists",
                     id="empty-state",
                 )
 
@@ -604,7 +607,10 @@ class Cup(App):
             container.mount(
                 Static(
                     "[bold]No editorial available[/bold]\n\n"
-                    "An editorial will be generated from your RSS feeds.",
+                    "No new articles found from your RSS feeds.\n"
+                    "• Press 'r' to refresh feeds manually\n"
+                    "• Press 'h' to view past editorials\n"
+                    "• Check your feed configuration if this persists",
                     id="empty-state",
                 )
             )

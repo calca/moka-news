@@ -235,12 +235,18 @@ Feed Management:
         feed_urls, config, ai_provider, download_tracker
     )
 
+    # Always continue to TUI even if no new articles are found
+    # This allows access to past editorials and manual refresh
     if not articles:
-        print("No articles to display.")
-        return
+        print("No new articles found - launching TUI to access past editorials...")
+    else:
+        print(f"✓ Found {len(articles)} articles")
 
     # Generate editorial
-    print("📝 Generating morning editorial...")
+    if articles:
+        print("📝 Generating morning editorial...")
+    else:
+        print("📝 No new articles for editorial - checking for previous editorial...")
     editorial_content = None
 
     # Get AI provider instance for editorial generation
@@ -264,22 +270,40 @@ Feed Management:
 
     editorial_path = None
     try:
-        editorial = editorial_generator.generate_editorial(articles)
-        editorial_path = editorial_generator.save_editorial(editorial)
-        editorial_content = editorial_generator.load_editorial(editorial_path)
-        print(f"✓ Editorial saved to: {editorial_path}")
+        if articles:
+            # Generate new editorial from articles
+            editorial = editorial_generator.generate_editorial(articles)
+            editorial_path = editorial_generator.save_editorial(editorial)
+            editorial_content = editorial_generator.load_editorial(editorial_path)
+            print(f"✓ Editorial generated and saved to: {editorial_path}")
+        else:
+            # Try to load the most recent editorial
+            recent_editorials = editorial_generator.list_editorials()
+            if recent_editorials:
+                # Load the most recent editorial
+                most_recent = recent_editorials[0]  # list_editorials returns sorted by date (newest first)
+                editorial_path = editorial_generator.editorials_dir / most_recent
+                editorial_content = editorial_generator.load_editorial(editorial_path)  
+                print(f"✓ Loading most recent editorial: {editorial_path}")
+            else:
+                editorial_content = None
+                print("ℹ️  No articles and no previous editorials found")
     except Exception as e:
-        print(f"⚠️  Error generating editorial: {e}")
+        print(f"⚠️  Error with editorial: {e}")
         editorial_content = None
 
     # Step 3: The Cup - Display in TUI
     if not use_tui:
         print("\n" + "=" * 80)
-        for i, article in enumerate(articles, 1):
-            print(f"\n[{i}] {article.get('ai_title', article['title'])}")
-            print(f"    Source: {article.get('source', 'Unknown')}")
-            print(f"    {article.get('ai_summary', article['summary'][:200])}")
-            print(f"    Link: {article.get('link', 'N/A')}")
+        if articles:
+            for i, article in enumerate(articles, 1):
+                print(f"\n[{i}] {article.get('ai_title', article['title'])}")
+                print(f"    Source: {article.get('source', 'Unknown')}")
+                print(f"    {article.get('ai_summary', article['summary'][:200])}")
+                print(f"    Link: {article.get('link', 'N/A')}")
+        else:
+            print("\n📰 No new articles found.")
+            print("   Try refreshing later or check your RSS feed configuration.")
         print("\n" + "=" * 80)
 
         # Print editorial if available
