@@ -3,6 +3,8 @@
 
 ai:
   provider: gemini-cli
+  max_content_length: 1200  # Shorter for efficiency
+  max_tokens: 200           # Concise summaries
   
   keywords:
     - business
@@ -76,8 +78,3 @@ refresh:
   allowed_times: ["07:00"]  # Single morning briefing
   max_daily_refreshes: 1    # Focus on morning routine
   require_confirmation_outside_hours: true
-
-# Optimized for quick reading
-ai:
-  max_content_length: 1200  # Shorter for efficiency
-  max_tokens: 200           # Concise summaries
