@@ -17,6 +17,7 @@ from textual.widgets import (
 )
 from textual.binding import Binding
 from textual.screen import Screen, ModalScreen
+from textual.events import Mount
 from typing import List, Dict, Any, Callable, Optional
 from pathlib import Path
 from datetime import datetime, time
@@ -25,16 +26,10 @@ import asyncio
 import subprocess
 
 
-class ConfirmationDialog(ModalScreen):
+class ConfirmationDialog(ModalScreen[bool]):
     """Modal dialog for confirming actions"""
 
-    BINDINGS = [
-        Binding("escape", "dismiss(False)", "Cancel", priority=True),
-        Binding("n", "dismiss(False)", "No", priority=True),
-        Binding("y", "dismiss(True)", "Yes", priority=True),
-    ]
-
-    CSS = """
+    DEFAULT_CSS = """
     ConfirmationDialog {
         align: center middle;
     }
@@ -65,8 +60,8 @@ class ConfirmationDialog(ModalScreen):
     }
     """
 
-    def __init__(self, message: str, title: str = "Confirmation", *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, message: str, title: str = "Confirmation"):
+        super().__init__()
         self.message = message
         self.dialog_title = title
 
@@ -83,7 +78,14 @@ class ConfirmationDialog(ModalScreen):
         """Handle button clicks"""
         if event.button.id == "yes-button":
             self.dismiss(True)
-        else:
+        elif event.button.id == "no-button":
+            self.dismiss(False)
+    
+    def on_key(self, event) -> None:
+        """Handle keyboard input"""
+        if event.key == "y":
+            self.dismiss(True)
+        elif event.key == "n" or event.key == "escape":
             self.dismiss(False)
 
 
@@ -462,18 +464,23 @@ class Cup(App):
 
             if not is_allowed:
                 # Show warning dialog and ask for confirmation
-                dialog = ConfirmationDialog(
-                    message=f"{reason}\n\nDo you want to refresh anyway?",
-                    title="⚠️ Refresh Outside Scheduled Hours",
-                )
-                confirmed = await self.push_screen_wait(dialog)
+                try:
+                    dialog = ConfirmationDialog(
+                        message=f"{reason}\n\nDo you want to refresh anyway?",
+                        title="⚠️ Refresh Outside Scheduled Hours",
+                    )
+                    confirmed = await self.push_screen_wait(dialog)
 
-                if not confirmed:
-                    self.notify("Refresh cancelled", severity="information")
+                    if not confirmed:
+                        self.notify("Refresh cancelled", severity="information")
+                        return
+
+                    # User confirmed, proceed with manual refresh
+                    self.notify("Manual refresh confirmed", severity="information")
+                except Exception as e:
+                    # If dialog fails, ask for confirmation differently
+                    self.notify(f"{reason} - Press 'r' again to confirm", severity="warning")
                     return
-
-                # User confirmed, proceed with manual refresh
-                self.notify("Manual refresh confirmed", severity="information")
 
         self.notify("Refreshing news feeds...", severity="information")
 
