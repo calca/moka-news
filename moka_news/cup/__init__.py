@@ -435,6 +435,7 @@ class Cup(App):
         yield Header(show_clock=True)
 
         with ScrollableContainer(id="content-container"):
+            # Always start with editorial if available, otherwise show empty state
             if self.editorial_content:
                 yield EditorialView(self.editorial_content, id="editorial-container")
             else:
@@ -740,26 +741,70 @@ class Cup(App):
 
             # Show editorial list screen
             screen = EditorialListScreen(editorials)
-            self.push_screen(screen, callback=self._handle_editorial_selection)
+            self.push_screen(screen, callback=self._handle_editorial_selection_wrapper)
         except Exception as e:
             self.notify(f"Error accessing editorial history: {e}", severity="error")
 
-    def _handle_editorial_selection(self, result) -> None:
+    async def _handle_editorial_selection(self, result) -> None:
         """Handle the selection from editorial history screen"""
         if result:
             # Load and display selected editorial
             editorial_path = result["filepath"]
             try:
+                # Completely reset the application state for editorial-only view
+                self.articles = []
+                
                 content = self.editorial_generator.load_editorial(editorial_path)
                 self.editorial_content = content
                 self.current_editorial_path = editorial_path  # Track current editorial
                 self.sub_title = self._format_subtitle()
-                self._rebuild_view()
+                
+                # Force complete rebuild by clearing and remounting everything
+                await self._force_editorial_only_view()
+                
+                # Scroll to top to show the editorial from the beginning
+                container = self.query_one("#content-container")
+                container.scroll_home(animate=True)
+                
                 self.notify(
                     f"Loaded editorial: {result['title']}", severity="information"
                 )
             except Exception as e:
                 self.notify(f"Error loading editorial: {e}", severity="error")
+    
+    def _handle_editorial_selection_wrapper(self, result) -> None:
+        """Wrapper to handle async editorial selection callback"""
+        if result:
+            # Schedule the async handler
+            asyncio.create_task(self._handle_editorial_selection(result))
+    
+    async def _force_editorial_only_view(self) -> None:
+        """Force the view to show only the editorial, removing everything else"""
+        container = self.query_one("#content-container")
+        
+        # Remove specific widgets by ID and wait for removal to complete
+        widgets_to_remove = ["#editorial-container", "#empty-state"]
+        for widget_id in widgets_to_remove:
+            try:
+                widget = self.query_one(widget_id)
+                await widget.remove()
+            except:
+                pass  # Widget doesn't exist, which is fine
+        
+        # Mount only the editorial
+        if self.editorial_content:
+            editorial_view = EditorialView(self.editorial_content, id="editorial-container")
+            await container.mount(editorial_view)
+        else:
+            empty_state = Static(
+                "[bold]No editorial available[/bold]\n\n"
+                "No new articles found from your RSS feeds.\n"
+                "• Press 'r' to refresh feeds manually\n"
+                "• Press 'h' to view past editorials\n"
+                "• Check your feed configuration if this persists",
+                id="empty-state",
+            )
+            await container.mount(empty_state)
 
     def action_show_info(self) -> None:
         """Show application information dialog"""
@@ -770,38 +815,9 @@ class Cup(App):
         self.push_screen(info_dialog)
 
     def _rebuild_view(self) -> None:
-        """Rebuild the view to show the editorial"""
-        container = self.query_one("#content-container")
-        
-        # Remove existing editorial widget if it exists to avoid ID conflicts
-        try:
-            existing_editorial = self.query_one("#editorial-container")
-            existing_editorial.remove()
-        except:
-            pass  # Widget doesn't exist, which is fine
-            
-        try:
-            existing_empty_state = self.query_one("#empty-state")
-            existing_empty_state.remove()
-        except:
-            pass  # Widget doesn't exist, which is fine
-        
-        # Mount the new content
-        if self.editorial_content:
-            container.mount(
-                EditorialView(self.editorial_content, id="editorial-container")
-            )
-        else:
-            container.mount(
-                Static(
-                    "[bold]No editorial available[/bold]\n\n"
-                    "No new articles found from your RSS feeds.\n"
-                    "• Press 'r' to refresh feeds manually\n"
-                    "• Press 'h' to view past editorials\n"
-                    "• Check your feed configuration if this persists",
-                    id="empty-state",
-                )
-            )
+        """Rebuild the view to show current content"""
+        # Schedule the async force editorial only view
+        asyncio.create_task(self._force_editorial_only_view())
 
 
 def serve(
