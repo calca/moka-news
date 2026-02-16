@@ -5,7 +5,7 @@ Extracts data from RSS feeds using feedparser
 
 import feedparser
 from typing import List, Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from moka_news.logger import get_logger
 from moka_news.constants import DEFAULT_TECH_FEEDS
@@ -63,7 +63,21 @@ class Grinder:
                     
                     # Filter by date if since parameter is provided
                     if self.since and published_dt:
-                        if published_dt < self.since:
+                        # Normalize datetime objects for comparison
+                        # Convert timezone-aware datetime to naive datetime for comparison
+                        if published_dt.tzinfo is not None:
+                            # Convert to UTC then remove timezone info
+                            published_dt_naive = published_dt.astimezone(timezone.utc).replace(tzinfo=None)
+                        else:
+                            published_dt_naive = published_dt
+                            
+                        # Ensure self.since is also naive (assume it's UTC if it has timezone)
+                        if self.since.tzinfo is not None:
+                            since_naive = self.since.astimezone(timezone.utc).replace(tzinfo=None)
+                        else:
+                            since_naive = self.since
+                            
+                        if published_dt_naive < since_naive:
                             continue  # Skip articles older than the since timestamp
                     
                     article = {
