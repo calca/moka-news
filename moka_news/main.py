@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from moka_news.grinder import Grinder
 from moka_news.barista import create_ai_provider, SimpleBarista
 from moka_news.cup import serve
-from moka_news.config import load_config, create_sample_config
+from moka_news.config import load_config, create_sample_config, get_config_path
 from moka_news.opml_manager import OPMLManager
 from moka_news.first_run_setup import is_first_run, run_first_run_setup
 from moka_news.download_tracker import DownloadTracker
@@ -348,6 +348,12 @@ Feed Management:
         # Get editorial opener command
         opener_command = editorial_config.get("opener_command", None)
 
+        # Get config path for info dialog
+        config_path = str(args.config) if args.config else str(get_config_path())
+        
+        # Get actual editorials directory (use editorial_generator's dir if not explicitly configured)
+        actual_editorials_dir = str(editorial_generator.editorials_dir)
+
         serve(
             articles,
             last_update,
@@ -360,6 +366,8 @@ Feed Management:
             refresh_manager=refresh_manager,
             opener_command=opener_command,
             current_editorial_path=editorial_path,
+            config_path=config_path,
+            editorials_dir=actual_editorials_dir,
         )
 
 

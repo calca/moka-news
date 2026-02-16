@@ -25,6 +25,7 @@ from datetime import datetime, time
 import webbrowser
 import asyncio
 import subprocess
+from moka_news import __version__
 
 
 class ConfirmationDialog(ModalScreen[bool]):
@@ -139,6 +140,64 @@ class LoadingDialog(ModalScreen):
         progress_bar = self.query_one(ProgressBar)
         # Set to indeterminate mode for infinite progress
         progress_bar.update(progress=None)
+
+
+class InfoDialog(ModalScreen[bool]):
+    """Modal dialog showing application info"""
+
+    DEFAULT_CSS = """
+    InfoDialog {
+        align: center middle;
+    }
+    
+    #info-container {
+        width: 70;
+        height: 20;
+        border: thick $primary;
+        background: $panel;
+        padding: 2;
+    }
+    
+    #info-buttons {
+        dock: bottom;
+        width: 100%;
+        height: 3;
+        padding: 1 0;
+        content-align: center middle;
+    }
+    
+    Button {
+        margin: 0 1;
+    }
+    """
+
+    def __init__(self, config_path: Optional[str] = None, editorials_dir: Optional[str] = None):
+        super().__init__()
+        self.config_path = config_path or "Not specified"
+        self.editorials_dir = editorials_dir or "Default location"
+
+    def compose(self) -> ComposeResult:
+        """Create the info dialog layout"""
+        with Vertical(id="info-container"):
+            yield Static(
+                f"[bold]☕ MoKa News - Application Info[/bold]\n\n"
+                f"[bold]Version:[/bold] {__version__}\n\n"
+                f"[bold]Configuration File:[/bold]\n{self.config_path}\n\n"
+                f"[bold]Editorials Directory:[/bold]\n{self.editorials_dir}\n\n"
+                f"[dim]Press ESC or click OK to close[/dim]"
+            )
+            with Horizontal(id="info-buttons"):
+                yield Button("OK", variant="primary", id="ok-button")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle button press"""
+        if event.button.id == "ok-button":
+            self.dismiss(True)
+
+    def on_key(self, event) -> None:
+        """Handle key press"""
+        if event.key == "escape":
+            self.dismiss(True)
 
 
 class ArticleCard(Static):
@@ -317,6 +376,7 @@ class Cup(App):
         Binding("q", "quit", "Quit", priority=True),
         Binding("r", "refresh", "Refresh"),
         Binding("h", "show_history", "History"),
+        Binding("i", "show_info", "Info"),
         Binding("o", "open_external", "Open External"),
         Binding("t", "toggle_theme", "Toggle Theme"),
         ("ctrl+c", "quit", "Quit"),
@@ -338,6 +398,8 @@ class Cup(App):
         refresh_manager: Optional[Any] = None,
         opener_command: Optional[str] = None,
         current_editorial_path: Optional[Path] = None,
+        config_path: Optional[str] = None,
+        editorials_dir: Optional[str] = None,
     ):
         super().__init__()
         self.articles = articles or []
@@ -356,6 +418,8 @@ class Cup(App):
         self.refresh_manager = refresh_manager
         self.opener_command = opener_command
         self.current_editorial_path = current_editorial_path  # Track current editorial path
+        self.config_path = config_path
+        self.editorials_dir = editorials_dir
 
     def _format_subtitle(self) -> str:
         """Format the subtitle with last update time"""
@@ -735,6 +799,14 @@ class Cup(App):
         except Exception as e:
             self.notify(f"Error accessing editorial history: {e}", severity="error")
 
+    async def action_show_info(self) -> None:
+        """Show application information dialog"""
+        info_dialog = InfoDialog(
+            config_path=self.config_path,
+            editorials_dir=self.editorials_dir
+        )
+        await self.push_screen_wait(info_dialog)
+
     def _rebuild_view(self) -> None:
         """Rebuild the view to show the editorial"""
         container = self.query_one("#content-container")
@@ -772,6 +844,8 @@ def serve(
     refresh_manager: Optional[Any] = None,
     opener_command: Optional[str] = None,
     current_editorial_path: Optional[Path] = None,
+    config_path: Optional[str] = None,
+    editorials_dir: Optional[str] = None,
 ):
     """
     Display articles in the TUI
@@ -789,6 +863,8 @@ def serve(
         refresh_manager: Optional RefreshManager instance for controlling refresh times
         opener_command: Optional command to open editorials in external app
         current_editorial_path: Path to the current editorial file
+        config_path: Path to the configuration file
+        editorials_dir: Path to the editorials directory
     """
     app = Cup(
         articles,
@@ -803,5 +879,7 @@ def serve(
         refresh_manager,
         opener_command,
         current_editorial_path,
+        config_path,
+        editorials_dir,
     )
     app.run()
