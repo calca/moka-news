@@ -51,6 +51,10 @@ fi
 echo -e "${BLUE}🔧 Activating virtual environment...${NC}"
 source venv/bin/activate
 
+# Upgrade pip to latest version to support pyproject.toml editable installs
+echo -e "${BLUE}🔄 Upgrading pip...${NC}"
+python3 -m pip install --upgrade pip > /dev/null 2>&1
+
 # Check if package is installed in development mode
 if ! pip show moka-news >/dev/null 2>&1; then
     echo -e "${YELLOW}📦 Installing MoKa News in development mode...${NC}"
