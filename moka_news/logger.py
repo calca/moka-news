@@ -30,34 +30,56 @@ class ColoredFormatter(logging.Formatter):
         return super().format(record)
 
 
-def setup_logger(name: str = "moka_news", level: int = logging.INFO) -> logging.Logger:
+def setup_logger(name: str = "moka_news", level: int = logging.INFO, log_file: Optional[str] = None) -> logging.Logger:
     """
     Setup and return a configured logger
     
     Args:
         name: Logger name (default: "moka_news")
         level: Logging level (default: INFO)
+        log_file: Optional path to log file for debug mode
     
     Returns:
         Configured logger instance
     """
     logger = logging.getLogger(name)
     
-    # Only add handler if logger doesn't have one already
-    if not logger.handlers:
-        logger.setLevel(level)
+    # Clear existing handlers only for the specific logger
+    if logger.handlers:
+        for handler in logger.handlers[:]:
+            logger.removeHandler(handler)
+            handler.close()
+    
+    logger.setLevel(level)
+    logger.propagate = False  # Prevent propagation to avoid duplicate logs
+    
+    # Console handler with colored output
+    console_handler = logging.StreamHandler(sys.stderr)
+    console_handler.setLevel(level)
+    
+    # Format: timestamp - level - message
+    console_formatter = ColoredFormatter(
+        fmt='%(asctime)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    console_handler.setFormatter(console_formatter)
+    logger.addHandler(console_handler)
+    
+    # Add file handler if log_file is specified (debug mode)
+    if log_file:
+        file_handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')  # Append mode
+        file_handler.setLevel(logging.DEBUG)  # File logs everything in debug mode
         
-        # Console handler with colored output
-        handler = logging.StreamHandler(sys.stderr)
-        handler.setLevel(level)
-        
-        # Format: timestamp - level - message
-        formatter = ColoredFormatter(
-            fmt='%(asctime)s - %(levelname)s - %(message)s',
+        # File format without colors but with more detail
+        file_formatter = logging.Formatter(
+            fmt='%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s',
             datefmt='%Y-%m-%d %H:%M:%S'
         )
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
+        file_handler.setFormatter(file_formatter)
+        logger.addHandler(file_handler)
+        
+        # Force flush to file
+        file_handler.flush()
     
     return logger
 

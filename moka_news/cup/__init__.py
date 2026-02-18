@@ -1067,7 +1067,7 @@ class Cup(App):
                 'default_template': 'minimal'
             })
             
-            poster_gen = PosterGenerator(poster_config)
+            poster_gen = PosterGenerator(config=poster_config)
             available_templates = poster_gen.list_templates()
             
             if not available_templates:
@@ -1108,7 +1108,7 @@ class Cup(App):
                 'default_template': 'minimal'
             })
             
-            poster_gen = PosterGenerator(poster_config)
+            poster_gen = PosterGenerator(config=poster_config)
             
             # Parse current editorial to extract title and content
             title = "Morning Editorial"

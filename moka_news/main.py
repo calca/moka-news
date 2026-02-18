@@ -4,6 +4,7 @@ Orchestrates The Grinder (RSS extraction), The Editorial Generator (AI focus), a
 """
 
 import argparse
+import sys
 from datetime import time
 from dotenv import load_dotenv
 from moka_news.grinder import Grinder
@@ -18,9 +19,8 @@ from moka_news.refresh_manager import RefreshManager
 from moka_news.editorial import EditorialGenerator
 from moka_news.logger import get_logger, setup_logger
 
-# Setup logger for console output
-setup_logger("moka_news")
-logger = get_logger(__name__)
+# Logger will be setup after parsing args to handle --debug flag
+logger = None
 
 
 def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
@@ -180,12 +180,40 @@ Feed Management:
     )
 
     parser.add_argument(
+        "--debug", action="store_true", 
+        help="Enable debug mode and write all logs to file (saves to ~/.config/moka-news/logs/)"
+    )
+
+    parser.add_argument(
         "--opml",
         metavar="PATH",
         help="Path to OPML file (default: ~/.config/moka-news/feeds.opml)",
     )
 
     args = parser.parse_args()
+
+    # Setup logger based on debug flag
+    global logger
+    if args.debug:
+        import logging
+        from pathlib import Path
+        logs_dir = Path.home() / ".config" / "moka-news" / "logs"
+        logs_dir.mkdir(parents=True, exist_ok=True)
+        from datetime import datetime
+        # Use daily log file instead of creating new file for each run
+        log_file = logs_dir / f"moka-news-{datetime.now().strftime('%Y-%m-%d')}.log"
+        setup_logger("moka_news", level=logging.DEBUG, log_file=str(log_file))
+        logger = get_logger(__name__)
+        logger.info(f"\n{'='*60}")
+        logger.info("🔍 DEBUG MODE ENABLED")
+        logger.info(f"📝 Logging to: {log_file}")
+        logger.info(f"🕐 Session started at: {datetime.now().strftime('%H:%M:%S')}")
+        logger.info(f"{'='*60}")
+        # Also print to console for immediate feedback
+        print(f"🔍 DEBUG MODE ENABLED - Logs appended to: {log_file}", file=sys.stderr)
+    else:
+        setup_logger("moka_news")
+        logger = get_logger(__name__)
 
     # Initialize OPML manager
     opml_manager = OPMLManager(args.opml)
