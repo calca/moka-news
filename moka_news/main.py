@@ -26,6 +26,7 @@ logger = get_logger(__name__)
 def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
     """
     Fetch RSS feeds (AI processing focused on editorial only).
+    If too few articles are found, automatically expands the time window.
 
     Args:
         feed_urls: List of RSS feed URLs
@@ -36,6 +37,11 @@ def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
     Returns:
         Tuple of (articles, last_update_time)
     """
+    # Get editorial configuration for minimum articles threshold
+    editorial_config = config.get("editorial", {})
+    min_articles = editorial_config.get("min_articles", 5)
+    extended_window_days = editorial_config.get("extended_window_days", 3)
+    
     # Get last download timestamp for filtering
     since = None
     if download_tracker:
@@ -53,11 +59,28 @@ def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
 
     logger.info(f"Ground {len(articles)} articles")
 
+    # Check if we have enough articles for a quality editorial
+    if articles and len(articles) < min_articles and download_tracker:
+        logger.info(
+            f"Only {len(articles)} articles found (minimum: {min_articles}). "
+            f"Expanding time window to last {extended_window_days} days..."
+        )
+        
+        # Fetch with extended time window
+        extended_since = download_tracker.get_last_download(days_back=extended_window_days)
+        if extended_since:
+            logger.info(
+                f"Fetching articles since {extended_since.strftime('%Y-%m-%d %H:%M:%S')}"
+            )
+            grinder_extended = Grinder(feed_urls, since=extended_since)
+            articles, last_update = grinder_extended.grind()
+            logger.info(f"Extended fetch: found {len(articles)} articles")
+
     if not articles:
         logger.warning("No articles found. Please check your RSS feeds.")
         return [], last_update
 
-    # Update download tracker
+    # Update download tracker (only update with current time, not extended window)
     if download_tracker:
         download_tracker.update_last_download(last_update)
 

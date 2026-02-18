@@ -97,3 +97,9 @@ editorial:
   # opener_command: "nano"     # Nano
   # opener_command: "open"     # Default app (macOS)
   # opener_command: "xdg-open" # Default app (Linux)
+  
+  # Article fetching configuration
+  min_articles: 10         # Minimum articles needed for quality editorial
+  extended_window_days: 3  # Days to look back if initial fetch has too few articles
+                           # If fewer than min_articles are found, automatically
+                           # expands the time window to fetch older articles

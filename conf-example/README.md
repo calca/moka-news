@@ -95,7 +95,12 @@ Configure the AI-generated morning editorial:
 editorial:
   editorials_dir: ~/Documents/moka-news-editorials  # Where to save editorials
   opener_command: "code"  # Command to open editorials (VS Code example)
+  min_articles: 10         # Minimum articles needed for quality editorial
+  extended_window_days: 3  # Days to look back if too few recent articles
 ```
+
+**Smart Article Fetching:**
+If fewer than `min_articles` are found in recent news, MoKa News automatically expands the search window to the last `extended_window_days` days. This ensures you always get a rich editorial even during slow news periods.
 
 Popular opener commands:
 - `"code"` - VS Code

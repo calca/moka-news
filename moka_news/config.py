@@ -103,6 +103,8 @@ DEFAULT_CONFIG = {
     "editorial": {
         "editorials_dir": None,  # Directory to save editorials (defaults to ~/.config/moka-news/editorials)
         "opener_command": None,  # Optional command to open editorials externally (e.g., "code", "vim", "nano")
+        "min_articles": 10,  # Minimum number of articles needed for quality editorial generation
+        "extended_window_days": 3,  # How many days to look back if initial fetch has too few articles
     },
 }
 

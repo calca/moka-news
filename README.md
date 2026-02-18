@@ -465,7 +465,19 @@ editorial:
   # Optional command to open editorials in external app
   # Press 'o' in TUI to open current editorial with this command
   opener_command: code  # Examples: "code", "vim", "nano", "open", "xdg-open"
+  
+  # Smart article fetching
+  min_articles: 10         # Minimum articles needed for quality editorial
+  extended_window_days: 3  # Days to look back if too few recent articles
 ```
+
+**Smart Article Fetching:**
+
+MoKa News automatically ensures you have enough articles for a quality editorial:
+- If fewer than `min_articles` are found in the recent time window, MoKa News automatically expands the search to the last `extended_window_days` days
+- This ensures you always get a rich, informative editorial even during slow news periods
+- Defaults: 10 minimum articles, 3-day extended window
+- Configurable to match your reading preferences
 
 ### Customizing Editorial Generation
 
