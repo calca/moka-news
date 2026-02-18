@@ -162,7 +162,7 @@ class PosterGenerator:
                 "font_family": "arial"
             },
             "elements": {
-                "qr_code": True,
+                "qr_code": False,
                 "timestamp": True,
                 "source": True,
                 "qr_position": "bottom_right"
@@ -192,7 +192,7 @@ class PosterGenerator:
                 "font_family": "Times"
             },
             "elements": {
-                "qr_code": True,
+                "qr_code": False,
                 "timestamp": True,
                 "source": True,
                 "qr_position": "bottom_left"
@@ -222,7 +222,7 @@ class PosterGenerator:
                 "font_family": "arial"
             },
             "elements": {
-                "qr_code": True,
+                "qr_code": False,
                 "timestamp": False,
                 "source": True,
                 "qr_position": "bottom_center"
@@ -252,7 +252,7 @@ class PosterGenerator:
                 "font_family": "arial"
             },
             "elements": {
-                "qr_code": True,
+                "qr_code": False,
                 "timestamp": True,
                 "source": True,
                 "qr_position": "top_right"
@@ -407,10 +407,7 @@ class PosterGenerator:
             draw.text((template.padding, footer_y), source_text, 
                      fill=template.secondary_color, font=metadata_font)
         
-        # Add QR code if enabled and qrcode library is available
-        if template.show_qr_code and QRCODE_AVAILABLE:
-            qr_url = "https://github.com/calca/moka-news"  # Default URL
-            self._add_qr_code(img, qr_url, template)
+        # QR code generation disabled
         
         # Generate filename
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
