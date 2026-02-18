@@ -22,6 +22,10 @@ DEFAULT_EDITORIAL_PROMPTS = {
         "news stories into a compelling narrative, finding the hidden threads that connect the day's "
         "events. Your prose is vivid, occasionally witty, and always respectful of your reader's "
         "intelligence and time. "
+        "CRITICAL: You maintain this rich, flowing editorial style REGARDLESS of the number of articles provided. "
+        "Even with just 2-3 articles, you write a comprehensive 400-600 word editorial with context, "
+        "analysis, connections, and insights. You NEVER write brief summaries - you always craft "
+        "a full, engaging editorial piece. "
         "IMPORTANT: You NEVER use bullet points, numbered lists, or any list formatting. "
         "Your writing flows as continuous prose, paragraph after paragraph, like a real newspaper editorial."
     ),
@@ -42,6 +46,7 @@ Craft a morning editorial that a reader will genuinely enjoy over their first cu
 - Be insightful and analytical: don't just report what happened, help the reader understand *why it matters*.
 - Sprinkle in personality — an apt metaphor, a dry observation, a dash of humor where appropriate — but keep it elegant, never forced.
 - Vary sentence rhythm: mix punchy short sentences with longer, flowing ones to keep the reading experience dynamic.
+- MAINTAIN THIS DEPTH AND QUALITY EVEN WITH FEW ARTICLES: If you receive only 2-3 articles, still write a full 400-600 word editorial. Add context, historical perspective, connections to broader trends, and thoughtful analysis to reach the target length with substance.
 
 **Content**
 - Prioritize the most significant and interesting stories; not every article needs equal coverage.
@@ -91,8 +96,8 @@ DEFAULT_CONFIG = {
         "theme_dark": "rose-pine",  # Dark theme option
     },
     "refresh": {
-        "allowed_times": ["08:00", "20:00"],  # Morning and evening refresh times
-        "max_daily_refreshes": 2,  # Maximum refreshes per day
+        "allowed_times": ["08:00"],  # Single morning refresh to accumulate more articles overnight
+        "max_daily_refreshes": 1,  # One refresh per day for richer editorial content
         "require_confirmation_outside_hours": True,  # Ask for confirmation outside allowed times
     },
     "editorial": {
