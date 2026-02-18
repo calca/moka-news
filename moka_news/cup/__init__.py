@@ -1096,7 +1096,7 @@ class Cup(App):
         loading_dialog = None
         try:
             # Show loading dialog
-            loading_dialog = LoadingDialog("Generating poster...", "Creating your editorial poster")
+            loading_dialog = LoadingDialog("Generating poster...")
             self.push_screen(loading_dialog)
             
             # Import and create poster generator
@@ -1111,8 +1111,11 @@ class Cup(App):
             poster_gen = PosterGenerator(config=poster_config)
             
             # Parse current editorial to extract title and content
+            if not self.editorial_content:
+                raise ValueError("No editorial content available for poster generation")
+            
             title = "Morning Editorial"
-            content = self.editorial_content
+            content = str(self.editorial_content)
             
             # Try to extract title from markdown content
             lines = content.split('\n')
@@ -1124,7 +1127,7 @@ class Cup(App):
                     title = line.strip()[3:]
                     break
             
-            # Create editorial dict for poster generation
+            # Create editorial dict for poster generation  
             editorial_data = {
                 "title": title,
                 "content": content,
@@ -1132,12 +1135,21 @@ class Cup(App):
             }
             
             # Generate poster
-            poster_path = await asyncio.get_event_loop().run_in_executor(
-                None, 
-                poster_gen.generate_poster,
-                editorial_data,
-                template_name
-            )
+            try:
+                import concurrent.futures
+                
+                # Use a dedicated executor to avoid argument issues
+                loop = asyncio.get_running_loop()
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    poster_path = await loop.run_in_executor(
+                        executor, 
+                        poster_gen.generate_poster,
+                        editorial_data, 
+                        template_name
+                    )
+            except Exception as e:
+                logger.error(f"Poster generation failed: {e}")
+                raise
             
             # Close loading dialog
             if loading_dialog:
