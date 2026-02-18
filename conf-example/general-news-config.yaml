@@ -61,3 +61,4 @@ refresh:
   allowed_times: ["07:30", "12:00", "19:00"]  # Morning, lunch, evening
   max_daily_refreshes: 3
   require_confirmation_outside_hours: true
+  auto_refresh_window: 60  # Time window in minutes around allowed times

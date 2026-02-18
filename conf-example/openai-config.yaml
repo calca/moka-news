@@ -33,3 +33,4 @@ ui:
 refresh:
   allowed_times: ["08:30", "17:30"]
   max_daily_refreshes: 2
+  auto_refresh_window: 60  # Time window in minutes around allowed times

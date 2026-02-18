@@ -195,6 +195,7 @@ refresh:
     - "20:00"  # Evening refresh time
   max_daily_refreshes: 2  # Maximum number of refreshes per day
   require_confirmation_outside_hours: true  # Ask for confirmation outside scheduled times
+  auto_refresh_window: 60  # Time window in minutes around allowed times for automatic refresh
 ```
 
 **Refresh Configuration:**
@@ -202,6 +203,7 @@ refresh:
 MoKa News focuses on editorial quality by limiting refreshes to specific times:
 - **Morning refresh:** 8:00 AM - Start your day with fresh news
 - **Evening refresh:** 20:00 (8:00 PM) - Catch up on the day's events
+- **Auto-refresh window:** 60 minutes around each allowed time (e.g., 7:30-8:30, 19:30-20:30)
 - **Manual refresh control:** When you press 'r' outside scheduled hours, you'll be asked to confirm
 - **First run:** On the first run, articles from the previous day are fetched to provide initial content
 

@@ -549,6 +549,10 @@ def launch_moka_news():
     if parsed_times:
         refresh_manager.allowed_refresh_times = parsed_times
     
+    # Configure auto refresh window from config (in minutes)
+    auto_refresh_window = refresh_config.get("auto_refresh_window", 60)
+    refresh_manager.auto_refresh_window = auto_refresh_window
+    
     # Setup refresh callback
     def refresh_callback():
         download_tracker = DownloadTracker()

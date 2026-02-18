@@ -97,7 +97,7 @@ def test_is_within_allowed_time_outside_window(temp_config_dir):
     
     assert is_allowed is False
     assert message is not None
-    assert "Manual refresh is only allowed during scheduled times" in message
+    assert "outside of scheduled" in message
     assert "08:00" in message
     assert "20:00" in message
 
@@ -242,3 +242,40 @@ def test_hours_until_calculation(temp_config_dir):
     hours = manager._hours_until(from_time, to_time)
     
     assert hours == 2.0
+
+
+def test_single_refresh_time(temp_config_dir):
+    """Test that RefreshManager works with a single allowed refresh time"""
+    manager = RefreshManager(temp_config_dir)
+    
+    # Configure with only one refresh time
+    manager.allowed_refresh_times = [time(8, 0)]
+    
+    # Test at a time outside the window
+    check_time = datetime(2026, 2, 15, 14, 0, 0)
+    is_allowed, message = manager.is_within_allowed_time(check_time)
+    
+    assert is_allowed is False
+    assert message is not None
+    assert "outside of scheduled" in message
+    assert "08:00" in message
+    # Should not crash when accessing message
+
+
+def test_multiple_refresh_times(temp_config_dir):
+    """Test that RefreshManager works with multiple allowed refresh times"""
+    manager = RefreshManager(temp_config_dir)
+    
+    # Configure with three refresh times
+    manager.allowed_refresh_times = [time(7, 0), time(12, 0), time(18, 0)]
+    
+    # Test at a time outside all windows
+    check_time = datetime(2026, 2, 15, 20, 0, 0)
+    is_allowed, message = manager.is_within_allowed_time(check_time)
+    
+    assert is_allowed is False
+    assert message is not None
+    assert "outside of scheduled" in message
+    assert "07:00" in message
+    assert "12:00" in message
+    assert "18:00" in message

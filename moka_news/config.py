@@ -99,6 +99,7 @@ DEFAULT_CONFIG = {
         "allowed_times": ["08:00"],  # Single morning refresh to accumulate more articles overnight
         "max_daily_refreshes": 1,  # One refresh per day for richer editorial content
         "require_confirmation_outside_hours": True,  # Ask for confirmation outside allowed times
+        "auto_refresh_window": 60,  # Time window in minutes around allowed times for automatic refresh
     },
     "editorial": {
         "editorials_dir": None,  # Directory to save editorials (defaults to ~/.config/moka-news/editorials)
@@ -302,6 +303,7 @@ refresh:
     - "20:00"  # Evening refresh time
   max_daily_refreshes: 2  # Maximum number of refreshes per day
   require_confirmation_outside_hours: true  # Require confirmation for manual refresh outside allowed times
+  auto_refresh_window: 60  # Time window in minutes around allowed times for automatic refresh
 
 # Editorial Configuration
 editorial:

@@ -85,6 +85,7 @@ refresh:
   allowed_times: ["08:00", "20:00"]  # Morning and evening
   max_daily_refreshes: 2  # Limit refreshes per day
   require_confirmation_outside_hours: true  # Ask before refreshing outside hours
+  auto_refresh_window: 60  # Time window in minutes around allowed times for automatic refresh
 ```
 
 ### ✍️ Editorial Configuration (`editorial`)

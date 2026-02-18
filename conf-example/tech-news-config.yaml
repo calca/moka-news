@@ -64,3 +64,4 @@ refresh:
   allowed_times: ["09:00", "17:00"]  # Start of day and end of work
   max_daily_refreshes: 2
   require_confirmation_outside_hours: false  # Devs work odd hours
+  auto_refresh_window: 60  # Time window in minutes around allowed times

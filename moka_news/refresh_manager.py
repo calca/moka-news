@@ -80,10 +80,14 @@ class RefreshManager:
         next_refresh = self._get_next_refresh_time(check_time)
         hours_until = self._hours_until(check_time, next_refresh)
 
+        # Build list of allowed times dynamically to support any number of refresh times
+        times_list = "\n".join(
+            f"• {t.strftime('%H:%M')}" for t in self.allowed_refresh_times
+        )
+
         message = (
             f"You are refreshing outside of scheduled automatic refresh times:\n"
-            f"• Morning: {self.allowed_refresh_times[0].strftime('%H:%M')}\n"
-            f"• Evening: {self.allowed_refresh_times[1].strftime('%H:%M')}\n\n"
+            f"{times_list}\n\n"
             f"Next automatic refresh: {next_refresh.strftime('%H:%M')} "
             f"({hours_until:.1f} hours from now)"
         )
