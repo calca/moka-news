@@ -615,7 +615,7 @@ class Cup(App):
             # Wait a bit to avoid multiple triggers
             await asyncio.sleep(60)
 
-    def _update_with_new_articles(
+    async def _update_with_new_articles(
         self, new_articles, new_update_time, notify_editorial: bool = False
     ):
         """
@@ -648,8 +648,8 @@ class Cup(App):
             except Exception as e:
                 self.notify(f"Error generating editorial: {e}", severity="error")
 
-        # Rebuild the UI
-        self._rebuild_view()
+        # Rebuild the UI (await to ensure it completes)
+        await self._force_editorial_only_view()
 
     async def _perform_refresh_with_progress(self, loading_dialog: LoadingDialog) -> tuple:
         """
@@ -723,7 +723,7 @@ class Cup(App):
             logger.info(f"Automatic refresh fetched {len(new_articles)} new articles")
 
             if new_articles:
-                self._update_with_new_articles(
+                await self._update_with_new_articles(
                     new_articles, new_update_time, notify_editorial=False
                 )
 
@@ -767,6 +767,8 @@ class Cup(App):
 
                     # User confirmed, proceed with manual refresh
                     self.notify("Manual refresh confirmed", severity="information")
+                    # Give time for the confirmation dialog to fully dismiss
+                    await asyncio.sleep(0.1)
                 except Exception as e:
                     # If dialog fails, ask for confirmation differently
                     self.notify(f"{reason} - Press 'r' again to confirm", severity="warning")
@@ -790,8 +792,8 @@ class Cup(App):
                 loading_dialog.update_message("Building view...")
                 await asyncio.sleep(0.1)
                 
-                # Rebuild the UI to show new editorial
-                self._rebuild_view()
+                # Rebuild the UI to show new editorial (await the task to ensure it completes)
+                await self._force_editorial_only_view()
                 
                 # Log the refresh
                 if self.refresh_manager:
