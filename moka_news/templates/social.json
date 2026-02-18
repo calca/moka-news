@@ -1,0 +1,28 @@
+{
+  "name": "Social",
+  "description": "Optimized for social media sharing",
+  "layout": {
+    "width": 1080,
+    "height": 1920,
+    "padding": 60,
+    "line_spacing": 1.2
+  },
+  "colors": {
+    "background": "#000000",
+    "text": "#ffffff",
+    "accent": "#ff6b6b",
+    "secondary": "#4ecdc4"
+  },
+  "typography": {
+    "title_size": 48,
+    "summary_size": 24,
+    "metadata_size": 18,
+    "font_family": "arial"
+  },
+  "elements": {
+    "qr_code": true,
+    "timestamp": false,
+    "source": true,
+    "qr_position": "bottom_center"
+  }
+}

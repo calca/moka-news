@@ -1,0 +1,28 @@
+{
+  "name": "Modern",
+  "description": "Contemporary design with geometric elements",
+  "layout": {
+    "width": 1080,
+    "height": 1920,
+    "padding": 70,
+    "line_spacing": 1.25
+  },
+  "colors": {
+    "background": "#2d3748",
+    "text": "#f7fafc",
+    "accent": "#68d391",
+    "secondary": "#4299e1"
+  },
+  "typography": {
+    "title_size": 50,
+    "summary_size": 25,
+    "metadata_size": 19,
+    "font_family": "arial"
+  },
+  "elements": {
+    "qr_code": true,
+    "timestamp": true,
+    "source": true,
+    "qr_position": "top_right"
+  }
+}

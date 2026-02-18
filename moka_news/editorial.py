@@ -39,15 +39,21 @@ class EditorialGenerator:
         self.editorial_prompts = editorial_prompts
         self.language = language
         
+        # Set config directory
+        self.config_dir = Path.home() / ".config" / "moka-news"
+        
         # Set editorials directory
         if editorials_dir:
             self.editorials_dir = Path(editorials_dir)
         else:
-            config_dir = Path.home() / ".config" / "moka-news"
-            self.editorials_dir = config_dir / "editorials"
+            self.editorials_dir = self.config_dir / "editorials"
         
-        # Create editorials directory if it doesn't exist
+        # Set posters directory
+        self.posters_dir = self.config_dir / "posters"
+        
+        # Create directories if they don't exist
         self.editorials_dir.mkdir(parents=True, exist_ok=True)
+        self.posters_dir.mkdir(parents=True, exist_ok=True)
         
         # Log configuration for debugging
         self._log_configuration()
@@ -60,6 +66,7 @@ class EditorialGenerator:
         logger.info(f"  - AI Provider: {self.ai_provider.__class__.__name__}")
         logger.info(f"  - Custom prompts: {'Yes' if self.editorial_prompts else 'No (using defaults)'}")
         logger.info(f"  - Editorials directory: {self.editorials_dir}")
+        logger.info(f"  - Posters directory: {self.posters_dir}")
     
     def generate_editorial(self, articles: List[Dict[str, Any]]) -> Dict[str, Any]:
         """

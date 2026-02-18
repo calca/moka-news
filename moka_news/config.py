@@ -107,6 +107,25 @@ DEFAULT_CONFIG = {
         "min_articles": 10,  # Minimum number of articles needed for quality editorial generation
         "extended_window_days": 3,  # How many days to look back if initial fetch has too few articles
     },
+    "poster": {
+        "method": "local",  # Generation method: local (PIL/Pillow), ai (AI image generation), hybrid (AI with fallback)
+        "default_template": "minimal",  # Default template to use for poster generation
+        "posters_dir": None,  # Directory to save posters (defaults to ~/.config/moka-news/posters)
+        "templates_dir": None,  # Directory containing custom templates (defaults to package templates)
+        "ai": {
+            "provider": "dall-e",  # AI image generation provider: dall-e, midjourney, stable-diffusion
+            "api_key": None,  # API key for AI image generation service
+            "model": "dall-e-3",  # Model to use for AI generation
+            "style": "natural",  # Style for AI generation: natural, vivid, artistic
+            "quality": "standard"  # Quality for AI generation: standard, hd
+        },
+        "local": {
+            "font_dirs": [],  # Additional directories to search for fonts
+            "default_font": "arial",  # Default font family for text rendering
+            "optimize_output": True,  # Optimize PNG output for smaller file sizes
+            "add_watermark": True  # Add MoKa News watermark to generated posters
+        }
+    },
 }
 
 

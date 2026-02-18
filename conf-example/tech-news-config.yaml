@@ -65,3 +65,9 @@ refresh:
   max_daily_refreshes: 2
   require_confirmation_outside_hours: false  # Devs work odd hours
   auto_refresh_window: 60  # Time window in minutes around allowed times
+
+# Tech-focused poster generation
+poster:
+  method: local           # Local generation for developers who prefer control
+  default_template: modern  # Contemporary design for tech content
+  posters_dir: ~/Documents/tech-news/posters

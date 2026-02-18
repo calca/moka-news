@@ -1,0 +1,28 @@
+{
+  "name": "Elegant",
+  "description": "Sophisticated design with serif typography",
+  "layout": {
+    "width": 1080,
+    "height": 1920,
+    "padding": 100,
+    "line_spacing": 1.4
+  },
+  "colors": {
+    "background": "#f8f8f2",
+    "text": "#282a36",
+    "accent": "#bd93f9",
+    "secondary": "#6272a4"
+  },
+  "typography": {
+    "title_size": 56,
+    "summary_size": 28,
+    "metadata_size": 22,
+    "font_family": "Times"
+  },
+  "elements": {
+    "qr_code": true,
+    "timestamp": true,
+    "source": true,
+    "qr_position": "bottom_left"
+  }
+}

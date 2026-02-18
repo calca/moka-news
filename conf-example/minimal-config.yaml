@@ -12,3 +12,8 @@ feeds:
 
 ui:
   use_tui: true
+
+# Poster Generation (press 'g' in TUI to generate)
+poster:
+  method: local           # Use local generation (no API keys needed)
+  default_template: minimal  # Clean, simple template

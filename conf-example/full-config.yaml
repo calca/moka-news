@@ -104,3 +104,27 @@ editorial:
   extended_window_days: 3  # Days to look back if initial fetch has too few articles
                            # If fewer than min_articles are found, automatically
                            # expands the time window to fetch older articles
+
+# Poster Generation Configuration
+poster:
+  method: local            # Generation method: local (PIL/Pillow), ai (AI image generation), hybrid (AI with fallback)
+  default_template: minimal # Default template: minimal, elegant, social, modern
+  
+  # Custom directories (optional)
+  posters_dir: ~/Documents/moka-news-posters  # Custom poster save location
+  templates_dir: null      # Custom template directory (defaults to package templates)
+  
+  # AI Image Generation (for method: ai or hybrid)
+  ai:
+    provider: dall-e       # AI provider: dall-e, midjourney, stable-diffusion
+    api_key: null          # API key for AI image generation (or use environment variable)
+    model: dall-e-3        # Model to use: dall-e-3, dall-e-2 
+    style: natural         # Style: natural, vivid, artistic
+    quality: standard      # Quality: standard, hd
+  
+  # Local Generation Options (for method: local or hybrid fallback)
+  local:
+    font_dirs: []          # Additional directories to search for custom fonts
+    default_font: arial    # Default font family: arial, times, helvetica
+    optimize_output: true  # Optimize PNG for smaller file sizes
+    add_watermark: true    # Add MoKa News watermark to generated posters

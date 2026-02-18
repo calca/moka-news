@@ -405,6 +405,7 @@ Feed Management:
             current_editorial_path=editorial_path,
             config_path=config_path,
             editorials_dir=actual_editorials_dir,
+            poster_config=config.get("poster", {}),
         )
 
 
