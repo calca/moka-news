@@ -4,6 +4,7 @@ Displays the news digest in a beautiful terminal interface
 """
 
 from textual.app import App, ComposeResult
+from textual import work
 from textual.containers import ScrollableContainer, VerticalScroll, Vertical, Horizontal
 from textual.widgets import (
     Header,
@@ -651,64 +652,6 @@ class Cup(App):
         # Rebuild the UI (await to ensure it completes)
         await self._force_editorial_only_view()
 
-    async def _perform_refresh_with_progress(self, loading_dialog: LoadingDialog) -> tuple:
-        """
-        Perform refresh with progress updates shown in loading dialog
-        
-        Args:
-            loading_dialog: LoadingDialog instance to update with progress
-            
-        Returns:
-            Tuple of (new_articles, new_update_time)
-        """
-        # Step 1: Fetch RSS feeds
-        loading_dialog.update_message("Fetching RSS feeds...")
-        await asyncio.sleep(0.1)  # Give UI time to update
-        
-        import concurrent.futures
-        loop = asyncio.get_event_loop()
-        
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            new_articles, new_update_time = await loop.run_in_executor(
-                executor, self.refresh_callback
-            )
-        
-        if not new_articles:
-            return new_articles, new_update_time
-        
-        # Step 2: Generate editorial
-        loading_dialog.update_message("Generating editorial...")
-        await asyncio.sleep(0.1)  # Give UI time to update
-        
-        # Update articles and timestamp
-        self.articles = new_articles
-        self.last_update = new_update_time
-        self.sub_title = self._format_subtitle()
-        
-        # Generate editorial in thread pool to avoid blocking
-        if self.editorial_generator:
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                editorial = await loop.run_in_executor(
-                    executor,
-                    self.editorial_generator.generate_editorial,
-                    new_articles
-                )
-                
-                editorial_path = await loop.run_in_executor(
-                    executor,
-                    self.editorial_generator.save_editorial,
-                    editorial
-                )
-                
-                self.current_editorial_path = editorial_path
-                self.editorial_content = await loop.run_in_executor(
-                    executor,
-                    self.editorial_generator.load_editorial,
-                    editorial_path
-                )
-        
-        return new_articles, new_update_time
-
     async def _perform_auto_refresh(self) -> None:
         """Perform automatic refresh without user confirmation"""
         if not self.refresh_callback:
@@ -742,81 +685,112 @@ class Cup(App):
             logger.error(f"Error during auto-refresh: {e}")
             self.notify(f"Error during auto-refresh: {e}", severity="error")
 
-    async def action_refresh(self) -> None:
+    def action_refresh(self) -> None:
         """Refresh the news feed"""
         if not self.refresh_callback:
             self.notify("Refresh functionality not available", severity="warning")
             return
 
-        # Check if refresh manager is available
-        if self.refresh_manager:
-            is_allowed, reason = self.refresh_manager.is_within_allowed_time()
+        # Ask for confirmation via callback (no push_screen_wait needed)
+        dialog = ConfirmationDialog(
+            message="Refresh feeds and generate a new editorial?",
+            title="☕ Refresh",
+        )
+        self.push_screen(dialog, callback=self._on_refresh_confirmed)
 
-            if not is_allowed:
-                # Show warning dialog and ask for confirmation
-                try:
-                    dialog = ConfirmationDialog(
-                        message=f"{reason}\n\nDo you want to refresh anyway?",
-                        title="⚠️ Refresh Outside Scheduled Hours",
-                    )
-                    confirmed = await self.push_screen_wait(dialog)
+    def _on_refresh_confirmed(self, confirmed: bool) -> None:
+        """Handle refresh confirmation result"""
+        if not confirmed:
+            self.notify("Refresh cancelled", severity="information")
+            return
+        # Kick off the actual refresh work
+        self._do_refresh()
 
-                    if not confirmed:
-                        self.notify("Refresh cancelled", severity="information")
-                        return
-
-                    # User confirmed, proceed with manual refresh
-                    self.notify("Manual refresh confirmed", severity="information")
-                    # Give time for the confirmation dialog to fully dismiss
-                    await asyncio.sleep(0.1)
-                except Exception as e:
-                    # If dialog fails, ask for confirmation differently
-                    self.notify(f"{reason} - Press 'r' again to confirm", severity="warning")
-                    return
-
-        # Show loading dialog with initial message
+    @work(exclusive=True)
+    async def _do_refresh(self) -> None:
+        """Perform the full refresh cycle in a worker thread"""
         loading_dialog = LoadingDialog("Starting refresh...")
-        
+        self.app.push_screen(loading_dialog)
+        await asyncio.sleep(0.2)  # Give dialog time to render
+
         try:
-            # Push loading dialog and wait for it to be mounted
-            await self.push_screen(loading_dialog)
-            
-            # Give dialog time to fully render
-            await asyncio.sleep(0.2)
-            
-            # Perform refresh with progress updates
-            new_articles, new_update_time = await self._perform_refresh_with_progress(loading_dialog)
-            
-            if new_articles:
-                # Update the message before rebuilding view
-                loading_dialog.update_message("Building view...")
-                await asyncio.sleep(0.1)
-                
-                # Rebuild the UI to show new editorial (await the task to ensure it completes)
-                await self._force_editorial_only_view()
-                
-                # Log the refresh
-                if self.refresh_manager:
-                    self.refresh_manager.log_refresh(auto=False)
-                
-                # Dismiss loading dialog
-                loading_dialog.dismiss()
-                
-                # Notify success with editorial count
-                self.notify(
-                    f"✓ Refreshed {len(new_articles)} articles and generated new editorial", 
-                    severity="information"
+            import concurrent.futures
+
+            loop = asyncio.get_event_loop()
+
+            # Step 1: Fetch RSS feeds
+            loading_dialog.update_message("Fetching RSS feeds...")
+            await asyncio.sleep(0.1)
+
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                new_articles, new_update_time = await loop.run_in_executor(
+                    executor, self.refresh_callback
                 )
-            else:
-                # Dismiss loading dialog
+
+            if not new_articles:
                 loading_dialog.dismiss()
-                self.notify("No articles found during refresh", severity="warning")
-                
+                self.notify("No new articles found", severity="warning")
+                return
+
+            # Step 2: Generate editorial
+            loading_dialog.update_message(
+                f"Generating editorial from {len(new_articles)} articles..."
+            )
+            await asyncio.sleep(0.1)
+
+            self.articles = new_articles
+            self.last_update = new_update_time
+            self.sub_title = self._format_subtitle()
+
+            if self.editorial_generator:
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    editorial = await loop.run_in_executor(
+                        executor,
+                        self.editorial_generator.generate_editorial,
+                        new_articles,
+                    )
+                    editorial_path = await loop.run_in_executor(
+                        executor,
+                        self.editorial_generator.save_editorial,
+                        editorial,
+                    )
+                    self.current_editorial_path = editorial_path
+                    self.editorial_content = await loop.run_in_executor(
+                        executor,
+                        self.editorial_generator.load_editorial,
+                        editorial_path,
+                    )
+
+            # Step 3: Prepare updated view
+            loading_dialog.update_message("Building view...")
+            await asyncio.sleep(0.1)
+
+            # Reload editorial list for navigation
+            self._load_editorial_list()
+
+            # Dismiss loading dialog BEFORE rebuilding view
+            loading_dialog.dismiss()
+            await asyncio.sleep(0.1)
+
+            # Rebuild the UI with new editorial
+            await self._force_editorial_only_view()
+
+            # Scroll to top
+            try:
+                container = self.query_one("#content-container")
+                container.scroll_home(animate=True)
+            except Exception:
+                pass
+
+            self.notify(
+                f"✓ Refreshed {len(new_articles)} articles and generated new editorial",
+                severity="information",
+            )
+
         except Exception as e:
-            # Make sure to dismiss dialog even on error
             try:
                 loading_dialog.dismiss()
-            except:
+            except Exception:
                 pass
             self.notify(f"Error refreshing: {e}", severity="error")
 
