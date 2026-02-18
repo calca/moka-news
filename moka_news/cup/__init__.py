@@ -626,12 +626,14 @@ class Cup(App):
             new_update_time: Timestamp of the update
             notify_editorial: Whether to show editorial generation notifications
         """
+        logger.info(f"Updating with {len(new_articles)} new articles")
         self.articles = new_articles
         self.last_update = new_update_time
         self.sub_title = self._format_subtitle()
 
         # Generate new editorial
         if self.editorial_generator:
+            logger.info(f"Generating editorial with language: {self.editorial_generator.language}")
             if notify_editorial:
                 self.notify("Generating editorial...", severity="information")
             try:
@@ -712,11 +714,13 @@ class Cup(App):
         if not self.refresh_callback:
             return
 
+        logger.info("Starting automatic refresh...")
         self.notify("Automatic refresh starting...", severity="information")
 
         try:
             # Call the refresh callback to fetch new articles
             new_articles, new_update_time = self.refresh_callback()
+            logger.info(f"Automatic refresh fetched {len(new_articles)} new articles")
 
             if new_articles:
                 self._update_with_new_articles(
@@ -732,8 +736,10 @@ class Cup(App):
                     severity="information",
                 )
             else:
+                logger.info("No new articles found during automatic refresh")
                 self.notify("No new articles found", severity="information")
         except Exception as e:
+            logger.error(f"Error during auto-refresh: {e}")
             self.notify(f"Error during auto-refresh: {e}", severity="error")
 
     async def action_refresh(self) -> None:

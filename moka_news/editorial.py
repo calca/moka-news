@@ -8,6 +8,9 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 from moka_news.barista import AIProvider
 from moka_news.constants import SUPPORTED_LANGUAGES
+from moka_news.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class EditorialGenerator:
@@ -45,6 +48,18 @@ class EditorialGenerator:
         
         # Create editorials directory if it doesn't exist
         self.editorials_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Log configuration for debugging
+        self._log_configuration()
+    
+    def _log_configuration(self):
+        """Log the current configuration of the EditorialGenerator"""
+        logger.info(f"EditorialGenerator configuration:")
+        logger.info(f"  - Language: {self.language}")
+        logger.info(f"  - Keywords: {self.keywords if self.keywords else 'None'}")
+        logger.info(f"  - AI Provider: {self.ai_provider.__class__.__name__}")
+        logger.info(f"  - Custom prompts: {'Yes' if self.editorial_prompts else 'No (using defaults)'}")
+        logger.info(f"  - Editorials directory: {self.editorials_dir}")
     
     def generate_editorial(self, articles: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
@@ -56,7 +71,17 @@ class EditorialGenerator:
         Returns:
             Dictionary containing the editorial content and metadata
         """
+        logger.info(f"\n{'='*60}")
+        logger.info(f"GENERATING EDITORIAL")
+        logger.info(f"{'='*60}")
+        logger.info(f"Number of articles: {len(articles)}")
+        logger.info(f"Language: {self.language}")
+        logger.info(f"Keywords: {', '.join(self.keywords) if self.keywords else 'None'}")
+        logger.info(f"AI Provider: {self.ai_provider.__class__.__name__}")
+        logger.info(f"{'='*60}\n")
+        
         if not articles:
+            logger.warning("No articles provided for editorial generation")
             return {
                 "title": "Good Morning!",
                 "content": "No news articles available today.",
@@ -74,18 +99,24 @@ class EditorialGenerator:
             "summary": prompt
         }
         
+        # Get prompts with language configuration
+        editorial_prompts = self._get_editorial_prompts()
+        logger.debug(f"Using editorial prompts with language: {self.language}")
+        
         # Generate editorial content using AI
         try:
             result = self.ai_provider.generate_summary(
                 editorial_article,
                 keywords=self.keywords,
-                prompts=self._get_editorial_prompts()
+                prompts=editorial_prompts
             )
             
             editorial_content = result.get("summary", "")
             editorial_title = result.get("title", "Your Morning News")
+            logger.info(f"Editorial generated successfully: {editorial_title}")
             
         except Exception as e:
+            logger.error(f"Error generating editorial with AI: {e}")
             print(f"Error generating editorial with AI: {e}")
             editorial_title = "Your Morning News"
             editorial_content = self._create_simple_editorial(articles)
@@ -158,6 +189,7 @@ class EditorialGenerator:
                 f"must be written in {language_name}."
             )
             prompts["system_message"] = prompts.get("system_message", "") + language_instruction
+            logger.info(f"Injected language instruction for {language_name} into prompts")
         
         return prompts
     

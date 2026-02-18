@@ -23,8 +23,8 @@ Supports multiple AI providers:
   - Google Gemini (Gemini Pro)
   - Mistral AI (Mistral models)
 - **CLI-based providers:**
-  - GitHub Copilot CLI (gh copilot)
-  - Gemini CLI (gcloud)
+  - GitHub Copilot CLI
+  - Gemini CLI
   - Mistral CLI
 - Simple mode (no AI, for testing)
 
