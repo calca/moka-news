@@ -170,7 +170,7 @@ class InfoDialog(ModalScreen[bool]):
     
     #info-container {
         width: 70;
-        height: 20;
+        height: 26;
         border: thick $primary;
         background: $panel;
         padding: 2;
@@ -189,10 +189,12 @@ class InfoDialog(ModalScreen[bool]):
     }
     """
 
-    def __init__(self, config_path: Optional[str] = None, editorials_dir: Optional[str] = None):
+    def __init__(self, config_path: Optional[str] = None, editorials_dir: Optional[str] = None, posters_dir: Optional[str] = None, logs_dir: Optional[str] = None):
         super().__init__()
         self.config_path = config_path or "Not specified"
         self.editorials_dir = editorials_dir or "Default location"
+        self.posters_dir = posters_dir or "Default location"
+        self.logs_dir = logs_dir or "Default location"
 
     def compose(self) -> ComposeResult:
         """Create the info dialog layout"""
@@ -202,6 +204,8 @@ class InfoDialog(ModalScreen[bool]):
                 f"[bold]Version:[/bold] {__version__}\n\n"
                 f"[bold]Configuration File:[/bold]\n{self.config_path}\n\n"
                 f"[bold]Editorials Directory:[/bold]\n{self.editorials_dir}\n\n"
+                f"[bold]Posters Directory:[/bold]\n{self.posters_dir}\n\n"
+                f"[bold]Logs Directory:[/bold]\n{self.logs_dir}\n\n"
                 f"[dim]Press ESC or click OK to close[/dim]"
             )
             with Horizontal(id="info-buttons"):
@@ -527,6 +531,8 @@ class Cup(App):
         current_editorial_path: Optional[Path] = None,
         config_path: Optional[str] = None,
         editorials_dir: Optional[str] = None,
+        posters_dir: Optional[str] = None,
+        logs_dir: Optional[str] = None,
         poster_config: Optional[Dict[str, Any]] = None,
     ):
         super().__init__()
@@ -548,6 +554,8 @@ class Cup(App):
         self.current_editorial_path = current_editorial_path  # Track current editorial path
         self.config_path = config_path
         self.editorials_dir = editorials_dir
+        self.posters_dir = posters_dir
+        self.logs_dir = logs_dir
         self.poster_config = poster_config or {"method": "local", "default_template": "minimal"}
         
         # Navigation properties for editorials
@@ -1047,7 +1055,9 @@ class Cup(App):
         """Show application information dialog"""
         info_dialog = InfoDialog(
             config_path=self.config_path,
-            editorials_dir=self.editorials_dir
+            editorials_dir=self.editorials_dir,
+            posters_dir=self.posters_dir,
+            logs_dir=self.logs_dir
         )
         self.push_screen(info_dialog)
 
@@ -1188,6 +1198,8 @@ def serve(
     current_editorial_path: Optional[Path] = None,
     config_path: Optional[str] = None,
     editorials_dir: Optional[str] = None,
+    posters_dir: Optional[str] = None,
+    logs_dir: Optional[str] = None,
     poster_config: Optional[Dict[str, Any]] = None,
 ):
     """
@@ -1208,6 +1220,8 @@ def serve(
         current_editorial_path: Path to the current editorial file
         config_path: Path to the configuration file
         editorials_dir: Path to the editorials directory
+        posters_dir: Path to the posters directory
+        logs_dir: Path to the logs directory
         poster_config: Configuration for poster generation
     """
     app = Cup(
@@ -1225,6 +1239,8 @@ def serve(
         current_editorial_path,
         config_path,
         editorials_dir,
+        posters_dir,
+        logs_dir,
         poster_config,
     )
     app.run()

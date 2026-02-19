@@ -419,6 +419,17 @@ Feed Management:
         # Get actual editorials directory (use editorial_generator's dir if not explicitly configured)
         actual_editorials_dir = str(editorial_generator.editorials_dir)
 
+        # Get posters directory (from config or default)
+        poster_config = config.get("poster", {})
+        posters_dir_path = poster_config.get("posters_dir")
+        if posters_dir_path:
+            actual_posters_dir = str(Path(posters_dir_path).expanduser().resolve())
+        else:
+            actual_posters_dir = str(Path.home() / ".config" / "moka-news" / "posters")
+
+        # Get logs directory
+        actual_logs_dir = str(Path.home() / ".config" / "moka-news" / "logs")
+
         serve(
             articles,
             last_update,
@@ -433,7 +444,9 @@ Feed Management:
             current_editorial_path=editorial_path,
             config_path=config_path,
             editorials_dir=actual_editorials_dir,
-            poster_config=config.get("poster", {}),
+            posters_dir=actual_posters_dir,
+            logs_dir=actual_logs_dir,
+            poster_config=poster_config,
         )
 
 
