@@ -69,6 +69,13 @@ moka-news = "moka_news.main:main"
 where = ["."]
 include = ["moka_news*"]
 
+[tool.setuptools.package-data]
+moka_news = [
+    "templates/*.json",
+    "fonts/*.ttf",
+    "fonts/LICENSE",
+]
+
 [tool.black]
 line-length = 88
 target-version = ['py38']

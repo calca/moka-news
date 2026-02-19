@@ -1,0 +1,34 @@
+# Font Licenses
+
+This directory contains open-source fonts from Google Fonts.
+
+## Inter
+
+- **Source**: https://github.com/rsms/inter
+- **License**: SIL Open Font License 1.1 (OFL)
+- **Copyright**: Copyright 2020 The Inter Project Authors (https://github.com/rsms/inter)
+
+The Inter font is licensed under the SIL Open Font License, Version 1.1.
+Full license text: https://scripts.sil.org/OFL
+
+## Roboto
+
+- **Source**: https://github.com/googlefonts/roboto
+- **License**: Apache License 2.0
+- **Copyright**: Copyright 2011 Google Inc. All Rights Reserved.
+
+Roboto is licensed under the Apache License, Version 2.0.
+Full license text: http://www.apache.org/licenses/LICENSE-2.0
+
+## Open Sans
+
+- **Source**: https://github.com/googlefonts/opensans
+- **License**: Apache License 2.0
+- **Copyright**: Copyright 2020 The Open Sans Project Authors (https://github.com/googlefonts/opensans)
+
+Open Sans is licensed under the Apache License, Version 2.0.
+Full license text: http://www.apache.org/licenses/LICENSE-2.0
+
+---
+
+All fonts are used in accordance with their respective open-source licenses.

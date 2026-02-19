@@ -56,3 +56,31 @@ SUPPORTED_LANGUAGES = {
 # Subprocess timeouts
 CLI_VERSION_CHECK_TIMEOUT = 5  # Seconds to wait for CLI version checks
 CLI_GENERATION_TIMEOUT = 30  # Seconds to wait for AI generation via CLI
+
+# Poster generation constants
+DEFAULT_BOX_PADDING = 40  # Padding inside content box
+DEFAULT_BOX_RADIUS = 20  # Border radius for rounded corners
+DEFAULT_SHADOW_OFFSET = 4  # Shadow offset in pixels
+DEFAULT_SHADOW_BLUR = 12  # Shadow blur radius
+
+# Gradient color presets for posters
+DEFAULT_GRADIENT_PRESETS = {
+    "purple-pink": ["#6a0dad", "#ff69b4"],  # Purple to pink
+    "ocean": ["#2e3192", "#1bffff"],  # Deep blue to cyan
+    "sunset": ["#ff6b6b", "#feca57"],  # Red to yellow
+    "forest": ["#0f4c5c", "#9bc472"],  # Dark teal to light green
+    "lavender": ["#9d84b7", "#daa5a4"],  # Lavender to rose
+    "mint": ["#4ecdc4", "#44e5b0"],  # Mint to seafoam
+    "rose-pine": ["#eb6f92", "#c4a7e7"],  # Rose Pine rose to mauve
+    "warm": ["#ee9ca7", "#ffdde1"],  # Warm pink gradient
+}
+
+# Bundled fonts for poster generation
+BUNDLED_FONTS = [
+    "Inter-Regular.ttf",
+    "Inter-Bold.ttf",
+    "Roboto-Regular.ttf",
+    "Roboto-Bold.ttf",
+    "OpenSans-Regular.ttf",
+    "OpenSans-Bold.ttf",
+]

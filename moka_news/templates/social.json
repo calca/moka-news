@@ -7,20 +7,38 @@
     "padding": 60,
     "line_spacing": 1.2
   },
+  "gradient": {
+    "enabled": true,
+    "type": "diagonal",
+    "preset": "purple-pink"
+  },
+  "content_box": {
+    "enabled": true,
+    "background": "#ffffff",
+    "padding": 40,
+    "border_radius": 20,
+    "shadow": {
+      "offset_x": 4,
+      "offset_y": 4,
+      "blur": 12,
+      "color": "rgba(0,0,0,0.15)"
+    }
+  },
   "colors": {
     "background": "#000000",
-    "text": "#ffffff",
-    "accent": "#ff6b6b",
-    "secondary": "#4ecdc4"
+    "text": "#1a1a1a",
+    "accent": "#dc2626",
+    "secondary": "#6b7280"
   },
   "typography": {
     "title_size": 48,
     "summary_size": 24,
     "metadata_size": 18,
-    "font_family": "arial"
+    "font_family": "arial",
+    "font_file": "OpenSans-Regular.ttf"
   },
   "elements": {
-    "qr_code": true,
+    "qr_code": false,
     "timestamp": false,
     "source": true,
     "qr_position": "bottom_center"
