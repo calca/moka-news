@@ -6,6 +6,7 @@ Orchestrates The Grinder (RSS extraction), The Editorial Generator (AI focus), a
 import argparse
 import sys
 from datetime import time
+from pathlib import Path
 from dotenv import load_dotenv
 from moka_news.grinder import Grinder
 from moka_news.barista import create_ai_provider, SimpleBarista
@@ -196,7 +197,6 @@ Feed Management:
     global logger
     if args.debug:
         import logging
-        from pathlib import Path
         logs_dir = Path.home() / ".config" / "moka-news" / "logs"
         logs_dir.mkdir(parents=True, exist_ok=True)
         from datetime import datetime
