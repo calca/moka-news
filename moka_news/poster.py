@@ -704,7 +704,7 @@ class PosterGenerator:
         # Add content box with shadow if enabled
         if template.content_box_enabled:
             # Calculate box dimensions with uniform margins on all sides
-            box_width = int(template.width * 0.8)
+            box_width = int(template.width * 0.9)
             # Use the same margin on all sides (10% of width)
             margin = (template.width - box_width) // 2
             box_x = margin
