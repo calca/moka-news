@@ -366,92 +366,6 @@ class EditorialListScreen(Screen):
         self.dismiss(None)
 
 
-class PosterOptionDialog(ModalScreen[Dict[str, str]]):
-    """Modal dialog for selecting poster generation options"""
-
-    DEFAULT_CSS = """
-    PosterOptionDialog {
-        align: center middle;
-    }
-    
-    #poster-container {
-        width: 60;
-        height: 25;
-        border: thick $primary;
-        background: $panel;
-        padding: 2;
-    }
-    
-    #template-list {
-        height: 8;
-        border: round $primary;
-        margin: 1 0;
-    }
-    
-    #button-container {
-        dock: bottom;
-        width: 100%;
-        height: 3;
-        align: center middle;
-        padding: 1;
-    }
-    
-    Button {
-        margin: 0 1;
-    }
-    """
-
-    def __init__(self, available_templates: List[str]):
-        super().__init__()
-        self.available_templates = available_templates
-        self.selected_template = available_templates[0] if available_templates else "minimal"
-
-    def compose(self) -> ComposeResult:
-        """Create the poster options dialog layout"""
-        with Vertical(id="poster-container"):
-            yield Static(f"[bold]🎨 Generate Poster[/bold]", id="dialog-title")
-            yield Static("\nSelect a template for your poster:", id="template-label")
-            
-            # Template selection list (items will be added in on_mount)
-            yield ListView(id="template-list")
-            
-            with Horizontal(id="button-container"):
-                yield Button("Generate", variant="success", id="generate-button")
-                yield Button("Cancel", variant="error", id="cancel-button")
-
-    def on_mount(self) -> None:
-        """Populate the template list after the widget is mounted"""
-        template_list = self.query_one("#template-list", ListView)
-        for template in self.available_templates:
-            template_list.append(ListItem(Label(f"📄 {template.title()}")))
-        
-        # Select the first template by default
-        if self.available_templates:
-            template_list.index = 0
-
-    def on_list_view_selected(self, event: ListView.Selected) -> None:
-        """Handle template selection"""
-        if event.list_view.id == "template-list":
-            selected_index = event.list_view.index
-            if 0 <= selected_index < len(self.available_templates):
-                self.selected_template = self.available_templates[selected_index]
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        """Handle button clicks"""
-        if event.button.id == "generate-button":
-            self.dismiss({
-                "action": "generate",
-                "template": self.selected_template
-            })
-        elif event.button.id == "cancel-button":
-            self.dismiss({"action": "cancel"})
-    
-    def on_key(self, event) -> None:
-        """Handle keyboard input"""
-        if event.key == "escape":
-            self.dismiss({"action": "cancel"})
-
-
 class Cup(App):
     """MoKa News TUI Application"""
 
@@ -1062,118 +976,58 @@ class Cup(App):
         self.push_screen(info_dialog)
 
     def action_generate_poster(self) -> None:
-        """Generate a poster from current editorial"""
+        """Generate a poster from current editorial in the background"""
         if not self.editorial_content:
             self.notify("No editorial available to generate poster from", severity="warning")
             return
-        
-        try:
-            # Import poster module here to avoid circular imports
-            from moka_news.poster import PosterGenerator
-            
-            # Get poster configuration from config (use defaults if not available)
-            poster_config = getattr(self, 'poster_config', {
-                'method': 'local',
-                'default_template': 'minimal'
-            })
-            
-            poster_gen = PosterGenerator(config=poster_config)
-            available_templates = poster_gen.list_templates()
-            
-            if not available_templates:
-                self.notify("No poster templates available", severity="error")
-                return
-            
-            # Show poster options dialog
-            poster_dialog = PosterOptionDialog(available_templates)
-            self.push_screen(poster_dialog, callback=self._handle_poster_generation)
-            
-        except Exception as e:
-            self.notify(f"Error initializing poster generation: {e}", severity="error")
+        self.notify("Generating poster in background…", severity="information")
+        self._generate_poster_background()
 
-    def _handle_poster_generation(self, result: Optional[Dict[str, str]]) -> None:
-        """Handle the result from poster options dialog"""
-        if not result or result.get("action") == "cancel":
-            return
-        
-        if result.get("action") == "generate":
-            template_name = result.get("template", "minimal")
-            self._generate_poster_async(template_name)
-
-    @work(exclusive=True)
-    async def _generate_poster_async(self, template_name: str) -> None:
-        """Generate poster asynchronously with loading dialog"""
-        loading_dialog = None
+    @work(thread=True, exclusive=True)
+    def _generate_poster_background(self) -> None:
+        """Generate poster in a background thread without blocking the TUI"""
         try:
-            # Show loading dialog
-            loading_dialog = LoadingDialog("Generating poster...")
-            self.push_screen(loading_dialog)
-            
-            # Import and create poster generator
             from moka_news.poster import PosterGenerator
-            
-            # Get poster configuration
-            poster_config = getattr(self, 'poster_config', {
-                'method': 'local',
-                'default_template': 'minimal'
+
+            poster_config = getattr(self, "poster_config", {
+                "method": "local",
+                "default_template": "minimal",
             })
-            
+
             poster_gen = PosterGenerator(config=poster_config)
-            
-            # Parse current editorial to extract title and content
-            if not self.editorial_content:
-                raise ValueError("No editorial content available for poster generation")
-            
-            title = "Morning Editorial"
+
             content = str(self.editorial_content)
-            
-            # Try to extract title from markdown content
-            lines = content.split('\n')
-            for line in lines:
-                if line.strip().startswith('# '):
-                    title = line.strip()[2:]
+            title = "Morning Editorial"
+            for line in content.split("\n"):
+                stripped = line.strip()
+                if stripped.startswith("# "):
+                    title = stripped[2:]
                     break
-                elif line.strip().startswith('## '):
-                    title = line.strip()[3:]
+                elif stripped.startswith("## "):
+                    title = stripped[3:]
                     break
-            
-            # Create editorial dict for poster generation  
+
             editorial_data = {
                 "title": title,
                 "content": content,
-                "timestamp": datetime.now()
+                "timestamp": datetime.now(),
             }
-            
-            # Generate poster
-            try:
-                import concurrent.futures
-                
-                # Use a dedicated executor to avoid argument issues
-                loop = asyncio.get_running_loop()
-                with concurrent.futures.ThreadPoolExecutor() as executor:
-                    poster_path = await loop.run_in_executor(
-                        executor, 
-                        poster_gen.generate_poster,
-                        editorial_data, 
-                        template_name
-                    )
-            except Exception as e:
-                logger.error(f"Poster generation failed: {e}")
-                raise
-            
-            # Close loading dialog
-            if loading_dialog:
-                loading_dialog.dismiss()
-            
-            self.notify(f"✓ Poster generated: {poster_path.name}", severity="success")
-            
+
+            template_name = poster_config.get("default_template", "minimal")
+            poster_path = poster_gen.generate_poster(editorial_data, template_name)
+
+            self.call_from_thread(
+                self.notify,
+                f"✓ Poster saved: {poster_path.name}",
+                severity="success",
+            )
         except Exception as e:
-            # Close loading dialog if it exists
-            if loading_dialog:
-                loading_dialog.dismiss()
-            
-            self.notify(f"Error generating poster: {e}", severity="error")
             logger.error(f"Poster generation error: {e}")
+            self.call_from_thread(
+                self.notify,
+                f"Error generating poster: {e}",
+                severity="error",
+            )
 
     def _rebuild_view(self) -> None:
         """Rebuild the view to show current content"""
