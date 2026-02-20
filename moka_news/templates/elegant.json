@@ -3,8 +3,8 @@
   "description": "Sophisticated design with serif typography",
   "layout": {
     "width": 1080,
-    "height": 1920,
-    "padding": 100,
+    "height": 1080,
+    "padding": 70,
     "line_spacing": 1.4
   },
   "gradient": {
@@ -31,8 +31,8 @@
     "secondary": "#6272a4"
   },
   "typography": {
-    "title_size": 56,
-    "summary_size": 28,
+    "title_size": 76,
+    "summary_size": 32,
     "metadata_size": 22,
     "font_family": "Times",
     "font_file": "Roboto-Regular.ttf"

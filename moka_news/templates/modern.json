@@ -3,8 +3,8 @@
   "description": "Contemporary design with geometric elements",
   "layout": {
     "width": 1080,
-    "height": 1920,
-    "padding": 70,
+    "height": 1080,
+    "padding": 55,
     "line_spacing": 1.25
   },
   "gradient": {
@@ -31,9 +31,9 @@
     "secondary": "#64748b"
   },
   "typography": {
-    "title_size": 50,
-    "summary_size": 25,
-    "metadata_size": 19,
+    "title_size": 70,
+    "summary_size": 30,
+    "metadata_size": 20,
     "font_family": "arial",
     "font_file": "Inter-Bold.ttf"
   },

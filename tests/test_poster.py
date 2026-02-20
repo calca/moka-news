@@ -32,7 +32,7 @@ class TestPosterTemplate:
         assert template.name == "Test Template"
         assert template.description == "Test description"
         assert template.width == 1080
-        assert template.height == 1920
+        assert template.height == 1080
         assert template.background_color == "#1e1e2e"
         assert template.text_color == "#cdd6f4"
     
@@ -166,14 +166,14 @@ class TestPosterGenerator:
         # Mock gradient background
         mock_gradient_img = MagicMock()
         mock_gradient_img.mode = "RGBA"
-        mock_gradient_img.size = (1080, 1920)
+        mock_gradient_img.size = (1080, 1080)
         mock_gradient_img.split.return_value = [MagicMock(), MagicMock(), MagicMock(), MagicMock()]
         mock_gradient.return_value = mock_gradient_img
         
         # Mock box drawing
         mock_box_img = MagicMock()
         mock_box_img.mode = "RGBA"
-        mock_box_img.size = (1080, 1920)
+        mock_box_img.size = (1080, 1080)
         mock_box_img.split.return_value = [MagicMock(), MagicMock(), MagicMock(), MagicMock()]
         mock_box.return_value = mock_box_img
         
@@ -272,7 +272,7 @@ properly when there are many sentences and words."""
             mock_img = MagicMock()
             template = PosterTemplate({
                 "elements": {"qr_code": True, "qr_position": "bottom_right"},
-                "layout": {"width": 1080, "height": 1920, "padding": 80},
+                "layout": {"width": 1080, "height": 1080, "padding": 60},
                 "colors": {"text": "#ffffff", "background": "#000000"}
             })
             
@@ -332,13 +332,13 @@ class TestPosterIntegration:
         # Mock gradient and box functions
         mock_gradient_img = MagicMock()
         mock_gradient_img.mode = "RGBA"
-        mock_gradient_img.size = (1080, 1920)
+        mock_gradient_img.size = (1080, 1080)
         mock_gradient_img.split.return_value = [MagicMock(), MagicMock(), MagicMock(), MagicMock()]
         mock_gradient.return_value = mock_gradient_img
         
         mock_box_img = MagicMock()
         mock_box_img.mode = "RGBA"
-        mock_box_img.size = (1080, 1920)
+        mock_box_img.size = (1080, 1080)
         mock_box_img.split.return_value = [MagicMock(), MagicMock(), MagicMock(), MagicMock()]
         mock_box.return_value = mock_box_img
         
@@ -503,7 +503,7 @@ class TestContentBox:
         """Test drawing rounded box with shadow"""
         # Mock components
         mock_base_img = MagicMock()
-        mock_base_img.size = (1080, 1920)
+        mock_base_img.size = (1080, 1080)
         mock_base_img.mode = "RGB"
         mock_rgba_img = MagicMock()
         mock_base_img.convert.return_value = mock_rgba_img
@@ -689,13 +689,13 @@ class TestEnhancedPosterGeneration:
         # Mock gradient background
         mock_gradient_img = MagicMock()
         mock_gradient_img.mode = "RGBA"
-        mock_gradient_img.size = (1080, 1920)
+        mock_gradient_img.size = (1080, 1080)
         mock_gradient.return_value = mock_gradient_img
         
         # Mock box drawing
         mock_rgba_img = MagicMock()
         mock_rgba_img.mode = "RGBA"
-        mock_rgba_img.size = (1080, 1920)
+        mock_rgba_img.size = (1080, 1080)
         mock_rgba_img.split.return_value = [MagicMock(), MagicMock(), MagicMock(), MagicMock()]
         mock_box.return_value = mock_rgba_img
         

@@ -3,8 +3,8 @@
   "description": "Clean and simple design with Rose Pine color scheme",
   "layout": {
     "width": 1080,
-    "height": 1920,
-    "padding": 80,
+    "height": 1080,
+    "padding": 60,
     "line_spacing": 1.3
   },
   "gradient": {
@@ -31,8 +31,8 @@
     "secondary": "#6e6a86"
   },
   "typography": {
-    "title_size": 52,
-    "summary_size": 26,
+    "title_size": 72,
+    "summary_size": 30,
     "metadata_size": 20,
     "font_family": "arial",
     "font_file": "Inter-Regular.ttf"

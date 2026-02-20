@@ -3,8 +3,8 @@
   "description": "Optimized for social media sharing",
   "layout": {
     "width": 1080,
-    "height": 1920,
-    "padding": 60,
+    "height": 1080,
+    "padding": 50,
     "line_spacing": 1.2
   },
   "gradient": {
@@ -31,8 +31,8 @@
     "secondary": "#6b7280"
   },
   "typography": {
-    "title_size": 48,
-    "summary_size": 24,
+    "title_size": 68,
+    "summary_size": 28,
     "metadata_size": 18,
     "font_family": "arial",
     "font_file": "OpenSans-Regular.ttf"

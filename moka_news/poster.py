@@ -1,5 +1,5 @@
 """
-Poster Generator - Creates 9:16 posters from editorial content
+Poster Generator - Creates square (1:1) posters from editorial content
 Supports both local generation (PIL/Pillow) and optional AI image generation
 """
 
@@ -138,8 +138,8 @@ class PosterTemplate:
         
         # Layout settings
         layout = template_data.get("layout", {})
-        self.width = layout.get("width", 1080)  # 9:16 aspect ratio
-        self.height = layout.get("height", 1920)
+        self.width = layout.get("width", 1080)  # 1:1 square
+        self.height = layout.get("height", 1080)
         self.padding = layout.get("padding", 60)
         self.line_spacing = layout.get("line_spacing", 1.2)
         
@@ -177,9 +177,9 @@ class PosterTemplate:
         
         # Typography
         typography = template_data.get("typography", {})
-        self.title_font_size = typography.get("title_size", 48)
-        self.summary_font_size = typography.get("summary_size", 24)
-        self.metadata_font_size = typography.get("metadata_size", 18)
+        self.title_font_size = typography.get("title_size", 72)
+        self.summary_font_size = typography.get("summary_size", 32)
+        self.metadata_font_size = typography.get("metadata_size", 22)
         self.font_family = typography.get("font_family", "arial")
         self.font_file = typography.get("font_file", None)  # Custom font file
         
@@ -378,7 +378,7 @@ def _draw_rounded_box_with_shadow(
 
 
 class PosterGenerator:
-    """Generates 9:16 posters from editorial content"""
+    """Generates square 1:1 posters from editorial content"""
     
     def __init__(
         self,
@@ -440,8 +440,8 @@ class PosterGenerator:
             "description": "Clean and simple design with Rose Pine color scheme",
             "layout": {
                 "width": 1080,
-                "height": 1920,
-                "padding": 80,
+                "height": 1080,
+                "padding": 60,
                 "line_spacing": 1.3
             },
             "gradient": {
@@ -468,8 +468,8 @@ class PosterGenerator:
                 "secondary": "#6e6a86"
             },
             "typography": {
-                "title_size": 52,
-                "summary_size": 26,
+                "title_size": 72,
+                "summary_size": 30,
                 "metadata_size": 20,
                 "font_family": "arial",
                 "font_file": "Inter-Regular.ttf"
@@ -488,8 +488,8 @@ class PosterGenerator:
             "description": "Sophisticated design with serif typography",
             "layout": {
                 "width": 1080,
-                "height": 1920,
-                "padding": 100,
+                "height": 1080,
+                "padding": 70,
                 "line_spacing": 1.4
             },
             "gradient": {
@@ -516,8 +516,8 @@ class PosterGenerator:
                 "secondary": "#6272a4"
             },
             "typography": {
-                "title_size": 56,
-                "summary_size": 28,
+                "title_size": 76,
+                "summary_size": 32,
                 "metadata_size": 22,
                 "font_family": "Times",
                 "font_file": "Roboto-Regular.ttf"
@@ -536,8 +536,8 @@ class PosterGenerator:
             "description": "Optimized for social media sharing",
             "layout": {
                 "width": 1080,
-                "height": 1920,
-                "padding": 60,
+                "height": 1080,
+                "padding": 50,
                 "line_spacing": 1.2
             },
             "gradient": {
@@ -564,8 +564,8 @@ class PosterGenerator:
                 "secondary": "#6b7280"
             },
             "typography": {
-                "title_size": 48,
-                "summary_size": 24,
+                "title_size": 68,
+                "summary_size": 28,
                 "metadata_size": 18,
                 "font_family": "arial",
                 "font_file": "OpenSans-Regular.ttf"
@@ -584,8 +584,8 @@ class PosterGenerator:
             "description": "Contemporary design with geometric elements",
             "layout": {
                 "width": 1080,
-                "height": 1920,
-                "padding": 70,
+                "height": 1080,
+                "padding": 55,
                 "line_spacing": 1.25
             },
             "gradient": {
@@ -612,9 +612,9 @@ class PosterGenerator:
                 "secondary": "#64748b"
             },
             "typography": {
-                "title_size": 50,
-                "summary_size": 25,
-                "metadata_size": 19,
+                "title_size": 70,
+                "summary_size": 30,
+                "metadata_size": 20,
                 "font_family": "arial",
                 "font_file": "Inter-Bold.ttf"
             },
@@ -956,7 +956,7 @@ class PosterGenerator:
         
         for sentence in sentences:
             sentence_words = len(sentence.split())
-            if word_count + sentence_words > 200:
+            if word_count + sentence_words > 120:
                 break
             poster_content += sentence + ". "
             word_count += sentence_words
