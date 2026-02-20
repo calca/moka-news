@@ -218,12 +218,12 @@ Feed Management:
         logger.info(f"{'='*60}")
         print(f"🔍 DEBUG MODE ENABLED - Logs appended to: {_log_file}", file=sys.stderr)
     else:
-        # Console stays at INFO; file captures WARNING+ so errors are never lost
+        # Console stays at WARNING; file captures INFO+ so nothing is lost
         setup_logger(
             "moka_news",
             level=_logging.INFO,
             log_file=str(_log_file),
-            file_level=_logging.WARNING,
+            file_level=_logging.INFO,
         )
         logger = get_logger(__name__)
         logger.debug(f"Log file: {_log_file}")

@@ -53,12 +53,16 @@ def setup_logger(name: str = "moka_news", level: int = logging.INFO, log_file: O
             logger.removeHandler(handler)
             handler.close()
     
-    logger.setLevel(level)
+    # The logger's own level must be the minimum so messages can reach
+    # both the console handler (WARNING+) and the file handler (level+).
+    effective_file_level = file_level if file_level is not None else level
+    logger_base_level = min(logging.WARNING, effective_file_level)
+    logger.setLevel(logger_base_level)
     logger.propagate = False  # Prevent propagation to avoid duplicate logs
     
-    # Console handler with colored output
+    # Console handler: WARNING+ only (INFO/DEBUG go to file, not terminal)
     console_handler = logging.StreamHandler(sys.stderr)
-    console_handler.setLevel(level)
+    console_handler.setLevel(logging.WARNING)
     
     # Format: timestamp - level - message
     console_formatter = ColoredFormatter(
