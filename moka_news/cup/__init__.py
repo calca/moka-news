@@ -986,6 +986,7 @@ class Cup(App):
     @work(thread=True, exclusive=True)
     def _generate_poster_background(self) -> None:
         """Generate poster in a background thread without blocking the TUI"""
+        logger.info("Poster generation started (background thread)")
         try:
             from moka_news.poster import PosterGenerator, PosterContentGenerator
 
@@ -993,8 +994,10 @@ class Cup(App):
                 "method": "local",
                 "default_template": "minimal",
             })
+            logger.debug(f"Poster config: {poster_config}")
 
-            poster_gen = PosterGenerator(config=poster_config)
+            logger.debug(f"Instantiating PosterGenerator (posters_dir={self.posters_dir})")
+            poster_gen = PosterGenerator(config=poster_config, posters_dir=self.posters_dir)
 
             # ── extract title from editorial markdown ────────────────────
             content = str(self.editorial_content)
@@ -1007,11 +1010,14 @@ class Cup(App):
                 elif stripped.startswith("## "):
                     title = stripped[3:]
                     break
+            logger.debug(f"Extracted title: {title!r}")
+            logger.debug(f"Editorial content length: {len(content)} chars")
 
             # ── AI poster content (configurable prompt) ──────────────────
             eg = getattr(self, "editorial_generator", None)
             ai_provider = getattr(eg, "ai_provider", None)
             language = getattr(eg, "language", "en")
+            logger.debug(f"AI provider: {type(ai_provider).__name__ if ai_provider else 'None'}, language: {language}")
             content_prompt = poster_config.get("content_prompt")  # None → use default
             content_gen = PosterContentGenerator(
                 ai_provider=ai_provider,
@@ -1026,7 +1032,9 @@ class Cup(App):
                     severity="information",
                 )
 
+            logger.debug("Calling PosterContentGenerator.generate()")
             poster_content = content_gen.generate({"title": title, "content": content})
+            logger.debug(f"Poster content length: {len(poster_content)} chars")
             # ─────────────────────────────────────────────────────────────
 
             editorial_data = {
@@ -1036,7 +1044,9 @@ class Cup(App):
             }
 
             template_name = poster_config.get("default_template", "minimal")
+            logger.debug(f"Generating poster with template: {template_name!r}")
             poster_path = poster_gen.generate_poster(editorial_data, template_name)
+            logger.info(f"Poster generated successfully: {poster_path}")
 
             self.call_from_thread(
                 self.notify,
@@ -1044,7 +1054,7 @@ class Cup(App):
                 severity="success",
             )
         except Exception as e:
-            logger.error(f"Poster generation error: {e}")
+            logger.exception(f"Poster generation failed: {e}")
             self.call_from_thread(
                 self.notify,
                 f"Error generating poster: {e}",

@@ -193,27 +193,40 @@ Feed Management:
 
     args = parser.parse_args()
 
-    # Setup logger based on debug flag
+    # Setup logger — always write WARNING+ to a daily log file so errors are
+    # captured even when the TUI is running (which hides stderr).
+    # --debug bumps both console and file to DEBUG level.
     global logger
+    import logging as _logging
+    from datetime import datetime as _dt
+    _logs_dir = Path.home() / ".config" / "moka-news" / "logs"
+    _logs_dir.mkdir(parents=True, exist_ok=True)
+    _log_file = _logs_dir / f"moka-news-{_dt.now().strftime('%Y-%m-%d')}.log"
+
     if args.debug:
-        import logging
-        logs_dir = Path.home() / ".config" / "moka-news" / "logs"
-        logs_dir.mkdir(parents=True, exist_ok=True)
-        from datetime import datetime
-        # Use daily log file instead of creating new file for each run
-        log_file = logs_dir / f"moka-news-{datetime.now().strftime('%Y-%m-%d')}.log"
-        setup_logger("moka_news", level=logging.DEBUG, log_file=str(log_file))
+        setup_logger(
+            "moka_news",
+            level=_logging.DEBUG,
+            log_file=str(_log_file),
+            file_level=_logging.DEBUG,
+        )
         logger = get_logger(__name__)
         logger.info(f"\n{'='*60}")
         logger.info("🔍 DEBUG MODE ENABLED")
-        logger.info(f"📝 Logging to: {log_file}")
-        logger.info(f"🕐 Session started at: {datetime.now().strftime('%H:%M:%S')}")
+        logger.info(f"📝 Logging to: {_log_file}")
+        logger.info(f"🕐 Session started at: {_dt.now().strftime('%H:%M:%S')}")
         logger.info(f"{'='*60}")
-        # Also print to console for immediate feedback
-        print(f"🔍 DEBUG MODE ENABLED - Logs appended to: {log_file}", file=sys.stderr)
+        print(f"🔍 DEBUG MODE ENABLED - Logs appended to: {_log_file}", file=sys.stderr)
     else:
-        setup_logger("moka_news")
+        # Console stays at INFO; file captures WARNING+ so errors are never lost
+        setup_logger(
+            "moka_news",
+            level=_logging.INFO,
+            log_file=str(_log_file),
+            file_level=_logging.WARNING,
+        )
         logger = get_logger(__name__)
+        logger.debug(f"Log file: {_log_file}")
 
     # Initialize OPML manager
     opml_manager = OPMLManager(args.opml)

@@ -714,31 +714,39 @@ class PosterGenerator:
                     # Python 3.9+
                     fonts_path = pkg_resources.files("moka_news") / "fonts" / font_file
                     if fonts_path.exists():
-                        return ImageFont.truetype(str(fonts_path), size)
+                        font = ImageFont.truetype(str(fonts_path), size)
+                        logger.debug(f"Loaded bundled font: {font_file!r} @ {size}px")
+                        return font
                 except AttributeError:
                     # Python 3.7-3.8 fallback
                     with pkg_resources.path("moka_news.fonts", font_file) as font_path:
                         if font_path.exists():
-                            return ImageFont.truetype(str(font_path), size)
+                            font = ImageFont.truetype(str(font_path), size)
+                            logger.debug(f"Loaded bundled font (3.8): {font_file!r} @ {size}px")
+                            return font
             except Exception as e:
-                logger.debug(f"Could not load bundled font {font_file}: {e}")
+                logger.debug(f"Could not load bundled font {font_file!r}: {e}")
             
             # Try as absolute path or relative to cwd
             try:
                 font_path = Path(font_file)
                 if font_path.exists():
-                    return ImageFont.truetype(str(font_path), size)
+                    font = ImageFont.truetype(str(font_path), size)
+                    logger.debug(f"Loaded font from path: {font_path} @ {size}px")
+                    return font
             except Exception as e:
-                logger.debug(f"Could not load font from path {font_file}: {e}")
+                logger.debug(f"Could not load font from path {font_file!r}: {e}")
         
         # Try system font
         try:
-            return ImageFont.truetype(font_family, size)
+            font = ImageFont.truetype(font_family, size)
+            logger.debug(f"Loaded system font: {font_family!r} @ {size}px")
+            return font
         except Exception as e:
-            logger.debug(f"Could not load system font {font_family}: {e}")
+            logger.debug(f"Could not load system font {font_family!r}: {e}")
         
         # Fallback to default PIL font
-        logger.warning(f"Could not load font, using default. Requested: {font_file or font_family}")
+        logger.warning(f"Font fallback to PIL default (bitmap): requested font_file={font_file!r}, font_family={font_family!r}, size={size}")
         return ImageFont.load_default()
 
     def _fit_font_size(
@@ -781,9 +789,14 @@ class PosterGenerator:
         custom_options: Optional[Dict[str, Any]] = None
     ) -> Path:
         """Generate poster locally using PIL/Pillow with gradient and content box support"""
+        logger.info(f"_generate_local_poster: start (template={template_name or self.default_template!r})")
         # Load template
         template_name = template_name or self.default_template
         template = self.load_template(template_name)
+        logger.debug(
+            f"Template loaded: {template.name} ({template.width}x{template.height}), "
+            f"gradient={template.gradient_enabled}, content_box={template.content_box_enabled}"
+        )
         
         # Apply custom options (including gradient and content_box overrides)
         if custom_options:
@@ -810,6 +823,7 @@ class PosterGenerator:
         
         # Create base image with gradient or solid color
         if template.gradient_enabled and template.gradient_colors:
+            logger.debug(f"Creating gradient background: type={template.gradient_type!r}, colors={template.gradient_colors}")
             img = _create_gradient_background(
                 template.width,
                 template.height,
@@ -817,6 +831,7 @@ class PosterGenerator:
                 template.gradient_type
             )
         else:
+            logger.debug(f"Creating solid background: {template.background_color!r}")
             img = Image.new("RGB", (template.width, template.height), template.background_color)
         
         # Add content box with shadow if enabled
@@ -828,6 +843,7 @@ class PosterGenerator:
             box_x = margin
             box_y = margin
             box_height = template.height - (2 * margin)
+            logger.debug(f"Content box: pos=({box_x},{box_y}), size=({box_width}x{box_height}), radius={template.content_box_radius}")
             
             # Draw rounded box with shadow
             shadow_config = {
@@ -845,6 +861,7 @@ class PosterGenerator:
                 shadow_config,
                 template.content_box_background
             )
+            logger.debug("Content box drawn")
             
             # Update drawing parameters to be relative to content box
             content_padding = template.content_box_padding
@@ -864,6 +881,8 @@ class PosterGenerator:
         title = editorial.get("title", "Morning Editorial")
         content = editorial.get("content", "")
         clean_content = self._clean_content_for_poster(content)
+        logger.debug(f"Title: {title!r}")
+        logger.debug(f"Body text length after cleaning: {len(clean_content)} chars / ~{len(clean_content.split())} words")
 
         # ── Zone calculation ───────────────────────────────────────────
         # Total drawable height (inside box padding, or canvas padding)
@@ -897,7 +916,7 @@ class PosterGenerator:
             min_size=28, max_size=260,
         )
         title_font = self._load_font(template.font_file, template.font_family, title_font_size)
-        logger.debug(f"Auto-fit title font: {title_font_size}px (zone {title_zone_h}px)")
+        logger.info(f"Title font: {title_font_size}px (zone {title_zone_h}px, max_width {max_width}px)")
 
         body_font_size = self._fit_font_size(
             draw, clean_content,
@@ -906,7 +925,7 @@ class PosterGenerator:
             min_size=18, max_size=160,
         )
         summary_font = self._load_font(template.font_file, template.font_family, body_font_size)
-        logger.debug(f"Auto-fit body font: {body_font_size}px (zone {body_zone_h}px)")
+        logger.info(f"Body font: {body_font_size}px (zone {body_zone_h}px)")
 
         # ── Draw title ─────────────────────────────────────────────────
         current_y = draw_y
@@ -957,6 +976,7 @@ class PosterGenerator:
         
         # Convert back to RGB if needed (after RGBA operations)
         if img.mode == 'RGBA':
+            logger.debug("Converting RGBA → RGB")
             # Create white background
             background = Image.new('RGB', img.size, (255, 255, 255))
             background.paste(img, mask=img.split()[3])  # Use alpha channel as mask
@@ -964,8 +984,7 @@ class PosterGenerator:
         
         # Save image
         img.save(output_path, "PNG", optimize=True)
-        logger.info(f"Local poster generated: {output_path}")
-        
+        logger.info(f"_generate_local_poster: saved → {output_path}")
         return output_path
     
     def _generate_ai_poster(

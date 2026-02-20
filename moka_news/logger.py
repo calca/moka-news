@@ -30,14 +30,17 @@ class ColoredFormatter(logging.Formatter):
         return super().format(record)
 
 
-def setup_logger(name: str = "moka_news", level: int = logging.INFO, log_file: Optional[str] = None) -> logging.Logger:
+def setup_logger(name: str = "moka_news", level: int = logging.INFO, log_file: Optional[str] = None, file_level: Optional[int] = None) -> logging.Logger:
     """
     Setup and return a configured logger
     
     Args:
         name: Logger name (default: "moka_news")
-        level: Logging level (default: INFO)
-        log_file: Optional path to log file for debug mode
+        level: Logging level for the console handler (default: INFO)
+        log_file: Optional path to log file
+        file_level: Logging level for the file handler (default: same as level).
+            Set to logging.DEBUG to always capture verbose output in the file
+            while keeping the console less noisy.
     
     Returns:
         Configured logger instance
@@ -65,10 +68,11 @@ def setup_logger(name: str = "moka_news", level: int = logging.INFO, log_file: O
     console_handler.setFormatter(console_formatter)
     logger.addHandler(console_handler)
     
-    # Add file handler if log_file is specified (debug mode)
+    # Add file handler if log_file is specified
     if log_file:
+        effective_file_level = file_level if file_level is not None else level
         file_handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')  # Append mode
-        file_handler.setLevel(logging.DEBUG)  # File logs everything in debug mode
+        file_handler.setLevel(effective_file_level)
         
         # File format without colors but with more detail
         file_formatter = logging.Formatter(
