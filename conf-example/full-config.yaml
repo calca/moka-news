@@ -113,7 +113,22 @@ poster:
   # Custom directories (optional)
   posters_dir: ~/Documents/moka-news-posters  # Custom poster save location
   templates_dir: null      # Custom template directory (defaults to package templates)
-  
+
+  # AI Prompt for poster content summary (optional)
+  # The AI distills the full editorial into a concise ≤300-word text for the poster.
+  # Placeholder: {content} → full editorial markdown.
+  # Remove or omit this section to use the built-in default prompt.
+  content_prompt:
+    system_message: >
+      You are an expert editorial journalist.
+      Write a concise, impactful summary intended for a visual news poster.
+    user_prompt: |
+      Create a poster summary of the following editorial.
+      Use clear, direct sentences.
+      Maximum 300 words. Return only the summary text, no titles or labels.
+
+      {content}
+
   # AI Image Generation (for method: ai or hybrid)
   ai:
     provider: dall-e       # AI provider: dall-e, midjourney, stable-diffusion

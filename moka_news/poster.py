@@ -38,6 +38,91 @@ class PosterGenerationError(Exception):
     pass
 
 
+class PosterContentGenerator:
+    """Generates AI-written content for a news poster.
+
+    Uses the configured AI provider to distil an editorial into a concise
+    (≤ 300-word) visual summary. Falls back to the raw editorial text when
+    no AI provider is available or when the AI call fails.
+
+    The prompt is fully configurable: pass a ``prompt_config`` dict with
+    ``system_message`` and ``user_prompt`` keys (using ``{content}`` as the
+    placeholder for the editorial body).  If omitted, ``DEFAULT_POSTER_CONTENT_PROMPTS``
+    from :mod:`moka_news.config` is used.
+
+    Example::
+
+        from moka_news.poster import PosterContentGenerator
+        gen = PosterContentGenerator(ai_provider=my_provider)
+        text = gen.generate({"title": "Morning News", "content": editorial_md})
+    """
+
+    MAX_TOKENS = 450  # generous margin to fit a ~300-word response
+
+    def __init__(self, ai_provider=None, prompt_config=None, language: str = "en"):
+        """
+        Args:
+            ai_provider: An :class:`~moka_news.barista.AIProvider` instance, or
+                ``None`` in which case the full editorial text is returned as-is.
+            prompt_config: Optional dict with ``system_message`` and ``user_prompt``
+                keys.  Defaults to ``DEFAULT_POSTER_CONTENT_PROMPTS``.
+            language: BCP-47 language code matching the editorial language
+                (e.g. ``"en"``, ``"it"``, ``"es"``, ``"fr"``).
+                When not ``"en"`` a language instruction is appended to
+                ``system_message`` so the AI writes in the same language as
+                the editorial.
+        """
+        from moka_news.config import DEFAULT_POSTER_CONTENT_PROMPTS
+        from moka_news.constants import SUPPORTED_LANGUAGES
+        self.ai_provider = ai_provider
+        self.language = language
+
+        # Start from the provided/default prompt config, then inject language.
+        base = dict(prompt_config or DEFAULT_POSTER_CONTENT_PROMPTS)
+        if language != "en":
+            language_name = SUPPORTED_LANGUAGES.get(language, language)
+            lang_instruction = (
+                f" IMPORTANT: Write the ENTIRE poster summary in {language_name}. "
+                f"Every sentence must be in {language_name}."
+            )
+            base["system_message"] = base.get("system_message", "") + lang_instruction
+            logger.debug(
+                f"PosterContentGenerator: language instruction injected for {language_name}"
+            )
+        self.prompt_config = base
+
+    def generate(self, editorial: Dict[str, Any]) -> str:
+        """Return poster content for *editorial*.
+
+        Args:
+            editorial: Dict with at least ``"title"`` and ``"content"`` keys.
+
+        Returns:
+            A concise text string ready to be rendered on the poster.
+        """
+        content = editorial.get("content", "")
+        title = editorial.get("title", "Morning Editorial")
+
+        if self.ai_provider is None:
+            logger.debug("PosterContentGenerator: no AI provider – using full editorial text")
+            return content
+
+        try:
+            result = self.ai_provider.generate_summary(
+                {"title": title, "summary": content},
+                prompts=self.prompt_config,
+                max_tokens=self.MAX_TOKENS,
+            )
+            summary = result.get("summary", "").strip()
+            if summary:
+                logger.info("PosterContentGenerator: AI summary generated successfully")
+                return summary
+        except Exception as e:
+            logger.warning(f"PosterContentGenerator: AI call failed, using full content: {e}")
+
+        return content
+
+
 class PosterTemplate:
     """Represents a poster template configuration"""
     

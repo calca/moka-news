@@ -987,7 +987,7 @@ class Cup(App):
     def _generate_poster_background(self) -> None:
         """Generate poster in a background thread without blocking the TUI"""
         try:
-            from moka_news.poster import PosterGenerator
+            from moka_news.poster import PosterGenerator, PosterContentGenerator
 
             poster_config = getattr(self, "poster_config", {
                 "method": "local",
@@ -996,6 +996,7 @@ class Cup(App):
 
             poster_gen = PosterGenerator(config=poster_config)
 
+            # ── extract title from editorial markdown ────────────────────
             content = str(self.editorial_content)
             title = "Morning Editorial"
             for line in content.split("\n"):
@@ -1007,9 +1008,30 @@ class Cup(App):
                     title = stripped[3:]
                     break
 
+            # ── AI poster content (configurable prompt) ──────────────────
+            eg = getattr(self, "editorial_generator", None)
+            ai_provider = getattr(eg, "ai_provider", None)
+            language = getattr(eg, "language", "en")
+            content_prompt = poster_config.get("content_prompt")  # None → use default
+            content_gen = PosterContentGenerator(
+                ai_provider=ai_provider,
+                prompt_config=content_prompt,
+                language=language,
+            )
+
+            if ai_provider is not None:
+                self.call_from_thread(
+                    self.notify,
+                    "Generating AI poster summary…",
+                    severity="information",
+                )
+
+            poster_content = content_gen.generate({"title": title, "content": content})
+            # ─────────────────────────────────────────────────────────────
+
             editorial_data = {
                 "title": title,
-                "content": content,
+                "content": poster_content,
                 "timestamp": datetime.now(),
             }
 
