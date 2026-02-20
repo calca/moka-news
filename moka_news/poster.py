@@ -740,7 +740,40 @@ class PosterGenerator:
         # Fallback to default PIL font
         logger.warning(f"Could not load font, using default. Requested: {font_file or font_family}")
         return ImageFont.load_default()
-    
+
+    def _fit_font_size(
+        self,
+        draw: ImageDraw.ImageDraw,
+        text: str,
+        font_file: Optional[str],
+        font_family: str,
+        max_width: int,
+        max_height: int,
+        line_spacing: float = 1.3,
+        min_size: int = 12,
+        max_size: int = 220,
+    ) -> int:
+        """Binary-search for the largest font size where *text* wraps and fits
+        inside (max_width × max_height).  Returns at least *min_size* even when
+        the text still overflows at that size.
+        """
+        best = min_size
+        lo, hi = min_size, max_size
+        while lo <= hi:
+            mid = (lo + hi) // 2
+            font = self._load_font(font_file, font_family, mid)
+            lines = self._wrap_text(draw, text, font, max_width)
+            total_h = 0
+            for line in lines:
+                bbox = draw.textbbox((0, 0), line, font=font)
+                total_h += int((bbox[3] - bbox[1]) * line_spacing)
+            if total_h <= max_height:
+                best = mid
+                lo = mid + 1
+            else:
+                hi = mid - 1
+        return best
+
     def _generate_local_poster(
         self,
         editorial: Dict[str, Any],
@@ -826,63 +859,97 @@ class PosterGenerator:
         
         # Create draw context
         draw = ImageDraw.Draw(img)
-        
-        # Load fonts using the new font loading method
-        title_font = self._load_font(template.font_file, template.font_family, template.title_font_size)
-        summary_font = self._load_font(template.font_file, template.font_family, template.summary_font_size)
-        metadata_font = self._load_font(template.font_file, template.font_family, template.metadata_font_size)
-        
-        # Calculate layout positions
-        current_y = draw_y
-        
-        # Draw title
+
+        # ── Text content ───────────────────────────────────────────────
         title = editorial.get("title", "Morning Editorial")
+        content = editorial.get("content", "")
+        clean_content = self._clean_content_for_poster(content)
+
+        # ── Zone calculation ───────────────────────────────────────────
+        # Total drawable height (inside box padding, or canvas padding)
+        if template.content_box_enabled:
+            total_draw_h = box_height - (template.content_box_padding * 2)
+        else:
+            total_draw_h = template.height - (template.padding * 2)
+
+        # Footer zone: one line per active metadata item + a small top gap
+        footer_line_h = template.metadata_font_size + 8
+        footer_lines = int(template.show_timestamp) + int(template.show_source)
+        footer_zone_h = max(footer_lines * footer_line_h + 20, 20)
+
+        # Divider between title and body
+        divider_zone_h = 32  # gap above + line + gap below
+
+        # Remaining content split: 35 % title / 65 % body
+        usable_h = total_draw_h - footer_zone_h - divider_zone_h
+        title_zone_h = max(int(usable_h * 0.35), 40)
+        body_zone_h = usable_h - title_zone_h
+
+        # ── Auto-fit fonts ─────────────────────────────────────────────
+        metadata_font = self._load_font(
+            template.font_file, template.font_family, template.metadata_font_size
+        )
+
+        title_font_size = self._fit_font_size(
+            draw, title,
+            template.font_file, template.font_family,
+            max_width, title_zone_h, template.line_spacing,
+            min_size=28, max_size=260,
+        )
+        title_font = self._load_font(template.font_file, template.font_family, title_font_size)
+        logger.debug(f"Auto-fit title font: {title_font_size}px (zone {title_zone_h}px)")
+
+        body_font_size = self._fit_font_size(
+            draw, clean_content,
+            template.font_file, template.font_family,
+            max_width, body_zone_h, template.line_spacing,
+            min_size=18, max_size=160,
+        )
+        summary_font = self._load_font(template.font_file, template.font_family, body_font_size)
+        logger.debug(f"Auto-fit body font: {body_font_size}px (zone {body_zone_h}px)")
+
+        # ── Draw title ─────────────────────────────────────────────────
+        current_y = draw_y
         title_lines = self._wrap_text(draw, title, title_font, max_width)
-        
         for line in title_lines:
             draw.text((draw_x, current_y), line, fill=template.accent_color, font=title_font)
             bbox = draw.textbbox((draw_x, current_y), line, font=title_font)
             current_y += int((bbox[3] - bbox[1]) * template.line_spacing)
-        
-        current_y += template.padding // 2  # Extra space after title
-        
-        # Draw summary content (first few lines)
-        content = editorial.get("content", "")
-        # Remove markdown formatting and take first paragraph
-        clean_content = self._clean_content_for_poster(content)
+
+        # ── Divider line ───────────────────────────────────────────────
+        current_y += 12
+        draw.line(
+            [(draw_x, current_y), (draw_x + max_width, current_y)],
+            fill=template.accent_color,
+            width=3,
+        )
+        current_y += 17
+
+        # ── Draw body (fills the body zone) ───────────────────────────
+        body_max_y = current_y + body_zone_h
         summary_lines = self._wrap_text(draw, clean_content, summary_font, max_width)
-        
-        # Calculate space available for content
-        if template.content_box_enabled:
-            max_y = box_y + box_height - template.content_box_padding - 100  # Leave space for footer
-        else:
-            max_y = template.height - template.padding * 3
-        
-        # Limit to fit on poster
-        for i, line in enumerate(summary_lines):
-            if current_y > max_y:
+        for line in summary_lines:
+            if current_y > body_max_y:
                 break
             draw.text((draw_x, current_y), line, fill=template.text_color, font=summary_font)
             bbox = draw.textbbox((draw_x, current_y), line, font=summary_font)
             current_y += int((bbox[3] - bbox[1]) * template.line_spacing)
-        
-        # Draw metadata at bottom
-        if template.content_box_enabled:
-            footer_y = box_y + box_height - template.content_box_padding - 60
-        else:
-            footer_y = template.height - template.padding - 100
-        
+
+        # ── Footer (anchored at bottom of drawable area) ───────────────
+        footer_y = draw_y + total_draw_h - footer_zone_h + 20
         if template.show_timestamp:
-            timestamp = datetime.now().strftime("%B %d, %Y")
-            draw.text((draw_x, footer_y), f"Generated: {timestamp}", 
-                     fill=template.secondary_color, font=metadata_font)
-            footer_y += 30
-        
+            ts = datetime.now().strftime("%B %d, %Y")
+            draw.text(
+                (draw_x, footer_y), f"Generated: {ts}",
+                fill=template.secondary_color, font=metadata_font,
+            )
+            footer_y += footer_line_h
         if template.show_source:
-            source_text = "MoKa News - AI-Generated Editorial"
-            draw.text((draw_x, footer_y), source_text, 
-                     fill=template.secondary_color, font=metadata_font)
-        
+            draw.text(
+                (draw_x, footer_y), "MoKa News - AI-Generated Editorial",
+                fill=template.secondary_color, font=metadata_font,
+            )
+
         # Generate filename
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
         filename = f"{timestamp}_poster.png"
@@ -956,7 +1023,7 @@ class PosterGenerator:
         
         for sentence in sentences:
             sentence_words = len(sentence.split())
-            if word_count + sentence_words > 120:
+            if word_count + sentence_words > 200:
                 break
             poster_content += sentence + ". "
             word_count += sentence_words
