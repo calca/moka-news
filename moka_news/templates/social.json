@@ -35,7 +35,8 @@
     "summary_size": 28,
     "metadata_size": 18,
     "font_family": "arial",
-    "font_file": "OpenSans-Regular.ttf"
+    "font_file": "OpenSans-Regular.ttf",
+    "bold_font_file": "OpenSans-Bold.ttf"
   },
   "elements": {
     "qr_code": false,

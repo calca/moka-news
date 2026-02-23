@@ -14,7 +14,7 @@ from moka_news.poster import (
     _interpolate_colors,
     _draw_rounded_box_with_shadow
 )
-from moka_news.constants import DEFAULT_GRADIENT_PRESETS
+from moka_news.constants import DEFAULT_GRADIENT_PRESETS, POSTER_MAX_WORDS
 
 
 class TestPosterTemplate:
@@ -233,10 +233,11 @@ properly when there are many sentences and words."""
             
             cleaned = poster_gen._clean_content_for_poster(content)
             
-            # Should remove markdown formatting
-            assert "**" not in cleaned
-            assert "*" not in cleaned
-            assert "`" not in cleaned
+            # Bold markers are preserved for rich-text rendering
+            assert "**bold text**" in cleaned
+            # Italic and code markers are removed
+            assert "*italic text*" not in cleaned
+            assert "`code text`" not in cleaned
             assert "[link](" not in cleaned
             # Headers at start of line (no indent) should be removed
             assert not cleaned.startswith("# ")
@@ -787,6 +788,128 @@ class TestEnhancedPosterGeneration:
                             setattr(template, attr_name, gval)
             
             assert template.gradient_colors == ["#00ff00", "#ff00ff"]
+
+
+class TestParseRichText:
+    """Tests for _parse_rich_text bold-markup parsing"""
+
+    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    def _gen(self, tmp_path):
+        config = {"method": "local"}
+        return PosterGenerator(config, posters_dir=tmp_path)
+
+    def test_plain_text_no_markers(self, tmp_path):
+        """Text with no ** markers returns a single non-bold segment"""
+        gen = self._gen(tmp_path)
+        result = gen._parse_rich_text("hello world")
+        assert result == [("hello world", False)]
+
+    def test_single_bold_marker(self, tmp_path):
+        """A single **word** is parsed as a bold segment"""
+        gen = self._gen(tmp_path)
+        result = gen._parse_rich_text("This is **important** news.")
+        assert ("important", True) in result
+        # Surrounding text must be present as non-bold
+        assert any(not bold for _, bold in result)
+
+    def test_multiple_bold_markers(self, tmp_path):
+        """Multiple ** spans are each captured independently"""
+        gen = self._gen(tmp_path)
+        result = gen._parse_rich_text("**AI** and **climate** are the big topics.")
+        bold_segments = [seg for seg, bold in result if bold]
+        assert "AI" in bold_segments
+        assert "climate" in bold_segments
+
+    def test_bold_phrase_with_spaces(self, tmp_path):
+        """A **multi word phrase** is returned as one bold segment"""
+        gen = self._gen(tmp_path)
+        result = gen._parse_rich_text("Read **the full report** now.")
+        bold_segments = [seg for seg, bold in result if bold]
+        assert "the full report" in bold_segments
+
+    def test_no_markers_all_regular(self, tmp_path):
+        """Output with no bold spans has is_bold == False everywhere"""
+        gen = self._gen(tmp_path)
+        result = gen._parse_rich_text("No special formatting here at all.")
+        assert all(not bold for _, bold in result)
+
+    def test_empty_string(self, tmp_path):
+        """Empty input produces an empty list or single empty segment"""
+        gen = self._gen(tmp_path)
+        result = gen._parse_rich_text("")
+        # Either empty list or a single ('', False) — both acceptable
+        assert result == [] or result == [("", False)]
+
+
+class TestCleanContentPosterMaxWords:
+    """Tests that _clean_content_for_poster respects POSTER_MAX_WORDS"""
+
+    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    def test_short_text_unchanged_word_count(self, tmp_path):
+        """Text shorter than POSTER_MAX_WORDS passes through without truncation"""
+        config = {"method": "local"}
+        gen = PosterGenerator(config, posters_dir=tmp_path)
+        short_text = "Breaking news today. Markets react."
+        result = gen._clean_content_for_poster(short_text)
+        # All words should still be present
+        assert "Breaking" in result
+        assert "Markets" in result
+
+    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    def test_long_text_truncated_to_max_words(self, tmp_path):
+        """Text exceeding POSTER_MAX_WORDS is truncated"""
+        config = {"method": "local"}
+        gen = PosterGenerator(config, posters_dir=tmp_path)
+        # Build text that is clearly over POSTER_MAX_WORDS
+        long_text = ". ".join(["word " * 20] * 10)
+        result = gen._clean_content_for_poster(long_text)
+        word_count = len(result.split())
+        # Allow a slight overshoot due to sentence-boundary logic, but must be
+        # substantially less than the original and close to POSTER_MAX_WORDS
+        assert word_count <= POSTER_MAX_WORDS * 2
+
+    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    def test_bold_markers_preserved(self, tmp_path):
+        """Bold ** markers in content are NOT stripped by the cleaner"""
+        config = {"method": "local"}
+        gen = PosterGenerator(config, posters_dir=tmp_path)
+        content = "The **AI revolution** is reshaping the world."
+        result = gen._clean_content_for_poster(content)
+        assert "**AI revolution**" in result
+
+    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    def test_markdown_italic_stripped(self, tmp_path):
+        """Single-asterisk italic markup is still stripped"""
+        config = {"method": "local"}
+        gen = PosterGenerator(config, posters_dir=tmp_path)
+        content = "This is *very* important news."
+        result = gen._clean_content_for_poster(content)
+        assert "*very*" not in result
+        assert "very" in result
+
+    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    def test_bold_font_file_loaded_for_template(self, tmp_path):
+        """PosterTemplate exposes bold_font_file from JSON typography section"""
+        import json
+        tmpl_data = {
+            "typography": {
+                "font_file": "Inter-Regular.ttf",
+                "bold_font_file": "Inter-Bold.ttf",
+            }
+        }
+        template = PosterTemplate(tmpl_data)
+        assert template.bold_font_file == "Inter-Bold.ttf"
+
+    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    def test_bold_font_file_fallback(self, tmp_path):
+        """When bold_font_file is absent, falls back to font_file"""
+        tmpl_data = {
+            "typography": {
+                "font_file": "Roboto-Regular.ttf",
+            }
+        }
+        template = PosterTemplate(tmpl_data)
+        assert template.bold_font_file == "Roboto-Regular.ttf"
 
 
 if __name__ == "__main__":

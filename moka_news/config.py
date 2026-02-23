@@ -77,8 +77,9 @@ DEFAULT_POSTER_CONTENT_PROMPTS = {
     "user_prompt": (
         "Create a poster summary of the following editorial. "
         "Use clear, direct sentences. "
-        "Maximum 300 words. Return only the summary text, "
-        "no titles or labels.\n\n{content}"
+        "Maximum 60 words. Be ruthlessly concise. "
+        "Mark 3 to 5 key terms or short phrases with **double asterisks** to make them stand out visually. "
+        "Return only the summary text, no titles or labels.\n\n{content}"
     ),
 }
 

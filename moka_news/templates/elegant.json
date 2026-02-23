@@ -35,7 +35,8 @@
     "summary_size": 32,
     "metadata_size": 22,
     "font_family": "Times",
-    "font_file": "Roboto-Regular.ttf"
+    "font_file": "Roboto-Regular.ttf",
+    "bold_font_file": "Roboto-Bold.ttf"
   },
   "elements": {
     "qr_code": false,

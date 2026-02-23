@@ -35,7 +35,8 @@
     "summary_size": 30,
     "metadata_size": 20,
     "font_family": "arial",
-    "font_file": "Inter-Bold.ttf"
+    "font_file": "Inter-Bold.ttf",
+    "bold_font_file": "Inter-Bold.ttf"
   },
   "elements": {
     "qr_code": false,

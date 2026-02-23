@@ -4,6 +4,7 @@ Supports both local generation (PIL/Pillow) and optional AI image generation
 """
 
 import json
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Union
@@ -28,6 +29,8 @@ from moka_news.constants import (
     DEFAULT_SHADOW_OFFSET,
     DEFAULT_SHADOW_BLUR,
     BUNDLED_FONTS,
+    POSTER_MAX_TOKENS,
+    POSTER_MAX_WORDS,
 )
 
 logger = get_logger(__name__)
@@ -57,7 +60,7 @@ class PosterContentGenerator:
         text = gen.generate({"title": "Morning News", "content": editorial_md})
     """
 
-    MAX_TOKENS = 450  # generous margin to fit a ~300-word response
+    MAX_TOKENS = POSTER_MAX_TOKENS  # from moka_news.constants
 
     def __init__(self, ai_provider=None, prompt_config=None, language: str = "en"):
         """
@@ -182,6 +185,7 @@ class PosterTemplate:
         self.metadata_font_size = typography.get("metadata_size", 22)
         self.font_family = typography.get("font_family", "arial")
         self.font_file = typography.get("font_file", None)  # Custom font file
+        self.bold_font_file = typography.get("bold_font_file", self.font_file)  # Bold variant, falls back to font_file
         
         # Elements positioning
         elements = template_data.get("elements", {})
@@ -915,16 +919,19 @@ class PosterGenerator:
             max_width, title_zone_h, template.line_spacing,
             min_size=28, max_size=260,
         )
-        title_font = self._load_font(template.font_file, template.font_family, title_font_size)
+        title_font = self._load_font(template.bold_font_file, template.font_family, title_font_size)
         logger.info(f"Title font: {title_font_size}px (zone {title_zone_h}px, max_width {max_width}px)")
 
+        # Body sizing uses bold font as worst-case (bold glyphs are slightly wider)
+        _plain_content = re.sub(r'\*\*([^*]+)\*\*', r'\1', clean_content)
         body_font_size = self._fit_font_size(
-            draw, clean_content,
-            template.font_file, template.font_family,
+            draw, _plain_content,
+            template.bold_font_file, template.font_family,
             max_width, body_zone_h, template.line_spacing,
             min_size=18, max_size=160,
         )
         summary_font = self._load_font(template.font_file, template.font_family, body_font_size)
+        summary_bold_font = self._load_font(template.bold_font_file, template.font_family, body_font_size)
         logger.info(f"Body font: {body_font_size}px (zone {body_zone_h}px)")
 
         # ── Draw title ─────────────────────────────────────────────────
@@ -946,13 +953,21 @@ class PosterGenerator:
 
         # ── Draw body (fills the body zone) ───────────────────────────
         body_max_y = current_y + body_zone_h
-        summary_lines = self._wrap_text(draw, clean_content, summary_font, max_width)
-        for line in summary_lines:
+        rich_segments = self._parse_rich_text(clean_content)
+        rich_lines = self._wrap_rich_lines(draw, rich_segments, summary_font, summary_bold_font, max_width)
+        for line_tokens in rich_lines:
             if current_y > body_max_y:
                 break
-            draw.text((draw_x, current_y), line, fill=template.text_color, font=summary_font)
-            bbox = draw.textbbox((draw_x, current_y), line, font=summary_font)
-            current_y += int((bbox[3] - bbox[1]) * template.line_spacing)
+            x = draw_x
+            line_h = 0
+            for token_text, _is_bold, token_font in line_tokens:
+                draw.text((x, current_y), token_text, fill=template.text_color, font=token_font)
+                bbox = draw.textbbox((x, current_y), token_text, font=token_font)
+                x += bbox[2] - bbox[0]
+                token_h = bbox[3] - bbox[1]
+                if token_h > line_h:
+                    line_h = token_h
+            current_y += int(line_h * template.line_spacing)
 
         # ── Footer (anchored at bottom of drawable area) ───────────────
         footer_y = draw_y + total_draw_h - footer_zone_h + 20
@@ -1018,35 +1033,113 @@ class PosterGenerator:
             lines.append(current_line)
         
         return lines
-    
+
+    def _parse_rich_text(self, text: str) -> List[tuple]:
+        """Parse ``**bold**`` markup in *text* into a list of segments.
+
+        Returns:
+            List of ``(segment_text, is_bold)`` tuples where *is_bold* is
+            ``True`` for text enclosed in double asterisks.  Every token
+            inside a bold span is returned as a separate ``(word, True)``
+            tuple so that word-wrapping in :meth:`_wrap_rich_lines` can
+            treat individual words.
+        """
+        segments: List[tuple] = []
+        pattern = re.compile(r'\*\*([^*]+)\*\*')
+        last_end = 0
+        for match in pattern.finditer(text):
+            start, end = match.span()
+            if start > last_end:
+                segments.append((text[last_end:start], False))
+            segments.append((match.group(1), True))
+            last_end = end
+        if last_end < len(text):
+            segments.append((text[last_end:], False))
+        return segments
+
+    def _wrap_rich_lines(
+        self,
+        draw: "ImageDraw.ImageDraw",
+        segments: List[tuple],
+        regular_font: "ImageFont.ImageFont",
+        bold_font: "ImageFont.ImageFont",
+        max_width: int,
+    ) -> List[List[tuple]]:
+        """Wrap rich-text segments into pixel-constrained lines.
+
+        Args:
+            draw: PIL :class:`~PIL.ImageDraw.ImageDraw` context.
+            segments: Output of :meth:`_parse_rich_text` —
+                ``list[(text, is_bold)]``.
+            regular_font: Font for non-bold tokens.
+            bold_font: Font for bold tokens.
+            max_width: Maximum line width in pixels.
+
+        Returns:
+            List of lines.  Each line is a list of
+            ``(token_str, is_bold, font)`` triples ready for rendering.
+        """
+        # Build a flat list of (word, is_bold) tokens from all segments
+        word_tokens: List[tuple] = []
+        for seg_text, is_bold in segments:
+            for word in seg_text.split():
+                word_tokens.append((word, is_bold))
+
+        lines: List[List[tuple]] = []
+        current_line: List[tuple] = []
+        current_width = 0
+
+        for word, is_bold in word_tokens:
+            font = bold_font if is_bold else regular_font
+            # Add a space separator when joining to an existing line
+            display = (" " + word) if current_line else word
+            bbox = draw.textbbox((0, 0), display, font=font)
+            token_w = bbox[2] - bbox[0]
+
+            if current_width + token_w <= max_width:
+                current_line.append((display, is_bold, font))
+                current_width += token_w
+            else:
+                if current_line:
+                    lines.append(current_line)
+                # Start new line without leading space
+                current_line = [(word, is_bold, font)]
+                bbox = draw.textbbox((0, 0), word, font=font)
+                current_width = bbox[2] - bbox[0]
+
+        if current_line:
+            lines.append(current_line)
+
+        return lines
+
     def _clean_content_for_poster(self, content: str) -> str:
-        """Clean editorial content for poster display"""
-        import re
-        
+        """Clean editorial content for poster display.
+
+        Bold markers (**word**) are preserved so that _parse_rich_text can
+        render them with the bold font variant.
+        """
         # Remove markdown links [text](url) -> text
         content = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', content)
-        
+
         # Remove markdown headers
         content = re.sub(r'^#+\s*', '', content, flags=re.MULTILINE)
-        
-        # Remove markdown formatting
-        content = re.sub(r'\*\*([^\*]+)\*\*', r'\1', content)  # Bold
-        content = re.sub(r'\*([^\*]+)\*', r'\1', content)      # Italic
-        content = re.sub(r'`([^`]+)`', r'\1', content)         # Code
-        
-        # Split into sentences and take the first few
+
+        # Remove markdown formatting — keep **bold** intact, strip the rest
+        content = re.sub(r'(?<!\*)\*(?!\*)([^*]+?)(?<!\*)\*(?!\*)', r'\1', content)   # Italic (single * only, not **)
+        content = re.sub(r'`([^`]+)`', r'\1', content)       # Inline code
+
+        # Truncate to POSTER_MAX_WORDS (sentence-boundary aware)
         sentences = content.split('. ')
-        # Take roughly first 200 words for poster
         word_count = 0
         poster_content = ""
-        
+
         for sentence in sentences:
             sentence_words = len(sentence.split())
-            if word_count + sentence_words > 200:
+            if word_count + sentence_words > POSTER_MAX_WORDS:
                 break
             poster_content += sentence + ". "
             word_count += sentence_words
-        
+
         return poster_content.strip()
     
     def _add_qr_code(self, img: Image.Image, url: str, template: PosterTemplate):
