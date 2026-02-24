@@ -75,8 +75,8 @@ class AIProvider(ABC):
     Individual articles are passed through without AI processing.
     When *prompts* is supplied via ``generate_summary(**kwargs)`` the provider
     enters **editorial mode**: it assembles the full prompt, calls the AI
-    back-end (API or CLI) via ``_invoke_ai``, and parses the ``TITLE:`` /
-    ``SUMMARY:`` response.
+    back-end (API or CLI) via ``_invoke_ai``, and parses the ``TITLE:`` line
+    plus the following paragraph (or ``SUMMARY:`` when present).
     """
 
     # ── public interface ────────────────────────────────────────────────
@@ -171,16 +171,37 @@ class AIProvider(ABC):
 
     @staticmethod
     def _parse_editorial_response(text: str) -> Dict[str, str]:
-        """Parse ``TITLE: …`` / ``SUMMARY: …`` from an AI response."""
+        """Parse editorial AI output into ``title`` and ``summary``."""
         title = "Your Morning News"
         summary = text
 
-        if "TITLE:" in text and "SUMMARY:" in text:
-            parts = text.split("SUMMARY:", 1)
-            title_part = parts[0]
-            summary = parts[1].strip()
-            title_line = title_part.split("TITLE:", 1)[1].strip()
-            title = title_line.split("\n")[0].strip()
+        if "TITLE:" not in text:
+            return {"title": title, "summary": summary}
+
+        after_title_marker = text.split("TITLE:", 1)[1].lstrip()
+        lines = after_title_marker.splitlines()
+        if not lines:
+            return {"title": title, "summary": summary}
+
+        title = lines[0].strip() or title
+        remainder = "\n".join(lines[1:]).strip()
+
+        # Backward compatibility for legacy format:
+        # TITLE: ...
+        # SUMMARY: ...
+        if remainder.startswith("SUMMARY:"):
+            summary = remainder.split("SUMMARY:", 1)[1].strip()
+            return {"title": title, "summary": summary}
+
+        # New format:
+        # TITLE: ...
+        #
+        # <first paragraph of body>
+        paragraphs = [p.strip() for p in remainder.split("\n\n") if p.strip()]
+        if paragraphs:
+            summary = paragraphs[0]
+        else:
+            summary = remainder or summary
 
         return {"title": title, "summary": summary}
 

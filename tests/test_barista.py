@@ -130,3 +130,27 @@ def test_mistral_cli_barista_checks_mistral():
     """Test that MistralCLIBarista can be instantiated"""
     barista = MistralCLIBarista()
     assert isinstance(barista, AIProvider)
+
+
+def test_parse_editorial_response_new_title_paragraph_format():
+    text = "TITLE: Morning Brief\n\nMarkets opened mixed after overnight volatility.\n\nSecond paragraph."
+    parsed = AIProvider._parse_editorial_response(text)
+
+    assert parsed["title"] == "Morning Brief"
+    assert parsed["summary"] == "Markets opened mixed after overnight volatility."
+
+
+def test_parse_editorial_response_legacy_summary_format():
+    text = "TITLE: Legacy Title\nSUMMARY: Legacy summary body."
+    parsed = AIProvider._parse_editorial_response(text)
+
+    assert parsed["title"] == "Legacy Title"
+    assert parsed["summary"] == "Legacy summary body."
+
+
+def test_parse_editorial_response_without_title_marker():
+    text = "No marker available"
+    parsed = AIProvider._parse_editorial_response(text)
+
+    assert parsed["title"] == "Your Morning News"
+    assert parsed["summary"] == "No marker available"
