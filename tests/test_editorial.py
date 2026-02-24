@@ -6,8 +6,15 @@ from moka_news.editorial import EditorialGenerator
 from moka_news.barista import SimpleBarista
 from datetime import datetime
 import tempfile
-import shutil
 from pathlib import Path
+import pytest
+
+
+class FailingBarista(SimpleBarista):
+    """Test provider that always fails in editorial mode."""
+
+    def _invoke_ai(self, system_message, user_prompt, max_tokens=4096):
+        raise RuntimeError("'gemini' CLI timed out after 120s")
 
 
 def test_editorial_generator_initialization():
@@ -257,3 +264,23 @@ def test_editorial_prompts_all_supported_languages():
             prompts = generator._get_editorial_prompts()
             if code != "en":
                 assert name in prompts["system_message"]
+
+
+def test_generate_editorial_raises_on_ai_failure():
+    """AI failures should propagate so callers can load previous editorials."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        generator = EditorialGenerator(
+            ai_provider=FailingBarista(),
+            editorials_dir=tmpdir
+        )
+        articles = [
+            {
+                "title": "Test Article",
+                "summary": "Test summary",
+                "link": "https://example.com/1",
+                "source": "Test Source"
+            }
+        ]
+
+        with pytest.raises(RuntimeError, match="Error generating editorial with AI"):
+            generator.generate_editorial(articles)

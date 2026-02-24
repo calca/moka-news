@@ -539,6 +539,24 @@ class Cup(App):
         except Exception as e:
             self.notify(f"Error loading editorial: {e}", severity="error")
 
+    def _load_previous_editorial_fallback(self) -> bool:
+        """Load the most recent saved editorial as fallback."""
+        if not self.editorial_generator:
+            return False
+
+        try:
+            previous_editorial = self.editorial_generator.load_most_recent_editorial()
+            if not previous_editorial:
+                return False
+
+            self.current_editorial_path = previous_editorial["filepath"]
+            self.editorial_content = previous_editorial["content"]
+            self._load_editorial_list()
+            return True
+        except Exception as exc:
+            logger.warning(f"Could not load fallback editorial: {exc}")
+            return False
+
     def _format_subtitle(self) -> str:
         """Format the subtitle with last update time"""
         time_str = self.last_update.strftime("%H:%M:%S")
@@ -658,7 +676,13 @@ class Cup(App):
                 if notify_editorial:
                     self.notify("✓ Editorial generated", severity="information")
             except Exception as e:
-                self.notify(f"Error generating editorial: {e}", severity="error")
+                if self._load_previous_editorial_fallback():
+                    self.notify(
+                        "Error generating editorial. Loaded previous editorial.",
+                        severity="warning",
+                    )
+                else:
+                    self.notify(f"Error generating editorial: {e}", severity="error")
 
         # Rebuild the UI (await to ensure it completes)
         await self._force_editorial_only_view()
@@ -803,7 +827,14 @@ class Cup(App):
                 loading_dialog.dismiss()
             except Exception:
                 pass
-            self.notify(f"Error refreshing: {e}", severity="error")
+            if self._load_previous_editorial_fallback():
+                await self._force_editorial_only_view()
+                self.notify(
+                    "Error refreshing editorial. Loaded previous editorial.",
+                    severity="warning",
+                )
+            else:
+                self.notify(f"Error refreshing: {e}", severity="error")
 
     def action_quit(self) -> None:
         """Quit the application"""

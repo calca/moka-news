@@ -124,9 +124,7 @@ class EditorialGenerator:
             
         except Exception as e:
             logger.error(f"Error generating editorial with AI: {e}")
-            print(f"Error generating editorial with AI: {e}")
-            editorial_title = "Your Morning News"
-            editorial_content = self._create_simple_editorial(articles)
+            raise RuntimeError(f"Error generating editorial with AI: {e}") from e
         
         # Collect sources
         sources = []
@@ -323,6 +321,24 @@ class EditorialGenerator:
                 print(f"Error reading editorial {filepath}: {e}")
         
         return editorials
+
+    def load_most_recent_editorial(self) -> Optional[Dict[str, Any]]:
+        """
+        Load the most recent saved editorial, if available.
+
+        Returns:
+            Dictionary with filepath and content, or None when no editorial exists.
+        """
+        editorials = self.list_editorials()
+        if not editorials:
+            return None
+
+        most_recent = editorials[-1]  # list_editorials() returns oldest -> newest
+        return {
+            "filepath": most_recent["filepath"],
+            "content": self.load_editorial(most_recent["filepath"]),
+            "title": most_recent.get("title", "Untitled"),
+        }
     
     def load_editorial(self, filepath: Path) -> str:
         """

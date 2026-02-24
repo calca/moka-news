@@ -526,8 +526,14 @@ def launch_moka_news():
         print(f"✓ Editorial generated and saved")
     except Exception as e:
         print(f"⚠️  Could not generate editorial: {e}")
-        editorial_content = None
-        editorial_path = None
+        previous_editorial = editorial_generator.load_most_recent_editorial()
+        if previous_editorial:
+            editorial_path = previous_editorial["filepath"]
+            editorial_content = previous_editorial["content"]
+            print(f"↩️  Loaded previous editorial: {editorial_path}")
+        else:
+            editorial_content = None
+            editorial_path = None
     
     # Setup refresh manager
     refresh_manager = RefreshManager()
