@@ -109,7 +109,7 @@ DEFAULT_CONFIG = {
     },
     "poster": {
         "method": "local",  # Generation method: local (PIL/Pillow)
-        "default_template": "minimal",  # Default template to use for poster generation
+        "default_template": "story",  # Default template to use for poster generation
         "posters_dir": None,  # Directory to save posters (defaults to ~/.config/moka-news/posters)
         "templates_dir": None,  # Directory containing custom templates (defaults to package templates)
         "local": {
@@ -337,7 +337,7 @@ editorial:
 # Poster Generation Configuration (press 'g' in TUI)
 poster:
   method: local              # Generation method: local (PIL/Pillow)
-  default_template: minimal  # Template: minimal, elegant, social, modern
+  default_template: story    # Built-in template: story (create your own in templates_dir if needed)
 """
 
     with open(path, "w") as f:

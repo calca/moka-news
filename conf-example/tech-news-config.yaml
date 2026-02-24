@@ -69,5 +69,5 @@ refresh:
 # Tech-focused poster generation
 poster:
   method: local           # Local generation for developers who prefer control
-  default_template: modern  # Contemporary design for tech content
+  default_template: story  # Built-in vertical story template
   posters_dir: ~/Documents/tech-news/posters

@@ -471,7 +471,7 @@ class Cup(App):
         self.editorials_dir = editorials_dir
         self.posters_dir = posters_dir
         self.logs_dir = logs_dir
-        self.poster_config = poster_config or {"method": "local", "default_template": "minimal"}
+        self.poster_config = poster_config or {"method": "local", "default_template": "story"}
         
         # Navigation properties for editorials
         self.editorial_list: List[Dict[str, Any]] = []
@@ -1024,7 +1024,7 @@ class Cup(App):
 
             poster_config = getattr(self, "poster_config", {
                 "method": "local",
-                "default_template": "minimal",
+                "default_template": "story",
             })
             logger.debug(f"Poster config: {poster_config}")
 
@@ -1043,7 +1043,7 @@ class Cup(App):
                 "timestamp": datetime.now(),
             }
 
-            template_name = poster_config.get("default_template", "minimal")
+            template_name = poster_config.get("default_template", "story")
             logger.debug(f"Generating poster with template: {template_name!r}")
             poster_path = poster_gen.generate_poster(editorial_data, template_name)
             logger.info(f"Poster generated successfully: {poster_path}")

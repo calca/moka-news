@@ -16,4 +16,4 @@ ui:
 # Poster Generation (press 'g' in TUI to generate)
 poster:
   method: local           # Use local generation (no API keys needed)
-  default_template: minimal  # Clean, simple template
+  default_template: story  # Vertical story template

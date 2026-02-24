@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Example: deterministic poster generation from editorial markdown.
 
-The poster now uses only:
+The poster now uses:
 1. Editorial title
-2. First valid editorial paragraph
+2. Cleaned editorial body text
 
 No GenAI prompt or poster summarization is used.
 """
@@ -39,7 +39,7 @@ def main() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         poster_config = {
             "method": "local",
-            "default_template": "minimal",
+            "default_template": "story",
         }
 
         poster_gen = PosterGenerator(
@@ -52,12 +52,12 @@ def main() -> None:
                 "title": SAMPLE_EDITORIAL["title"],
                 "content": SAMPLE_EDITORIAL["content"],
             },
-            template_name="minimal",
+            template_name="story",
         )
 
         print(f"✓ Poster saved: {poster_path}")
         print(f"  File size: {poster_path.stat().st_size // 1024} KB")
-        print("  Body text source: first editorial paragraph (automatic)")
+        print("  Body text source: cleaned editorial body (automatic)")
 
 
 if __name__ == "__main__":

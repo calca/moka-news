@@ -1,4 +1,4 @@
-"""Poster Generator - Creates square (1:1) posters from editorial content."""
+"""Poster Generator - Creates social posters from editorial content."""
 
 import json
 import re
@@ -24,7 +24,6 @@ from moka_news.constants import (
     DEFAULT_BOX_RADIUS,
     DEFAULT_SHADOW_OFFSET,
     DEFAULT_SHADOW_BLUR,
-    POSTER_MAX_WORDS,
 )
 
 logger = get_logger(__name__)
@@ -50,7 +49,7 @@ class PosterTemplate:
         
         # Layout settings
         layout = template_data.get("layout", {})
-        self.width = layout.get("width", 1080)  # 1:1 square
+        self.width = layout.get("width", 1080)
         self.height = layout.get("height", 1080)
         self.padding = layout.get("padding", 60)
         self.line_spacing = layout.get("line_spacing", 1.2)
@@ -92,6 +91,14 @@ class PosterTemplate:
         self.title_font_size = typography.get("title_size", 72)
         self.summary_font_size = typography.get("summary_size", 32)
         self.metadata_font_size = typography.get("metadata_size", 22)
+        self.title_min_size = typography.get(
+            "title_min_size", max(20, int(self.title_font_size * 0.7))
+        )
+        self.title_max_size = typography.get("title_max_size", self.title_font_size)
+        self.summary_min_size = typography.get(
+            "summary_min_size", max(16, int(self.summary_font_size * 0.75))
+        )
+        self.summary_max_size = typography.get("summary_max_size", self.summary_font_size)
         self.font_family = typography.get("font_family", "arial")
         self.font_file = typography.get("font_file", None)  # Custom font file
         self.bold_font_file = typography.get("bold_font_file", self.font_file)  # Bold variant, falls back to font_file
@@ -291,7 +298,7 @@ def _draw_rounded_box_with_shadow(
 
 
 class PosterGenerator:
-    """Generates square 1:1 posters from editorial content"""
+    """Generates shareable social posters from editorial content"""
     
     def __init__(
         self,
@@ -334,13 +341,18 @@ class PosterGenerator:
         
         # Configuration
         self.generation_method = "local"
-        self.default_template = config.get("default_template", "minimal")
+        self.default_template = config.get("default_template", "story")
         requested_method = config.get("method", "local")
         if requested_method != "local":
             logger.warning(
                 "Poster method %r is no longer supported, using local rendering.",
                 requested_method,
             )
+
+        if self.default_template == "story":
+            story_template = self.templates_dir / "story.json"
+            if not story_template.exists():
+                self._create_default_templates()
         
         logger.info(f"PosterGenerator initialized:")
         logger.info(f"  - Method: {self.generation_method}")
@@ -351,142 +363,51 @@ class PosterGenerator:
     def _create_default_templates(self):
         """Create default template files if templates directory doesn't exist"""
         self.templates_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Minimal template (Rose Pine inspired with gradient)
-        minimal_template = {
-            "name": "Minimal",
-            "description": "Clean and simple design with Rose Pine color scheme",
+
+        # Story template for vertical social formats (Instagram Story 9:16)
+        template = {
+            "name": "Story",
+            "description": "Vertical layout optimized for Instagram Story readability",
             "layout": {
                 "width": 1080,
-                "height": 1080,
-                "padding": 60,
-                "line_spacing": 1.3
+                "height": 1920,
+                "padding": 72,
+                "line_spacing": 1.32
             },
             "gradient": {
                 "enabled": True,
                 "type": "vertical",
-                "preset": "rose-pine"
+                "preset": "warm"
             },
             "content_box": {
                 "enabled": True,
                 "background": "#ffffff",
-                "padding": 50,
-                "border_radius": 20,
+                "padding": 64,
+                "border_radius": 24,
                 "shadow": {
-                    "offset_x": 4,
-                    "offset_y": 4,
-                    "blur": 12,
-                    "color": "rgba(0,0,0,0.15)"
+                    "offset_x": 6,
+                    "offset_y": 6,
+                    "blur": 16,
+                    "color": "rgba(0,0,0,0.16)"
                 }
             },
             "colors": {
-                "background": "#191724",
-                "text": "#2d2d2d",
-                "accent": "#eb6f92",
-                "secondary": "#6e6a86"
+                "background": "#111827",
+                "text": "#1f2937",
+                "accent": "#be123c",
+                "secondary": "#475569"
             },
             "typography": {
                 "title_size": 72,
-                "summary_size": 30,
-                "metadata_size": 20,
-                "font_family": "arial",
-                "font_file": "Inter-Regular.ttf"
-            },
-            "elements": {
-                "qr_code": False,
-                "timestamp": True,
-                "source": True,
-                "qr_position": "bottom_right"
-            }
-        }
-        
-        # Elegant template with diagonal gradient
-        elegant_template = {
-            "name": "Elegant",
-            "description": "Sophisticated design with serif typography",
-            "layout": {
-                "width": 1080,
-                "height": 1080,
-                "padding": 70,
-                "line_spacing": 1.4
-            },
-            "gradient": {
-                "enabled": True,
-                "type": "diagonal",
-                "colors": ["#f5f5dc", "#d3d3d3"]
-            },
-            "content_box": {
-                "enabled": True,
-                "background": "#ffffff",
-                "padding": 45,
-                "border_radius": 20,
-                "shadow": {
-                    "offset_x": 4,
-                    "offset_y": 4,
-                    "blur": 12,
-                    "color": "rgba(0,0,0,0.15)"
-                }
-            },
-            "colors": {
-                "background": "#f8f8f2",
-                "text": "#282a36",
-                "accent": "#bd93f9",
-                "secondary": "#6272a4"
-            },
-            "typography": {
-                "title_size": 76,
-                "summary_size": 32,
+                "summary_size": 34,
                 "metadata_size": 22,
-                "font_family": "Times",
-                "font_file": "Roboto-Regular.ttf"
-            },
-            "elements": {
-                "qr_code": False,
-                "timestamp": True,
-                "source": True,
-                "qr_position": "bottom_left"
-            }
-        }
-        
-        # Social template with vivid gradient
-        social_template = {
-            "name": "Social",
-            "description": "Optimized for social media sharing",
-            "layout": {
-                "width": 1080,
-                "height": 1080,
-                "padding": 50,
-                "line_spacing": 1.2
-            },
-            "gradient": {
-                "enabled": True,
-                "type": "diagonal",
-                "preset": "purple-pink"
-            },
-            "content_box": {
-                "enabled": True,
-                "background": "#ffffff",
-                "padding": 40,
-                "border_radius": 20,
-                "shadow": {
-                    "offset_x": 4,
-                    "offset_y": 4,
-                    "blur": 12,
-                    "color": "rgba(0,0,0,0.15)"
-                }
-            },
-            "colors": {
-                "background": "#000000",
-                "text": "#1a1a1a",
-                "accent": "#dc2626",
-                "secondary": "#6b7280"
-            },
-            "typography": {
-                "title_size": 68,
-                "summary_size": 28,
-                "metadata_size": 18,
+                "title_min_size": 54,
+                "title_max_size": 72,
+                "summary_min_size": 12,
+                "summary_max_size": 34,
                 "font_family": "arial",
-                "font_file": "OpenSans-Regular.ttf"
+                "font_file": "Inter-Regular.ttf",
+                "bold_font_file": "Inter-Bold.ttf"
             },
             "elements": {
                 "qr_code": False,
@@ -495,69 +416,12 @@ class PosterGenerator:
                 "qr_position": "bottom_center"
             }
         }
-        
-        # Modern template with blue gradient
-        modern_template = {
-            "name": "Modern",
-            "description": "Contemporary design with geometric elements",
-            "layout": {
-                "width": 1080,
-                "height": 1080,
-                "padding": 55,
-                "line_spacing": 1.25
-            },
-            "gradient": {
-                "enabled": True,
-                "type": "vertical",
-                "colors": ["#4299e1", "#2dd4bf"]
-            },
-            "content_box": {
-                "enabled": True,
-                "background": "#ffffff",
-                "padding": 40,
-                "border_radius": 20,
-                "shadow": {
-                    "offset_x": 4,
-                    "offset_y": 4,
-                    "blur": 12,
-                    "color": "rgba(0,0,0,0.15)"
-                }
-            },
-            "colors": {
-                "background": "#2d3748",
-                "text": "#2d3748",
-                "accent": "#2563eb",
-                "secondary": "#64748b"
-            },
-            "typography": {
-                "title_size": 70,
-                "summary_size": 30,
-                "metadata_size": 20,
-                "font_family": "arial",
-                "font_file": "Inter-Bold.ttf"
-            },
-            "elements": {
-                "qr_code": False,
-                "timestamp": True,
-                "source": True,
-                "qr_position": "top_right"
-            }
-        }
-        
-        # Save templates
-        templates = {
-            "minimal.json": minimal_template,
-            "elegant.json": elegant_template,
-            "social.json": social_template,
-            "modern.json": modern_template
-        }
-        
-        for filename, template_data in templates.items():
-            template_path = self.templates_dir / filename
-            with open(template_path, 'w', encoding='utf-8') as f:
-                json.dump(template_data, f, indent=2)
-        
-        logger.info(f"Created {len(templates)} default templates in {self.templates_dir}")
+
+        template_path = self.templates_dir / "story.json"
+        with open(template_path, 'w', encoding='utf-8') as f:
+            json.dump(template, f, indent=2)
+
+        logger.info(f"Created 1 default template in {self.templates_dir}")
     
     def list_templates(self) -> List[str]:
         """List available template names"""
@@ -723,10 +587,10 @@ class PosterGenerator:
         max_size: int = 220,
     ) -> int:
         """Binary-search for the largest font size where *text* wraps and fits
-        inside (max_width × max_height).  Returns at least *min_size* even when
-        the text still overflows at that size.
+        inside (max_width × max_height). If text does not fit at *min_size*,
+        shrink progressively to a small hard floor.
         """
-        best = min_size
+        best: Optional[int] = None
         lo, hi = min_size, max_size
         while lo <= hi:
             mid = (lo + hi) // 2
@@ -741,7 +605,23 @@ class PosterGenerator:
                 lo = mid + 1
             else:
                 hi = mid - 1
-        return best
+        if best is not None:
+            return best
+
+        # If text doesn't fit even at min_size, keep shrinking down to a
+        # hard floor to maximize the chance of showing the full body text.
+        hard_floor = 8
+        for size in range(min_size - 1, hard_floor - 1, -1):
+            font = self._load_font(font_file, font_family, size)
+            lines = self._wrap_text(draw, text, font, max_width)
+            total_h = 0
+            for line in lines:
+                bbox = draw.textbbox((0, 0), line, font=font)
+                total_h += int((bbox[3] - bbox[1]) * line_spacing)
+            if total_h <= max_height:
+                return size
+
+        return hard_floor
 
     def _generate_local_poster(
         self,
@@ -863,9 +743,9 @@ class PosterGenerator:
         # Divider between title and body
         divider_zone_h = 32  # gap above + line + gap below
 
-        # Remaining content split: 35 % title / 65 % body
+        # Remaining content split: 25 % title / 75 % body to favor full body text.
         usable_h = total_draw_h - footer_zone_h - divider_zone_h
-        title_zone_h = max(int(usable_h * 0.35), 40)
+        title_zone_h = max(int(usable_h * 0.25), 40)
         body_zone_h = usable_h - title_zone_h
 
         # ── Auto-fit fonts ─────────────────────────────────────────────
@@ -873,24 +753,30 @@ class PosterGenerator:
             template.font_file, template.font_family, template.metadata_font_size
         )
 
+        width_scale = max(0.6, template.width / 1080.0)
+        title_min_size = max(16, int(template.title_min_size * width_scale))
+        title_max_size = max(title_min_size, int(template.title_max_size * width_scale))
+
         title_font_size = self._fit_font_size(
             draw, title,
             template.font_file, template.font_family,
             max_width, title_zone_h, template.line_spacing,
-            min_size=max(24, int(template.title_font_size * 0.7)),
-            max_size=max(260, int(template.title_font_size * 2.5)),
+            min_size=title_min_size,
+            max_size=title_max_size,
         )
         title_font = self._load_font(template.bold_font_file, template.font_family, title_font_size)
         logger.info(f"Title font: {title_font_size}px (zone {title_zone_h}px, max_width {max_width}px)")
 
         # Body sizing uses bold font as worst-case (bold glyphs are slightly wider)
         _plain_content = re.sub(r'\*\*([^*]+)\*\*', r'\1', clean_content)
+        body_min_size = max(8, int(template.summary_min_size * width_scale))
+        body_max_size = max(body_min_size, int(template.summary_max_size * width_scale))
         body_font_size = self._fit_font_size(
             draw, _plain_content,
             template.bold_font_file, template.font_family,
             max_width, body_zone_h, template.line_spacing,
-            min_size=max(18, int(template.summary_font_size * 0.8)),
-            max_size=max(160, int(template.summary_font_size * 2.2)),
+            min_size=body_min_size,
+            max_size=body_max_size,
         )
         summary_font = self._load_font(template.font_file, template.font_family, body_font_size)
         summary_bold_font = self._load_font(template.bold_font_file, template.font_family, body_font_size)
@@ -1064,7 +950,7 @@ class PosterGenerator:
         return lines
 
     def _extract_poster_paragraph(self, markdown_content: str) -> str:
-        """Extract and clean the first editorial paragraph for poster body."""
+        """Extract and clean the editorial body for poster text."""
         content = markdown_content or ""
 
         # Ignore trailing sources section if present.
@@ -1074,12 +960,16 @@ class PosterGenerator:
         # Normalize TITLE:/SUMMARY: format to body-only content.
         _, content = self._extract_title_and_body(content)
 
+        cleaned_blocks: List[str] = []
         for block in re.split(r"\n\s*\n", content):
             cleaned = self._clean_content_for_poster(block)
             if cleaned:
-                return cleaned
+                cleaned_blocks.append(cleaned)
 
-        return "No editorial paragraph available."
+        if cleaned_blocks:
+            return " ".join(cleaned_blocks)
+
+        return "No editorial content available."
 
     @staticmethod
     def _extract_title_and_body(content: str) -> Tuple[Optional[str], str]:
@@ -1134,11 +1024,6 @@ class PosterGenerator:
         text = re.sub(r'(?<!\*)\*(?!\*)([^*]+?)(?<!\*)\*(?!\*)', r'\1', text)
         text = re.sub(r'`([^`]+)`', r'\1', text)
         text = re.sub(r'\s+', ' ', text).strip()
-
-        # Keep first paragraph concise to preserve readability and hierarchy.
-        words = text.split()
-        if len(words) > POSTER_MAX_WORDS:
-            text = " ".join(words[:POSTER_MAX_WORDS]).rstrip() + "…"
 
         return text
     

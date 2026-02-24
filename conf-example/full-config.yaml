@@ -108,7 +108,7 @@ editorial:
 # Poster Generation Configuration
 poster:
   method: local            # Generation method: local (PIL/Pillow)
-  default_template: minimal # Default template: minimal, elegant, social, modern
+  default_template: story  # Built-in template: story
   
   # Custom directories (optional)
   posters_dir: ~/Documents/moka-news-posters  # Custom poster save location

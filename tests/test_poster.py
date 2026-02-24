@@ -14,7 +14,7 @@ from moka_news.poster import (
     _interpolate_colors,
     _draw_rounded_box_with_shadow
 )
-from moka_news.constants import DEFAULT_GRADIENT_PRESETS, POSTER_MAX_WORDS
+from moka_news.constants import DEFAULT_GRADIENT_PRESETS
 
 
 class TestPosterTemplate:
@@ -35,6 +35,10 @@ class TestPosterTemplate:
         assert template.height == 1080
         assert template.background_color == "#1e1e2e"
         assert template.text_color == "#cdd6f4"
+        assert template.title_max_size == 72
+        assert template.summary_max_size == 32
+        assert template.title_min_size == 50
+        assert template.summary_min_size == 24
     
     def test_template_initialization_with_custom_values(self):
         """Test template initialization with custom values"""
@@ -90,6 +94,29 @@ class TestPosterTemplate:
         finally:
             temp_path.unlink()
 
+    def test_template_typography_readability_bounds(self):
+        """Template should expose explicit typography min/max bounds when provided."""
+        template_data = {
+            "name": "Readable",
+            "typography": {
+                "title_size": 64,
+                "title_min_size": 44,
+                "title_max_size": 64,
+                "summary_size": 30,
+                "summary_min_size": 22,
+                "summary_max_size": 30,
+            },
+        }
+
+        template = PosterTemplate(template_data)
+
+        assert template.title_font_size == 64
+        assert template.title_min_size == 44
+        assert template.title_max_size == 64
+        assert template.summary_font_size == 30
+        assert template.summary_min_size == 22
+        assert template.summary_max_size == 30
+
 
 class TestPosterGenerator:
     """Test PosterGenerator class functionality"""
@@ -104,11 +131,11 @@ class TestPosterGenerator:
     def test_initialization_with_default_config(self):
         """Test successful initialization with default configuration"""
         with tempfile.TemporaryDirectory() as temp_dir:
-            config = {"method": "local", "default_template": "minimal"}
+            config = {"method": "local", "default_template": "story"}
             poster_gen = PosterGenerator(config, posters_dir=Path(temp_dir) / "posters")
             
             assert poster_gen.generation_method == "local"
-            assert poster_gen.default_template == "minimal"
+            assert poster_gen.default_template == "story"
             assert poster_gen.posters_dir.exists()
             assert poster_gen.templates_dir.exists()
     
@@ -122,11 +149,7 @@ class TestPosterGenerator:
             poster_gen = PosterGenerator(config, templates_dir=templates_dir)
             templates = poster_gen.list_templates()
             
-            # Should have default templates
-            assert "minimal" in templates
-            assert "elegant" in templates
-            assert "social" in templates
-            assert "modern" in templates
+            assert templates == ["story"]
     
     @patch('moka_news.poster.PIL_AVAILABLE', True)
     def test_load_template(self):
@@ -136,10 +159,10 @@ class TestPosterGenerator:
             config = {"method": "local"}
             
             poster_gen = PosterGenerator(config, templates_dir=templates_dir)
-            template = poster_gen.load_template("minimal")
+            template = poster_gen.load_template("story")
             
             assert isinstance(template, PosterTemplate)
-            assert template.name == "Minimal"
+            assert template.name == "Story"
     
     @patch('moka_news.poster.PIL_AVAILABLE', True)
     def test_load_nonexistent_template(self):
@@ -188,7 +211,7 @@ class TestPosterGenerator:
         mock_draw_obj.textbbox.return_value = (0, 0, 100, 30)
         
         with tempfile.TemporaryDirectory() as temp_dir:
-            config = {"method": "local", "default_template": "minimal"}
+            config = {"method": "local", "default_template": "story"}
             poster_gen = PosterGenerator(
                 config, 
                 posters_dir=Path(temp_dir) / "posters",
@@ -355,7 +378,7 @@ class TestPosterIntegration:
         with tempfile.TemporaryDirectory() as temp_dir:
             config = {
                 "method": "local",
-                "default_template": "minimal"
+                "default_template": "story"
             }
             
             poster_gen = PosterGenerator(
@@ -381,13 +404,13 @@ approaches.
             }
             
             # Generate poster
-            poster_path = poster_gen.generate_poster(editorial, "minimal")
+            poster_path = poster_gen.generate_poster(editorial, "story")
             
             # Verify output path is correct
             assert poster_path.suffix == ".png"
             assert poster_path.parent == poster_gen.posters_dir
             
-            # Verify gradient was created (minimal template has gradient enabled)
+            # Verify gradient was created (story template has gradient enabled)
             mock_gradient.assert_called_once()
             
             # Verify PIL save was called
@@ -760,14 +783,14 @@ class TestEnhancedPosterGeneration:
     def test_custom_options_override_gradient(self):
         """Test that custom options can override gradient settings"""
         with tempfile.TemporaryDirectory() as temp_dir:
-            config = {"method": "local", "default_template": "minimal"}
+            config = {"method": "local", "default_template": "story"}
             poster_gen = PosterGenerator(
                 config,
                 posters_dir=Path(temp_dir) / "posters",
                 templates_dir=Path(temp_dir) / "templates"
             )
             
-            template = poster_gen.load_template("minimal")
+            template = poster_gen.load_template("story")
             
             # Override gradient colors via custom options
             custom_options = {
@@ -838,36 +861,31 @@ class TestParseRichText:
         assert result == [] or result == [("", False)]
 
 
-class TestCleanContentPosterMaxWords:
-    """Tests that _clean_content_for_poster respects POSTER_MAX_WORDS"""
+class TestPosterTextExtraction:
+    """Tests for poster text cleaning and extraction."""
 
     @patch('moka_news.poster.PIL_AVAILABLE', True)
     def test_short_text_unchanged_word_count(self, tmp_path):
-        """Text shorter than POSTER_MAX_WORDS passes through without truncation"""
+        """Short text passes through unchanged."""
         config = {"method": "local"}
         gen = PosterGenerator(config, posters_dir=tmp_path)
         short_text = "Breaking news today. Markets react."
         result = gen._clean_content_for_poster(short_text)
-        # All words should still be present
         assert "Breaking" in result
         assert "Markets" in result
 
     @patch('moka_news.poster.PIL_AVAILABLE', True)
-    def test_long_text_truncated_to_max_words(self, tmp_path):
-        """Text exceeding POSTER_MAX_WORDS is truncated"""
+    def test_long_text_not_truncated(self, tmp_path):
+        """Long text should not be truncated by word-count limits."""
         config = {"method": "local"}
         gen = PosterGenerator(config, posters_dir=tmp_path)
-        # Build text that is clearly over POSTER_MAX_WORDS
-        long_text = ". ".join(["word " * 20] * 10)
+        long_text = " ".join(f"word{i}" for i in range(220))
         result = gen._clean_content_for_poster(long_text)
-        word_count = len(result.split())
-        # Allow a slight overshoot due to sentence-boundary logic, but must be
-        # substantially less than the original and close to POSTER_MAX_WORDS
-        assert word_count <= POSTER_MAX_WORDS * 2
+        assert len(result.split()) == 220
 
     @patch('moka_news.poster.PIL_AVAILABLE', True)
     def test_bold_markers_preserved(self, tmp_path):
-        """Bold ** markers in content are NOT stripped by the cleaner"""
+        """Bold ** markers in content are NOT stripped by the cleaner."""
         config = {"method": "local"}
         gen = PosterGenerator(config, posters_dir=tmp_path)
         content = "The **AI revolution** is reshaping the world."
@@ -876,7 +894,7 @@ class TestCleanContentPosterMaxWords:
 
     @patch('moka_news.poster.PIL_AVAILABLE', True)
     def test_markdown_italic_stripped(self, tmp_path):
-        """Single-asterisk italic markup is still stripped"""
+        """Single-asterisk italic markup is still stripped."""
         config = {"method": "local"}
         gen = PosterGenerator(config, posters_dir=tmp_path)
         content = "This is *very* important news."
@@ -886,8 +904,7 @@ class TestCleanContentPosterMaxWords:
 
     @patch('moka_news.poster.PIL_AVAILABLE', True)
     def test_bold_font_file_loaded_for_template(self, tmp_path):
-        """PosterTemplate exposes bold_font_file from JSON typography section"""
-        import json
+        """PosterTemplate exposes bold_font_file from JSON typography section."""
         tmpl_data = {
             "typography": {
                 "font_file": "Inter-Regular.ttf",
@@ -899,7 +916,7 @@ class TestCleanContentPosterMaxWords:
 
     @patch('moka_news.poster.PIL_AVAILABLE', True)
     def test_bold_font_file_fallback(self, tmp_path):
-        """When bold_font_file is absent, falls back to font_file"""
+        """When bold_font_file is absent, falls back to font_file."""
         tmpl_data = {
             "typography": {
                 "font_file": "Roboto-Regular.ttf",
@@ -909,8 +926,8 @@ class TestCleanContentPosterMaxWords:
         assert template.bold_font_file == "Roboto-Regular.ttf"
 
     @patch('moka_news.poster.PIL_AVAILABLE', True)
-    def test_extract_first_editorial_paragraph(self, tmp_path):
-        """Extracts first narrative paragraph, skipping title/date/separators."""
+    def test_extract_editorial_body_includes_multiple_paragraphs(self, tmp_path):
+        """Extraction includes all editorial paragraphs and skips sources."""
         config = {"method": "local"}
         gen = PosterGenerator(config, posters_dir=tmp_path)
         editorial_md = """# Morning Brief
@@ -921,51 +938,51 @@ class TestCleanContentPosterMaxWords:
 
 First paragraph with **focus** and [source](https://example.com).
 
-Second paragraph that should not be used.
+Second paragraph should be included too.
 
 ## Sources
 
 - [Item](https://example.com)
 """
         result = gen._extract_poster_paragraph(editorial_md)
-        assert result.startswith("First paragraph")
-        assert "Second paragraph" not in result
-        assert "**focus**" in result
+        assert "First paragraph with **focus** and source." in result
+        assert "Second paragraph should be included too." in result
+        assert "Item" not in result
 
     @patch('moka_news.poster.PIL_AVAILABLE', True)
-    def test_extract_title_and_first_paragraph_from_title_format(self, tmp_path):
-        """When content starts with TITLE:, use next paragraph for poster body."""
+    def test_extract_title_and_body_from_title_format(self, tmp_path):
+        """When content starts with TITLE:, the full body is extracted."""
         config = {"method": "local"}
         gen = PosterGenerator(config, posters_dir=tmp_path)
         editorial_text = """TITLE: Morning Brief
 
 First paragraph for the poster body.
 
-Second paragraph should not be used.
+Second paragraph is included.
 """
         title, body = gen._extract_title_and_body(editorial_text)
         paragraph = gen._extract_poster_paragraph(editorial_text)
 
         assert title == "Morning Brief"
         assert body.startswith("First paragraph")
-        assert paragraph == "First paragraph for the poster body."
+        assert paragraph == "First paragraph for the poster body. Second paragraph is included."
 
     @patch('moka_news.poster.PIL_AVAILABLE', True)
     def test_extract_body_from_legacy_title_summary_format(self, tmp_path):
-        """Legacy TITLE:/SUMMARY: content is normalized for poster extraction."""
+        """Legacy TITLE:/SUMMARY: content is normalized for full extraction."""
         config = {"method": "local"}
         gen = PosterGenerator(config, posters_dir=tmp_path)
         editorial_text = """TITLE: Legacy Brief
 SUMMARY: First paragraph from summary.
 
-Second paragraph not for poster.
+Second paragraph is included.
 """
         title, body = gen._extract_title_and_body(editorial_text)
         paragraph = gen._extract_poster_paragraph(editorial_text)
 
         assert title == "Legacy Brief"
         assert body.startswith("First paragraph from summary.")
-        assert paragraph == "First paragraph from summary."
+        assert paragraph == "First paragraph from summary. Second paragraph is included."
 
     @patch('moka_news.poster.PIL_AVAILABLE', True)
     def test_extract_title_from_body_when_markdown_heading_exists(self, tmp_path):

@@ -58,7 +58,6 @@ CLI_VERSION_CHECK_TIMEOUT = 5  # Seconds to wait for CLI version checks
 CLI_GENERATION_TIMEOUT = 30  # Seconds to wait for AI generation via CLI
 
 # Poster generation constants
-POSTER_MAX_WORDS = 60   # Maximum words for poster body text (AI prompt + clean truncation)
 POSTER_MAX_TOKENS = 300  # Maximum AI response tokens for poster content
 DEFAULT_BOX_PADDING = 40  # Padding inside content box
 DEFAULT_BOX_RADIUS = 20  # Border radius for rounded corners

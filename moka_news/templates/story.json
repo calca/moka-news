@@ -1,0 +1,51 @@
+{
+  "name": "Story",
+  "description": "Vertical layout optimized for Instagram Story readability",
+  "layout": {
+    "width": 1080,
+    "height": 1920,
+    "padding": 72,
+    "line_spacing": 1.32
+  },
+  "gradient": {
+    "enabled": true,
+    "type": "vertical",
+    "preset": "warm"
+  },
+  "content_box": {
+    "enabled": true,
+    "background": "#ffffff",
+    "padding": 64,
+    "border_radius": 24,
+    "shadow": {
+      "offset_x": 6,
+      "offset_y": 6,
+      "blur": 16,
+      "color": "rgba(0,0,0,0.16)"
+    }
+  },
+  "colors": {
+    "background": "#111827",
+    "text": "#1f2937",
+    "accent": "#be123c",
+    "secondary": "#475569"
+  },
+  "typography": {
+    "title_size": 72,
+    "summary_size": 34,
+    "metadata_size": 22,
+    "title_min_size": 54,
+    "title_max_size": 72,
+    "summary_min_size": 12,
+    "summary_max_size": 34,
+    "font_family": "arial",
+    "font_file": "Inter-Regular.ttf",
+    "bold_font_file": "Inter-Bold.ttf"
+  },
+  "elements": {
+    "qr_code": false,
+    "timestamp": false,
+    "source": true,
+    "qr_position": "bottom_center"
+  }
+}
