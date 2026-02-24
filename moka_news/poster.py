@@ -91,6 +91,7 @@ class PosterTemplate:
         self.title_font_size = typography.get("title_size", 72)
         self.summary_font_size = typography.get("summary_size", 32)
         self.metadata_font_size = typography.get("metadata_size", 22)
+        self.title_single_line = typography.get("title_single_line", False)
         self.title_min_size = typography.get(
             "title_min_size", max(20, int(self.title_font_size * 0.7))
         )
@@ -398,11 +399,12 @@ class PosterGenerator:
                 "secondary": "#475569"
             },
             "typography": {
-                "title_size": 72,
+                "title_size": 64,
                 "summary_size": 34,
                 "metadata_size": 22,
-                "title_min_size": 54,
-                "title_max_size": 72,
+                "title_single_line": True,
+                "title_min_size": 34,
+                "title_max_size": 64,
                 "summary_min_size": 12,
                 "summary_max_size": 34,
                 "font_family": "arial",
@@ -623,6 +625,80 @@ class PosterGenerator:
 
         return hard_floor
 
+    def _fit_single_line_font_size(
+        self,
+        draw: ImageDraw.ImageDraw,
+        text: str,
+        font_file: Optional[str],
+        font_family: str,
+        max_width: int,
+        max_height: int,
+        min_size: int = 12,
+        max_size: int = 220,
+    ) -> int:
+        """Binary-search the largest font size fitting one single line."""
+        best: Optional[int] = None
+        lo, hi = min_size, max_size
+        while lo <= hi:
+            mid = (lo + hi) // 2
+            font = self._load_font(font_file, font_family, mid)
+            bbox = draw.textbbox((0, 0), text, font=font)
+            text_w = bbox[2] - bbox[0]
+            text_h = bbox[3] - bbox[1]
+            if text_w <= max_width and text_h <= max_height:
+                best = mid
+                lo = mid + 1
+            else:
+                hi = mid - 1
+
+        if best is not None:
+            return best
+
+        hard_floor = 8
+        for size in range(min_size - 1, hard_floor - 1, -1):
+            font = self._load_font(font_file, font_family, size)
+            bbox = draw.textbbox((0, 0), text, font=font)
+            text_w = bbox[2] - bbox[0]
+            text_h = bbox[3] - bbox[1]
+            if text_w <= max_width and text_h <= max_height:
+                return size
+        return hard_floor
+
+    @staticmethod
+    def _truncate_single_line_text(
+        draw: ImageDraw.ImageDraw,
+        text: str,
+        font: ImageFont.ImageFont,
+        max_width: int,
+    ) -> str:
+        """Truncate text to a single line with ASCII ellipsis if needed."""
+        raw = (text or "").strip()
+        if not raw:
+            return ""
+
+        def text_width(value: str) -> int:
+            bbox = draw.textbbox((0, 0), value, font=font)
+            return bbox[2] - bbox[0]
+
+        if text_width(raw) <= max_width:
+            return raw
+
+        suffix = "..."
+        words = raw.split()
+        while words:
+            candidate = " ".join(words).rstrip()
+            trial = f"{candidate}{suffix}"
+            if text_width(trial) <= max_width:
+                return trial
+            words.pop()
+
+        for idx in range(len(raw), 0, -1):
+            trial = f"{raw[:idx].rstrip()}{suffix}"
+            if text_width(trial) <= max_width:
+                return trial
+
+        return suffix if text_width(suffix) <= max_width else ""
+
     def _generate_local_poster(
         self,
         editorial: Dict[str, Any],
@@ -743,9 +819,10 @@ class PosterGenerator:
         # Divider between title and body
         divider_zone_h = 32  # gap above + line + gap below
 
-        # Remaining content split: 25 % title / 75 % body to favor full body text.
+        # Remaining content split: title uses less height in single-line mode.
         usable_h = total_draw_h - footer_zone_h - divider_zone_h
-        title_zone_h = max(int(usable_h * 0.25), 40)
+        title_ratio = 0.14 if template.title_single_line else 0.25
+        title_zone_h = max(int(usable_h * title_ratio), 40)
         body_zone_h = usable_h - title_zone_h
 
         # ── Auto-fit fonts ─────────────────────────────────────────────
@@ -757,13 +834,25 @@ class PosterGenerator:
         title_min_size = max(16, int(template.title_min_size * width_scale))
         title_max_size = max(title_min_size, int(template.title_max_size * width_scale))
 
-        title_font_size = self._fit_font_size(
-            draw, title,
-            template.font_file, template.font_family,
-            max_width, title_zone_h, template.line_spacing,
-            min_size=title_min_size,
-            max_size=title_max_size,
-        )
+        if template.title_single_line:
+            title_font_size = self._fit_single_line_font_size(
+                draw,
+                title,
+                template.font_file,
+                template.font_family,
+                max_width,
+                title_zone_h,
+                min_size=title_min_size,
+                max_size=title_max_size,
+            )
+        else:
+            title_font_size = self._fit_font_size(
+                draw, title,
+                template.font_file, template.font_family,
+                max_width, title_zone_h, template.line_spacing,
+                min_size=title_min_size,
+                max_size=title_max_size,
+            )
         title_font = self._load_font(template.bold_font_file, template.font_family, title_font_size)
         logger.info(f"Title font: {title_font_size}px (zone {title_zone_h}px, max_width {max_width}px)")
 
@@ -771,7 +860,7 @@ class PosterGenerator:
         _plain_content = re.sub(r'\*\*([^*]+)\*\*', r'\1', clean_content)
         body_min_size = max(8, int(template.summary_min_size * width_scale))
         body_max_size = max(body_min_size, int(template.summary_max_size * width_scale))
-        body_font_size = self._fit_font_size(
+        body_font_size = self._fit_font_size_for_paragraphs(
             draw, _plain_content,
             template.bold_font_file, template.font_family,
             max_width, body_zone_h, template.line_spacing,
@@ -784,7 +873,10 @@ class PosterGenerator:
 
         # ── Draw title ─────────────────────────────────────────────────
         current_y = draw_y
-        title_lines = self._wrap_text(draw, title, title_font, max_width)
+        if template.title_single_line:
+            title_lines = [self._truncate_single_line_text(draw, title, title_font, max_width)]
+        else:
+            title_lines = self._wrap_text(draw, title, title_font, max_width)
         for line in title_lines:
             draw.text((draw_x, current_y), line, fill=template.accent_color, font=title_font)
             bbox = draw.textbbox((draw_x, current_y), line, font=title_font)
@@ -801,21 +893,39 @@ class PosterGenerator:
 
         # ── Draw body (fills the body zone) ───────────────────────────
         body_max_y = current_y + body_zone_h
-        rich_segments = self._parse_rich_text(clean_content)
-        rich_lines = self._wrap_rich_lines(draw, rich_segments, summary_font, summary_bold_font, max_width)
-        for line_tokens in rich_lines:
-            if current_y > body_max_y:
+        body_paragraphs = self._split_paragraphs(clean_content)
+        line_probe_bbox = draw.textbbox((0, 0), "Ag", font=summary_font)
+        paragraph_gap_h = max(6, int((line_probe_bbox[3] - line_probe_bbox[1]) * 0.8))
+        stop_render = False
+        for paragraph_index, paragraph in enumerate(body_paragraphs):
+            rich_segments = self._parse_rich_text(paragraph)
+            rich_lines = self._wrap_rich_lines(
+                draw,
+                rich_segments,
+                summary_font,
+                summary_bold_font,
+                max_width,
+            )
+            for line_tokens in rich_lines:
+                if current_y > body_max_y:
+                    stop_render = True
+                    break
+                x = draw_x
+                line_h = 0
+                for token_text, _is_bold, token_font in line_tokens:
+                    draw.text((x, current_y), token_text, fill=template.text_color, font=token_font)
+                    bbox = draw.textbbox((x, current_y), token_text, font=token_font)
+                    x += bbox[2] - bbox[0]
+                    token_h = bbox[3] - bbox[1]
+                    if token_h > line_h:
+                        line_h = token_h
+                current_y += int(line_h * template.line_spacing)
+            if stop_render:
                 break
-            x = draw_x
-            line_h = 0
-            for token_text, _is_bold, token_font in line_tokens:
-                draw.text((x, current_y), token_text, fill=template.text_color, font=token_font)
-                bbox = draw.textbbox((x, current_y), token_text, font=token_font)
-                x += bbox[2] - bbox[0]
-                token_h = bbox[3] - bbox[1]
-                if token_h > line_h:
-                    line_h = token_h
-            current_y += int(line_h * template.line_spacing)
+            if paragraph_index < len(body_paragraphs) - 1:
+                if current_y + paragraph_gap_h > body_max_y:
+                    break
+                current_y += paragraph_gap_h
 
         # ── Footer (anchored at bottom of drawable area) ───────────────
         footer_y = draw_y + total_draw_h - footer_zone_h + 20
@@ -870,6 +980,95 @@ class PosterGenerator:
             lines.append(current_line)
         
         return lines
+
+    @staticmethod
+    def _split_paragraphs(text: str) -> List[str]:
+        """Split body text into cleaned paragraphs preserving blank-line boundaries."""
+        if not text:
+            return []
+        return [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
+
+    def _measure_wrapped_paragraph_height(
+        self,
+        draw: ImageDraw.ImageDraw,
+        paragraphs: List[str],
+        font: ImageFont.ImageFont,
+        max_width: int,
+        line_spacing: float,
+        paragraph_gap_factor: float = 0.8,
+    ) -> int:
+        """Measure total height for wrapped paragraphs including paragraph gaps."""
+        if not paragraphs:
+            return 0
+
+        probe_bbox = draw.textbbox((0, 0), "Ag", font=font)
+        base_line_h = max(1, probe_bbox[3] - probe_bbox[1])
+        paragraph_gap_h = max(6, int(base_line_h * paragraph_gap_factor))
+
+        total_h = 0
+        for idx, paragraph in enumerate(paragraphs):
+            lines = self._wrap_text(draw, paragraph, font, max_width)
+            for line in lines:
+                bbox = draw.textbbox((0, 0), line, font=font)
+                total_h += int((bbox[3] - bbox[1]) * line_spacing)
+            if idx < len(paragraphs) - 1:
+                total_h += paragraph_gap_h
+        return total_h
+
+    def _fit_font_size_for_paragraphs(
+        self,
+        draw: ImageDraw.ImageDraw,
+        text: str,
+        font_file: Optional[str],
+        font_family: str,
+        max_width: int,
+        max_height: int,
+        line_spacing: float = 1.3,
+        min_size: int = 12,
+        max_size: int = 220,
+        paragraph_gap_factor: float = 0.8,
+    ) -> int:
+        """Binary-search the largest font size that fits wrapped paragraphs."""
+        paragraphs = self._split_paragraphs(text)
+        if not paragraphs:
+            return min_size
+
+        best: Optional[int] = None
+        lo, hi = min_size, max_size
+        while lo <= hi:
+            mid = (lo + hi) // 2
+            font = self._load_font(font_file, font_family, mid)
+            total_h = self._measure_wrapped_paragraph_height(
+                draw,
+                paragraphs,
+                font,
+                max_width,
+                line_spacing,
+                paragraph_gap_factor=paragraph_gap_factor,
+            )
+            if total_h <= max_height:
+                best = mid
+                lo = mid + 1
+            else:
+                hi = mid - 1
+
+        if best is not None:
+            return best
+
+        hard_floor = 8
+        for size in range(min_size - 1, hard_floor - 1, -1):
+            font = self._load_font(font_file, font_family, size)
+            total_h = self._measure_wrapped_paragraph_height(
+                draw,
+                paragraphs,
+                font,
+                max_width,
+                line_spacing,
+                paragraph_gap_factor=paragraph_gap_factor,
+            )
+            if total_h <= max_height:
+                return size
+        return hard_floor
 
     def _parse_rich_text(self, text: str) -> List[tuple]:
         """Parse ``**bold**`` markup in *text* into a list of segments.
@@ -967,7 +1166,7 @@ class PosterGenerator:
                 cleaned_blocks.append(cleaned)
 
         if cleaned_blocks:
-            return " ".join(cleaned_blocks)
+            return "\n\n".join(cleaned_blocks)
 
         return "No editorial content available."
 

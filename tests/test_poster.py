@@ -865,6 +865,40 @@ class TestPosterTextExtraction:
     """Tests for poster text cleaning and extraction."""
 
     @patch('moka_news.poster.PIL_AVAILABLE', True)
+    def test_split_paragraphs_preserves_structure(self, tmp_path):
+        """Paragraph splitter keeps blank-line paragraph boundaries."""
+        config = {"method": "local"}
+        gen = PosterGenerator(config, posters_dir=tmp_path)
+        text = "One paragraph.\n\nSecond paragraph.\n\nThird paragraph."
+        paragraphs = gen._split_paragraphs(text)
+        assert paragraphs == ["One paragraph.", "Second paragraph.", "Third paragraph."]
+
+    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    def test_truncate_single_line_text_adds_ellipsis(self, tmp_path):
+        """Single-line title truncation should add trailing ellipsis when needed."""
+        from PIL import Image, ImageDraw
+        config = {"method": "local"}
+        gen = PosterGenerator(config, posters_dir=tmp_path)
+        img = Image.new("RGB", (1080, 1920), "white")
+        draw = ImageDraw.Draw(img)
+        font = gen._load_font("Inter-Bold.ttf", "arial", 52)
+        title = "Questo titolo e molto lungo e deve essere ridotto su una sola riga"
+        truncated = gen._truncate_single_line_text(draw, title, font, max_width=380)
+
+        assert truncated.endswith("...")
+        bbox = draw.textbbox((0, 0), truncated, font=font)
+        assert (bbox[2] - bbox[0]) <= 380
+
+    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    def test_story_template_uses_single_line_title(self, tmp_path):
+        """Story template should default to single-line title behavior."""
+        config = {"method": "local", "default_template": "story"}
+        gen = PosterGenerator(config, posters_dir=tmp_path, templates_dir=tmp_path / "templates")
+        template = gen.load_template("story")
+
+        assert template.title_single_line is True
+
+    @patch('moka_news.poster.PIL_AVAILABLE', True)
     def test_short_text_unchanged_word_count(self, tmp_path):
         """Short text passes through unchanged."""
         config = {"method": "local"}
@@ -947,6 +981,7 @@ Second paragraph should be included too.
         result = gen._extract_poster_paragraph(editorial_md)
         assert "First paragraph with **focus** and source." in result
         assert "Second paragraph should be included too." in result
+        assert "\n\n" in result
         assert "Item" not in result
 
     @patch('moka_news.poster.PIL_AVAILABLE', True)
@@ -965,7 +1000,7 @@ Second paragraph is included.
 
         assert title == "Morning Brief"
         assert body.startswith("First paragraph")
-        assert paragraph == "First paragraph for the poster body. Second paragraph is included."
+        assert paragraph == "First paragraph for the poster body.\n\nSecond paragraph is included."
 
     @patch('moka_news.poster.PIL_AVAILABLE', True)
     def test_extract_body_from_legacy_title_summary_format(self, tmp_path):
@@ -982,7 +1017,7 @@ Second paragraph is included.
 
         assert title == "Legacy Brief"
         assert body.startswith("First paragraph from summary.")
-        assert paragraph == "First paragraph from summary. Second paragraph is included."
+        assert paragraph == "First paragraph from summary.\n\nSecond paragraph is included."
 
     @patch('moka_news.poster.PIL_AVAILABLE', True)
     def test_extract_title_from_body_when_markdown_heading_exists(self, tmp_path):
