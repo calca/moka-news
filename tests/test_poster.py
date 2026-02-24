@@ -241,16 +241,13 @@ properly when there are many sentences and words."""
             assert "[link](" not in cleaned
             # Headers at start of line (no indent) should be removed
             assert not cleaned.startswith("# ")
-    def test_ai_generation_not_implemented(self):
-        """Test that AI generation raises not implemented error"""
+    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    def test_non_local_method_falls_back_to_local(self):
+        """Poster generator should always render locally, even with legacy methods."""
         with tempfile.TemporaryDirectory() as temp_dir:
             config = {"method": "ai"}
             poster_gen = PosterGenerator(config, posters_dir=Path(temp_dir))
-            
-            editorial = {"title": "Test", "content": "Test content"}
-            
-            with pytest.raises(PosterGenerationError, match="AI poster generation not yet implemented"):
-                poster_gen._generate_ai_poster(editorial)
+            assert poster_gen.generation_method == "local"
     
     @patch('moka_news.poster.PIL_AVAILABLE', True)
     @patch('moka_news.poster.qrcode')
@@ -910,6 +907,30 @@ class TestCleanContentPosterMaxWords:
         }
         template = PosterTemplate(tmpl_data)
         assert template.bold_font_file == "Roboto-Regular.ttf"
+
+    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    def test_extract_first_editorial_paragraph(self, tmp_path):
+        """Extracts first narrative paragraph, skipping title/date/separators."""
+        config = {"method": "local"}
+        gen = PosterGenerator(config, posters_dir=tmp_path)
+        editorial_md = """# Morning Brief
+
+*Tuesday, February 24, 2026 at 08:00*
+
+---
+
+First paragraph with **focus** and [source](https://example.com).
+
+Second paragraph that should not be used.
+
+## Sources
+
+- [Item](https://example.com)
+"""
+        result = gen._extract_poster_paragraph(editorial_md)
+        assert result.startswith("First paragraph")
+        assert "Second paragraph" not in result
+        assert "**focus**" in result
 
 
 if __name__ == "__main__":

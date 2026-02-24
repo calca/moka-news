@@ -107,37 +107,14 @@ editorial:
 
 # Poster Generation Configuration
 poster:
-  method: local            # Generation method: local (PIL/Pillow), ai (AI image generation), hybrid (AI with fallback)
+  method: local            # Generation method: local (PIL/Pillow)
   default_template: minimal # Default template: minimal, elegant, social, modern
   
   # Custom directories (optional)
   posters_dir: ~/Documents/moka-news-posters  # Custom poster save location
   templates_dir: null      # Custom template directory (defaults to package templates)
 
-  # AI Prompt for poster content summary (optional)
-  # The AI distills the full editorial into a concise ≤300-word text for the poster.
-  # Placeholder: {content} → full editorial markdown.
-  # Remove or omit this section to use the built-in default prompt.
-  content_prompt:
-    system_message: >
-      You are an expert editorial journalist.
-      Write a concise, impactful summary intended for a visual news poster.
-    user_prompt: |
-      Create a poster summary of the following editorial.
-      Use clear, direct sentences.
-      Maximum 300 words. Return only the summary text, no titles or labels.
-
-      {content}
-
-  # AI Image Generation (for method: ai or hybrid)
-  ai:
-    provider: dall-e       # AI provider: dall-e, midjourney, stable-diffusion
-    api_key: null          # API key for AI image generation (or use environment variable)
-    model: dall-e-3        # Model to use: dall-e-3, dall-e-2 
-    style: natural         # Style: natural, vivid, artistic
-    quality: standard      # Quality: standard, hd
-  
-  # Local Generation Options (for method: local or hybrid fallback)
+  # Local generation options
   local:
     font_dirs: []          # Additional directories to search for custom fonts
     default_font: arial    # Default font family: arial, times, helvetica

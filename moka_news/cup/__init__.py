@@ -1019,7 +1019,7 @@ class Cup(App):
         """Generate poster in a background thread without blocking the TUI"""
         logger.info("Poster generation started (background thread)")
         try:
-            from moka_news.poster import PosterGenerator, PosterContentGenerator
+            from moka_news.poster import PosterGenerator
 
             poster_config = getattr(self, "poster_config", {
                 "method": "local",
@@ -1044,33 +1044,9 @@ class Cup(App):
             logger.debug(f"Extracted title: {title!r}")
             logger.debug(f"Editorial content length: {len(content)} chars")
 
-            # ── AI poster content (configurable prompt) ──────────────────
-            eg = getattr(self, "editorial_generator", None)
-            ai_provider = getattr(eg, "ai_provider", None)
-            language = getattr(eg, "language", "en")
-            logger.debug(f"AI provider: {type(ai_provider).__name__ if ai_provider else 'None'}, language: {language}")
-            content_prompt = poster_config.get("content_prompt")  # None → use default
-            content_gen = PosterContentGenerator(
-                ai_provider=ai_provider,
-                prompt_config=content_prompt,
-                language=language,
-            )
-
-            if ai_provider is not None:
-                self.call_from_thread(
-                    self.notify,
-                    "Generating AI poster summary…",
-                    severity="information",
-                )
-
-            logger.debug("Calling PosterContentGenerator.generate()")
-            poster_content = content_gen.generate({"title": title, "content": content})
-            logger.debug(f"Poster content length: {len(poster_content)} chars")
-            # ─────────────────────────────────────────────────────────────
-
             editorial_data = {
                 "title": title,
-                "content": poster_content,
+                "content": content,
                 "timestamp": datetime.now(),
             }
 

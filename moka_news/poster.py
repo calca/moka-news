@@ -1,13 +1,10 @@
-"""
-Poster Generator - Creates square (1:1) posters from editorial content
-Supports both local generation (PIL/Pillow) and optional AI image generation
-"""
+"""Poster Generator - Creates square (1:1) posters from editorial content."""
 
 import json
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, List, Optional
 try:
     from PIL import Image, ImageDraw, ImageFont, ImageColor, ImageFilter
     PIL_AVAILABLE = True
@@ -20,7 +17,6 @@ try:
 except ImportError:
     QRCODE_AVAILABLE = False
 
-import requests
 from moka_news.logger import get_logger
 from moka_news.constants import (
     DEFAULT_GRADIENT_PRESETS,
@@ -28,8 +24,6 @@ from moka_news.constants import (
     DEFAULT_BOX_RADIUS,
     DEFAULT_SHADOW_OFFSET,
     DEFAULT_SHADOW_BLUR,
-    BUNDLED_FONTS,
-    POSTER_MAX_TOKENS,
     POSTER_MAX_WORDS,
 )
 
@@ -39,91 +33,6 @@ logger = get_logger(__name__)
 class PosterGenerationError(Exception):
     """Exception raised when poster generation fails"""
     pass
-
-
-class PosterContentGenerator:
-    """Generates AI-written content for a news poster.
-
-    Uses the configured AI provider to distil an editorial into a concise
-    (≤ 300-word) visual summary. Falls back to the raw editorial text when
-    no AI provider is available or when the AI call fails.
-
-    The prompt is fully configurable: pass a ``prompt_config`` dict with
-    ``system_message`` and ``user_prompt`` keys (using ``{content}`` as the
-    placeholder for the editorial body).  If omitted, ``DEFAULT_POSTER_CONTENT_PROMPTS``
-    from :mod:`moka_news.config` is used.
-
-    Example::
-
-        from moka_news.poster import PosterContentGenerator
-        gen = PosterContentGenerator(ai_provider=my_provider)
-        text = gen.generate({"title": "Morning News", "content": editorial_md})
-    """
-
-    MAX_TOKENS = POSTER_MAX_TOKENS  # from moka_news.constants
-
-    def __init__(self, ai_provider=None, prompt_config=None, language: str = "en"):
-        """
-        Args:
-            ai_provider: An :class:`~moka_news.barista.AIProvider` instance, or
-                ``None`` in which case the full editorial text is returned as-is.
-            prompt_config: Optional dict with ``system_message`` and ``user_prompt``
-                keys.  Defaults to ``DEFAULT_POSTER_CONTENT_PROMPTS``.
-            language: BCP-47 language code matching the editorial language
-                (e.g. ``"en"``, ``"it"``, ``"es"``, ``"fr"``).
-                When not ``"en"`` a language instruction is appended to
-                ``system_message`` so the AI writes in the same language as
-                the editorial.
-        """
-        from moka_news.config import DEFAULT_POSTER_CONTENT_PROMPTS
-        from moka_news.constants import SUPPORTED_LANGUAGES
-        self.ai_provider = ai_provider
-        self.language = language
-
-        # Start from the provided/default prompt config, then inject language.
-        base = dict(prompt_config or DEFAULT_POSTER_CONTENT_PROMPTS)
-        if language != "en":
-            language_name = SUPPORTED_LANGUAGES.get(language, language)
-            lang_instruction = (
-                f" IMPORTANT: Write the ENTIRE poster summary in {language_name}. "
-                f"Every sentence must be in {language_name}."
-            )
-            base["system_message"] = base.get("system_message", "") + lang_instruction
-            logger.debug(
-                f"PosterContentGenerator: language instruction injected for {language_name}"
-            )
-        self.prompt_config = base
-
-    def generate(self, editorial: Dict[str, Any]) -> str:
-        """Return poster content for *editorial*.
-
-        Args:
-            editorial: Dict with at least ``"title"`` and ``"content"`` keys.
-
-        Returns:
-            A concise text string ready to be rendered on the poster.
-        """
-        content = editorial.get("content", "")
-        title = editorial.get("title", "Morning Editorial")
-
-        if self.ai_provider is None:
-            logger.debug("PosterContentGenerator: no AI provider – using full editorial text")
-            return content
-
-        try:
-            result = self.ai_provider.generate_summary(
-                {"title": title, "summary": content},
-                prompts=self.prompt_config,
-                max_tokens=self.MAX_TOKENS,
-            )
-            summary = result.get("summary", "").strip()
-            if summary:
-                logger.info("PosterContentGenerator: AI summary generated successfully")
-                return summary
-        except Exception as e:
-            logger.warning(f"PosterContentGenerator: AI call failed, using full content: {e}")
-
-        return content
 
 
 class PosterTemplate:
@@ -424,9 +333,14 @@ class PosterGenerator:
             self._create_default_templates()
         
         # Configuration
-        self.generation_method = config.get("method", "local")  # local, ai, hybrid
+        self.generation_method = "local"
         self.default_template = config.get("default_template", "minimal")
-        self.ai_config = config.get("ai", {})
+        requested_method = config.get("method", "local")
+        if requested_method != "local":
+            logger.warning(
+                "Poster method %r is no longer supported, using local rendering.",
+                requested_method,
+            )
         
         logger.info(f"PosterGenerator initialized:")
         logger.info(f"  - Method: {self.generation_method}")
@@ -684,18 +598,7 @@ class PosterGenerator:
         Returns:
             Path to the generated poster file
         """
-        if self.generation_method == "ai":
-            return self._generate_ai_poster(editorial, template_name, custom_options)
-        elif self.generation_method == "hybrid":
-            # Try AI first, fallback to local
-            try:
-                return self._generate_ai_poster(editorial, template_name, custom_options)
-            except Exception as e:
-                logger.warning(f"AI poster generation failed, falling back to local: {e}")
-                return self._generate_local_poster(editorial, template_name, custom_options)
-        else:
-            # Default to local generation
-            return self._generate_local_poster(editorial, template_name, custom_options)
+        return self._generate_local_poster(editorial, template_name, custom_options)
     
     def _load_font(self, font_file: Optional[str], font_family: str, size: int) -> ImageFont.ImageFont:
         """
@@ -936,9 +839,9 @@ class PosterGenerator:
         draw = ImageDraw.Draw(img)
 
         # ── Text content ───────────────────────────────────────────────
-        title = editorial.get("title", "Morning Editorial")
-        content = editorial.get("content", "")
-        clean_content = self._clean_content_for_poster(content)
+        title = str(editorial.get("title") or "Morning Editorial").strip()
+        content = str(editorial.get("content") or "")
+        clean_content = self._extract_poster_paragraph(content)
         logger.debug(f"Title: {title!r}")
         logger.debug(f"Body text length after cleaning: {len(clean_content)} chars / ~{len(clean_content.split())} words")
 
@@ -1036,7 +939,7 @@ class PosterGenerator:
             footer_y += footer_line_h
         if template.show_source:
             draw.text(
-                (draw_x, footer_y), "MoKa News - AI-Generated Editorial",
+                (draw_x, footer_y), "MoKa News Editorial",
                 fill=template.secondary_color, font=metadata_font,
             )
 
@@ -1057,17 +960,6 @@ class PosterGenerator:
         img.save(output_path, "PNG", optimize=True)
         logger.info(f"_generate_local_poster: saved → {output_path}")
         return output_path
-    
-    def _generate_ai_poster(
-        self,
-        editorial: Dict[str, Any],
-        template_name: Optional[str] = None,
-        custom_options: Optional[Dict[str, Any]] = None
-    ) -> Path:
-        """Generate poster using AI image generation (placeholder implementation)"""
-        # This is a placeholder for AI integration
-        # In a real implementation, this would call DALL-E, Midjourney, or similar
-        raise PosterGenerationError("AI poster generation not yet implemented. Use 'local' or 'hybrid' method.")
     
     def _wrap_text(self, draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont, max_width: int) -> List[str]:
         """Wrap text to fit within specified width"""
@@ -1168,35 +1060,58 @@ class PosterGenerator:
 
         return lines
 
+    def _extract_poster_paragraph(self, markdown_content: str) -> str:
+        """Extract and clean the first editorial paragraph for poster body."""
+        content = markdown_content or ""
+
+        # Ignore trailing sources section if present.
+        if "\n## Sources" in content:
+            content = content.split("\n## Sources", 1)[0]
+
+        for block in re.split(r"\n\s*\n", content):
+            cleaned = self._clean_content_for_poster(block)
+            if cleaned:
+                return cleaned
+
+        return "No editorial paragraph available."
+
     def _clean_content_for_poster(self, content: str) -> str:
-        """Clean editorial content for poster display.
+        """Clean a single paragraph for poster display."""
+        raw = (content or "").strip()
+        if not raw:
+            return ""
 
-        Bold markers (**word**) are preserved so that _parse_rich_text can
-        render them with the bold font variant.
-        """
+        # Drop markdown metadata lines.
+        cleaned_lines: List[str] = []
+        for line in raw.splitlines():
+            stripped = line.strip()
+            if not stripped or stripped == "---":
+                continue
+            if stripped.startswith("#"):
+                continue
+            if re.fullmatch(r"\*[^*]+\*", stripped):
+                continue
+            if stripped.startswith("- "):
+                continue
+            cleaned_lines.append(stripped)
+        text = " ".join(cleaned_lines).strip()
+        if not text:
+            return ""
+
         # Remove markdown links [text](url) -> text
-        content = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', content)
-
-        # Remove markdown headers
-        content = re.sub(r'^#+\s*', '', content, flags=re.MULTILINE)
+        text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', text)
 
         # Remove markdown formatting — keep **bold** intact, strip the rest
-        content = re.sub(r'(?<!\*)\*(?!\*)([^*]+?)(?<!\*)\*(?!\*)', r'\1', content)   # Italic (single * only, not **)
-        content = re.sub(r'`([^`]+)`', r'\1', content)       # Inline code
+        text = re.sub(r'(?<!\*)\*(?!\*)([^*]+?)(?<!\*)\*(?!\*)', r'\1', text)
+        text = re.sub(r'`([^`]+)`', r'\1', text)
+        text = re.sub(r'\s+', ' ', text).strip()
 
-        # Truncate to POSTER_MAX_WORDS (sentence-boundary aware)
-        sentences = content.split('. ')
-        word_count = 0
-        poster_content = ""
+        # Keep first paragraph concise to preserve readability and hierarchy.
+        words = text.split()
+        if len(words) > POSTER_MAX_WORDS:
+            text = " ".join(words[:POSTER_MAX_WORDS]).rstrip() + "…"
 
-        for sentence in sentences:
-            sentence_words = len(sentence.split())
-            if word_count + sentence_words > POSTER_MAX_WORDS:
-                break
-            poster_content += sentence + ". "
-            word_count += sentence_words
-
-        return poster_content.strip()
+        return text
     
     def _add_qr_code(self, img: Image.Image, url: str, template: PosterTemplate):
         """Add QR code to the poster"""

@@ -69,20 +69,6 @@ TITLE: <a crisp, evocative editorial title that captures the day's mood>
 SUMMARY: <the full editorial content in Markdown, written in flowing prose with NO bullet points or numbered lists>""",
 }
 
-DEFAULT_POSTER_CONTENT_PROMPTS = {
-    "system_message": (
-        "You are an expert editorial journalist. "
-        "Write a concise, impactful summary intended for a visual news poster."
-    ),
-    "user_prompt": (
-        "Create a poster summary of the following editorial. "
-        "Use clear, direct sentences. "
-        "Maximum 60 words. Be ruthlessly concise. "
-        "Mark 3 to 5 key terms or short phrases with **double asterisks** to make them stand out visually. "
-        "Return only the summary text, no titles or labels.\n\n{content}"
-    ),
-}
-
 DEFAULT_CONFIG = {
     "ai": {
         "provider": "gemini-cli",  # Default AI provider - requires gcloud CLI
@@ -122,18 +108,10 @@ DEFAULT_CONFIG = {
         "extended_window_days": 3,  # How many days to look back if initial fetch has too few articles
     },
     "poster": {
-        "method": "local",  # Generation method: local (PIL/Pillow), ai (AI image generation), hybrid (AI with fallback)
+        "method": "local",  # Generation method: local (PIL/Pillow)
         "default_template": "minimal",  # Default template to use for poster generation
         "posters_dir": None,  # Directory to save posters (defaults to ~/.config/moka-news/posters)
         "templates_dir": None,  # Directory containing custom templates (defaults to package templates)
-        "content_prompt": DEFAULT_POSTER_CONTENT_PROMPTS,  # AI prompt for generating poster content summary
-        "ai": {
-            "provider": "dall-e",  # AI image generation provider: dall-e, midjourney, stable-diffusion
-            "api_key": None,  # API key for AI image generation service
-            "model": "dall-e-3",  # Model to use for AI generation
-            "style": "natural",  # Style for AI generation: natural, vivid, artistic
-            "quality": "standard"  # Quality for AI generation: standard, hd
-        },
         "local": {
             "font_dirs": [],  # Additional directories to search for fonts
             "default_font": "arial",  # Default font family for text rendering
@@ -358,22 +336,8 @@ editorial:
 
 # Poster Generation Configuration (press 'g' in TUI)
 poster:
-  method: local              # Generation method: local (PIL/Pillow), hybrid (AI then fallback)
+  method: local              # Generation method: local (PIL/Pillow)
   default_template: minimal  # Template: minimal, elegant, social, modern
-
-  # AI Prompt for poster content summary (optional)
-  # The AI condenses the editorial into a concise ≤300-word text for the poster.
-  # Use the placeholder {content} for the editorial body.
-  content_prompt:
-    system_message: >
-      You are an expert editorial journalist.
-      Write a concise, impactful summary intended for a visual news poster.
-    user_prompt: |
-      Create a poster summary of the following editorial.
-      Use clear, direct sentences.
-      Maximum 300 words. Return only the summary text, no titles or labels.
-
-      {content}
 """
 
     with open(path, "w") as f:

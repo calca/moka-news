@@ -138,18 +138,9 @@ Editorial Prompts customization:
 9. Edit the 'ai.editorial_prompts' section in ~/.config/moka-news/config.yaml
 10. Default editorial prompts work great for most users
 
-Poster Content Prompt customization:
-11. Customize the AI prompt used to condense the editorial for the poster
-12. Edit the 'poster.content_prompt' section in your config file
-13. Use the {content} placeholder for the editorial body
-14. Example config:
-      poster:
-        content_prompt:
-          system_message: "You are a sharp news editor writing poster captions."
-          user_prompt: |
-            Write a 150-word max poster caption for this editorial.
-
-            {content}
-15. Omit 'content_prompt' entirely to keep the built-in default
-16. See examples/poster_example.py for a full walkthrough
+Poster generation:
+11. Poster rendering is local/deterministic (no GenAI prompt for posters)
+12. Poster body is extracted from the first editorial paragraph
+13. Configure poster style via template settings under 'poster'
+14. See examples/poster_example.py for a full walkthrough
 """)
