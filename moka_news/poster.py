@@ -748,10 +748,64 @@ class PosterGenerator:
             return font
         except Exception as e:
             logger.debug(f"Could not load system font {font_family!r}: {e}")
+
+        # Try common TrueType fallbacks so text remains scalable and legible.
+        fallback_candidates = self._get_fallback_font_candidates(font_family)
+        for candidate in fallback_candidates:
+            try:
+                font = ImageFont.truetype(candidate, size)
+                logger.debug(f"Loaded fallback TrueType font: {candidate!r} @ {size}px")
+                return font
+            except Exception:
+                continue
         
         # Fallback to default PIL font
-        logger.warning(f"Font fallback to PIL default (bitmap): requested font_file={font_file!r}, font_family={font_family!r}, size={size}")
+        logger.warning(
+            "Font fallback to PIL default (bitmap): "
+            f"requested font_file={font_file!r}, font_family={font_family!r}, size={size}"
+        )
         return ImageFont.load_default()
+
+    def _get_fallback_font_candidates(self, font_family: str) -> List[str]:
+        """Return platform-friendly fallback font names/paths for scalable text."""
+        family = (font_family or "").lower()
+        candidates: List[str] = []
+
+        if "times" in family or "serif" in family:
+            candidates.extend([
+                "Times New Roman.ttf",
+                "Times.ttc",
+                "/System/Library/Fonts/Supplemental/Times New Roman.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
+                "DejaVuSerif.ttf",
+            ])
+        else:
+            candidates.extend([
+                "Arial.ttf",
+                "Helvetica.ttc",
+                "LiberationSans-Regular.ttf",
+                "/System/Library/Fonts/Supplemental/Arial.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                "DejaVuSans.ttf",
+            ])
+
+        # Always include a neutral fallback chain as last resort.
+        candidates.extend([
+            "Arial.ttf",
+            "Helvetica.ttc",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "DejaVuSans.ttf",
+        ])
+
+        # Preserve order while removing duplicates.
+        unique_candidates: List[str] = []
+        seen = set()
+        for item in candidates:
+            if item not in seen:
+                seen.add(item)
+                unique_candidates.append(item)
+
+        return unique_candidates
 
     def _fit_font_size(
         self,
@@ -917,7 +971,8 @@ class PosterGenerator:
             draw, title,
             template.font_file, template.font_family,
             max_width, title_zone_h, template.line_spacing,
-            min_size=28, max_size=260,
+            min_size=max(24, int(template.title_font_size * 0.7)),
+            max_size=max(260, int(template.title_font_size * 2.5)),
         )
         title_font = self._load_font(template.bold_font_file, template.font_family, title_font_size)
         logger.info(f"Title font: {title_font_size}px (zone {title_zone_h}px, max_width {max_width}px)")
@@ -928,7 +983,8 @@ class PosterGenerator:
             draw, _plain_content,
             template.bold_font_file, template.font_family,
             max_width, body_zone_h, template.line_spacing,
-            min_size=18, max_size=160,
+            min_size=max(18, int(template.summary_font_size * 0.8)),
+            max_size=max(160, int(template.summary_font_size * 2.2)),
         )
         summary_font = self._load_font(template.font_file, template.font_family, body_font_size)
         summary_bold_font = self._load_font(template.bold_font_file, template.font_family, body_font_size)
