@@ -137,7 +137,7 @@ def test_parse_editorial_response_new_title_paragraph_format():
     parsed = AIProvider._parse_editorial_response(text)
 
     assert parsed["title"] == "Morning Brief"
-    assert parsed["summary"] == "Markets opened mixed after overnight volatility."
+    assert parsed["summary"] == "Markets opened mixed after overnight volatility.\n\nSecond paragraph."
 
 
 def test_parse_editorial_response_legacy_summary_format():
@@ -154,3 +154,11 @@ def test_parse_editorial_response_without_title_marker():
 
     assert parsed["title"] == "Your Morning News"
     assert parsed["summary"] == "No marker available"
+
+
+def test_parse_editorial_response_case_insensitive_markers():
+    text = "title: Lowercase Title\nsummary: Lowercase summary body."
+    parsed = AIProvider._parse_editorial_response(text)
+
+    assert parsed["title"] == "Lowercase Title"
+    assert parsed["summary"] == "Lowercase summary body."

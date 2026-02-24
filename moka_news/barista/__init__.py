@@ -5,6 +5,7 @@ generation (when prompts are passed via kwargs).
 """
 
 import os
+import re
 import subprocess
 from typing import Dict, Any, Optional, List
 from abc import ABC
@@ -76,7 +77,7 @@ class AIProvider(ABC):
     When *prompts* is supplied via ``generate_summary(**kwargs)`` the provider
     enters **editorial mode**: it assembles the full prompt, calls the AI
     back-end (API or CLI) via ``_invoke_ai``, and parses the ``TITLE:`` line
-    plus the following paragraph (or ``SUMMARY:`` when present).
+    plus the generated editorial body.
     """
 
     # ── public interface ────────────────────────────────────────────────
@@ -175,33 +176,36 @@ class AIProvider(ABC):
         title = "Your Morning News"
         summary = text
 
-        if "TITLE:" not in text:
+        title_match = re.search(
+            r"^\s*(?:\*\*)?TITLE(?:\*\*)?\s*:\s*(.+?)\s*$",
+            text,
+            flags=re.IGNORECASE | re.MULTILINE,
+        )
+        if not title_match:
             return {"title": title, "summary": summary}
 
-        after_title_marker = text.split("TITLE:", 1)[1].lstrip()
-        lines = after_title_marker.splitlines()
-        if not lines:
-            return {"title": title, "summary": summary}
-
-        title = lines[0].strip() or title
-        remainder = "\n".join(lines[1:]).strip()
+        title = title_match.group(1).strip() or title
+        remainder = text[title_match.end():].strip()
 
         # Backward compatibility for legacy format:
         # TITLE: ...
         # SUMMARY: ...
-        if remainder.startswith("SUMMARY:"):
-            summary = remainder.split("SUMMARY:", 1)[1].strip()
+        remainder = re.sub(
+            r"^\s*(?:\*\*)?SUMMARY(?:\*\*)?\s*:\s*",
+            "",
+            remainder,
+            count=1,
+            flags=re.IGNORECASE,
+        )
+
+        if not remainder:
             return {"title": title, "summary": summary}
 
         # New format:
         # TITLE: ...
         #
-        # <first paragraph of body>
-        paragraphs = [p.strip() for p in remainder.split("\n\n") if p.strip()]
-        if paragraphs:
-            summary = paragraphs[0]
-        else:
-            summary = remainder or summary
+        # <full editorial body>
+        summary = remainder.strip() or summary
 
         return {"title": title, "summary": summary}
 

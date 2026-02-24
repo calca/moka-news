@@ -4,7 +4,7 @@ import json
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 try:
     from PIL import Image, ImageDraw, ImageFont, ImageColor, ImageFilter
     PIL_AVAILABLE = True
@@ -839,8 +839,11 @@ class PosterGenerator:
         draw = ImageDraw.Draw(img)
 
         # ── Text content ───────────────────────────────────────────────
-        title = str(editorial.get("title") or "Morning Editorial").strip()
         content = str(editorial.get("content") or "")
+        title = str(editorial.get("title") or "Morning Editorial").strip()
+        title_from_content, _ = self._extract_title_and_body(content)
+        if title_from_content:
+            title = title_from_content
         clean_content = self._extract_poster_paragraph(content)
         logger.debug(f"Title: {title!r}")
         logger.debug(f"Body text length after cleaning: {len(clean_content)} chars / ~{len(clean_content.split())} words")
@@ -1068,12 +1071,36 @@ class PosterGenerator:
         if "\n## Sources" in content:
             content = content.split("\n## Sources", 1)[0]
 
+        # Normalize TITLE:/SUMMARY: format to body-only content.
+        _, content = self._extract_title_and_body(content)
+
         for block in re.split(r"\n\s*\n", content):
             cleaned = self._clean_content_for_poster(block)
             if cleaned:
                 return cleaned
 
         return "No editorial paragraph available."
+
+    @staticmethod
+    def _extract_title_and_body(content: str) -> Tuple[Optional[str], str]:
+        """Extract title from a leading ``TITLE:`` line and return remaining body."""
+        raw = content or ""
+        lines = raw.splitlines()
+        title_re = re.compile(r"^\s*(?:\*\*)?TITLE(?:\*\*)?\s*:\s*(.+?)\s*$", re.IGNORECASE)
+        summary_prefix_re = re.compile(r"^\s*(?:\*\*)?SUMMARY(?:\*\*)?\s*:\s*", re.IGNORECASE)
+
+        for idx, line in enumerate(lines):
+            stripped = line.strip()
+            match = title_re.match(stripped)
+            if not match:
+                continue
+
+            title = match.group(1).strip() or None
+            remainder = "\n".join(lines[idx + 1:]).lstrip()
+            remainder = summary_prefix_re.sub("", remainder, count=1)
+            return title, remainder
+
+        return None, raw
 
     def _clean_content_for_poster(self, content: str) -> str:
         """Clean a single paragraph for poster display."""
@@ -1088,6 +1115,8 @@ class PosterGenerator:
             if not stripped or stripped == "---":
                 continue
             if stripped.startswith("#"):
+                continue
+            if re.match(r"^(?:\*\*)?(?:TITLE|SUMMARY)(?:\*\*)?\s*:", stripped, re.IGNORECASE):
                 continue
             if re.fullmatch(r"\*[^*]+\*", stripped):
                 continue

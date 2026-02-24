@@ -26,6 +26,7 @@ from pathlib import Path
 from datetime import datetime, time
 import webbrowser
 import asyncio
+import re
 import subprocess
 from moka_news import __version__
 from moka_news.logger import get_logger
@@ -1032,15 +1033,7 @@ class Cup(App):
 
             # ── extract title from editorial markdown ────────────────────
             content = str(self.editorial_content)
-            title = "Morning Editorial"
-            for line in content.split("\n"):
-                stripped = line.strip()
-                if stripped.startswith("# "):
-                    title = stripped[2:]
-                    break
-                elif stripped.startswith("## "):
-                    title = stripped[3:]
-                    break
+            title = self._extract_editorial_title(content)
             logger.debug(f"Extracted title: {title!r}")
             logger.debug(f"Editorial content length: {len(content)} chars")
 
@@ -1067,6 +1060,29 @@ class Cup(App):
                 f"Error generating poster: {e}",
                 severity="error",
             )
+
+    @staticmethod
+    def _extract_editorial_title(content: str) -> str:
+        """Extract editorial title, preferring ``TITLE:`` marker over markdown heading."""
+        text = content or ""
+        title_marker_re = re.compile(
+            r"^\s*(?:\*\*)?TITLE(?:\*\*)?\s*:\s*(.+?)\s*$",
+            re.IGNORECASE | re.MULTILINE,
+        )
+        match = title_marker_re.search(text)
+        if match:
+            title = match.group(1).strip()
+            if title:
+                return title
+
+        for line in text.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("# "):
+                return stripped[2:].strip() or "Morning Editorial"
+            if stripped.startswith("## "):
+                return stripped[3:].strip() or "Morning Editorial"
+
+        return "Morning Editorial"
 
     def _rebuild_view(self) -> None:
         """Rebuild the view to show current content"""

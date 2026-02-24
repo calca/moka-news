@@ -932,6 +932,63 @@ Second paragraph that should not be used.
         assert "Second paragraph" not in result
         assert "**focus**" in result
 
+    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    def test_extract_title_and_first_paragraph_from_title_format(self, tmp_path):
+        """When content starts with TITLE:, use next paragraph for poster body."""
+        config = {"method": "local"}
+        gen = PosterGenerator(config, posters_dir=tmp_path)
+        editorial_text = """TITLE: Morning Brief
+
+First paragraph for the poster body.
+
+Second paragraph should not be used.
+"""
+        title, body = gen._extract_title_and_body(editorial_text)
+        paragraph = gen._extract_poster_paragraph(editorial_text)
+
+        assert title == "Morning Brief"
+        assert body.startswith("First paragraph")
+        assert paragraph == "First paragraph for the poster body."
+
+    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    def test_extract_body_from_legacy_title_summary_format(self, tmp_path):
+        """Legacy TITLE:/SUMMARY: content is normalized for poster extraction."""
+        config = {"method": "local"}
+        gen = PosterGenerator(config, posters_dir=tmp_path)
+        editorial_text = """TITLE: Legacy Brief
+SUMMARY: First paragraph from summary.
+
+Second paragraph not for poster.
+"""
+        title, body = gen._extract_title_and_body(editorial_text)
+        paragraph = gen._extract_poster_paragraph(editorial_text)
+
+        assert title == "Legacy Brief"
+        assert body.startswith("First paragraph from summary.")
+        assert paragraph == "First paragraph from summary."
+
+    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    def test_extract_title_from_body_when_markdown_heading_exists(self, tmp_path):
+        """If markdown starts with # heading, TITLE: later in body still wins."""
+        config = {"method": "local"}
+        gen = PosterGenerator(config, posters_dir=tmp_path)
+        editorial_text = """# Your Morning News
+
+*Tuesday, February 24, 2026 at 10:58*
+
+---
+
+TITLE: Correct Poster Title
+
+First paragraph body.
+"""
+        title, body = gen._extract_title_and_body(editorial_text)
+        paragraph = gen._extract_poster_paragraph(editorial_text)
+
+        assert title == "Correct Poster Title"
+        assert body.startswith("First paragraph body.")
+        assert paragraph == "First paragraph body."
+
 
 if __name__ == "__main__":
     pytest.main([__file__])

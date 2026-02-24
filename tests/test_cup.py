@@ -117,3 +117,25 @@ def test_cup_theme_toggle_from_custom():
     # Toggle again should switch to dark
     app.action_toggle_theme()
     assert app.theme == "rose-pine", "Second toggle should switch to dark"
+
+
+def test_extract_editorial_title_prefers_title_marker_over_heading():
+    content = """# Your Morning News
+
+*Tuesday, February 24, 2026 at 10:58*
+
+---
+
+TITLE: Correct Editorial Title
+
+Body paragraph.
+"""
+    assert Cup._extract_editorial_title(content) == "Correct Editorial Title"
+
+
+def test_extract_editorial_title_falls_back_to_markdown_heading():
+    content = """# Heading Title
+
+Body paragraph.
+"""
+    assert Cup._extract_editorial_title(content) == "Heading Title"
