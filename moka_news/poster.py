@@ -366,13 +366,13 @@ class PosterGenerator:
         """Create default template files if templates directory doesn't exist"""
         self.templates_dir.mkdir(parents=True, exist_ok=True)
 
-        # Story template for vertical social formats (Instagram Story 9:16)
+        # Story template for vertical social formats (compact portrait 4:5)
         template = {
             "name": "Story",
-            "description": "Vertical layout optimized for Instagram Story readability",
+            "description": "Vertical 4:5 layout optimized for readability",
             "layout": {
                 "width": 1080,
-                "height": 1920,
+                "height": 1350,
                 "padding": 72,
                 "line_spacing": 1.32
             },
@@ -384,7 +384,7 @@ class PosterGenerator:
             "content_box": {
                 "enabled": True,
                 "background": "#ffffff",
-                "padding": 64,
+                "padding": 56,
                 "border_radius": 24,
                 "shadow": {
                     "offset_x": 6,

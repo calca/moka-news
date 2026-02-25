@@ -1,9 +1,9 @@
 {
   "name": "Story",
-  "description": "Vertical layout optimized for Instagram Story readability",
+  "description": "Vertical 4:5 layout optimized for readability",
   "layout": {
     "width": 1080,
-    "height": 1920,
+    "height": 1350,
     "padding": 72,
     "line_spacing": 1.32
   },
@@ -15,7 +15,7 @@
   "content_box": {
     "enabled": true,
     "background": "#ffffff",
-    "padding": 64,
+    "padding": 56,
     "border_radius": 24,
     "shadow": {
       "offset_x": 6,
