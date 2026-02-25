@@ -257,8 +257,9 @@ properly when there are many sentences and words."""
             
             cleaned = poster_gen._clean_content_for_poster(content)
             
-            # Bold markers are preserved for rich-text rendering
-            assert "**bold text**" in cleaned
+            # Bold markers are stripped for cleaner reading
+            assert "**bold text**" not in cleaned
+            assert "bold text" in cleaned
             # Italic and code markers are removed
             assert "*italic text*" not in cleaned
             assert "`code text`" not in cleaned
@@ -875,6 +876,28 @@ class TestPosterTextExtraction:
         assert paragraphs == ["One paragraph.", "Second paragraph.", "Third paragraph."]
 
     @patch('moka_news.poster.PIL_AVAILABLE', True)
+    def test_format_body_for_readability_breaks_sentences(self, tmp_path):
+        """Body formatter should split at sentence boundaries without emphasis."""
+        config = {"method": "local"}
+        gen = PosterGenerator(config, posters_dir=tmp_path)
+        text = "Buongiorno a tutti. Oggi parliamo di tecnologia."
+        formatted = gen._format_body_for_readability(text)
+
+        assert "\n\n" in formatted
+        assert "**" not in formatted
+
+    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    def test_format_body_for_readability_single_sentence(self, tmp_path):
+        """Single sentence should remain on one block without emphasis."""
+        config = {"method": "local"}
+        gen = PosterGenerator(config, posters_dir=tmp_path)
+        text = "Mercati globali in rapido cambiamento."
+        formatted = gen._format_body_for_readability(text)
+
+        assert "\n\n" not in formatted
+        assert "**" not in formatted
+
+    @patch('moka_news.poster.PIL_AVAILABLE', True)
     def test_truncate_single_line_text_adds_ellipsis(self, tmp_path):
         """Single-line title truncation should add trailing ellipsis when needed."""
         from PIL import Image, ImageDraw
@@ -932,12 +955,13 @@ class TestPosterTextExtraction:
 
     @patch('moka_news.poster.PIL_AVAILABLE', True)
     def test_bold_markers_preserved(self, tmp_path):
-        """Bold ** markers in content are NOT stripped by the cleaner."""
+        """Bold ** markers in content are stripped by the cleaner."""
         config = {"method": "local"}
         gen = PosterGenerator(config, posters_dir=tmp_path)
         content = "The **AI revolution** is reshaping the world."
         result = gen._clean_content_for_poster(content)
-        assert "**AI revolution**" in result
+        assert "**AI revolution**" not in result
+        assert "AI revolution" in result
 
     @patch('moka_news.poster.PIL_AVAILABLE', True)
     def test_markdown_italic_stripped(self, tmp_path):
@@ -992,7 +1016,7 @@ Second paragraph should be included too.
 - [Item](https://example.com)
 """
         result = gen._extract_poster_paragraph(editorial_md)
-        assert result == "First paragraph with **focus** and source."
+        assert result == "First paragraph with focus and source."
         assert "Second paragraph should be included too." not in result
         assert "Item" not in result
 

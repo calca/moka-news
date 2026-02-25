@@ -409,8 +409,8 @@ class PosterGenerator:
                 "summary_min_size": 12,
                 "summary_max_size": 34,
                 "font_family": "arial",
-                "font_file": "Inter-Regular.ttf",
-                "bold_font_file": "Inter-Bold.ttf"
+                "font_file": "OpenSans-Regular.ttf",
+                "bold_font_file": "OpenSans-Bold.ttf"
             },
             "elements": {
                 "qr_code": False,
@@ -803,8 +803,11 @@ class PosterGenerator:
         if title_from_content:
             title = title_from_content
         clean_content = self._extract_poster_paragraph(content)
+        body_content = self._format_body_for_readability(clean_content)
         logger.debug(f"Title: {title!r}")
-        logger.debug(f"Body text length after cleaning: {len(clean_content)} chars / ~{len(clean_content.split())} words")
+        logger.debug(
+            f"Body text length after cleaning: {len(body_content)} chars / ~{len(body_content.split())} words"
+        )
 
         # ── Zone calculation ───────────────────────────────────────────
         # Total drawable height (inside box padding, or canvas padding)
@@ -863,13 +866,15 @@ class PosterGenerator:
         logger.info(f"Title font: {title_font_size}px (zone {title_zone_h}px, max_width {max_width}px)")
 
         # Body sizing uses bold font as worst-case (bold glyphs are slightly wider)
-        _plain_content = re.sub(r'\*\*([^*]+)\*\*', r'\1', clean_content)
+        _plain_content = re.sub(r'\*\*([^*]+)\*\*', r'\1', body_content)
         body_min_size = max(8, int(template.summary_min_size * width_scale))
         body_max_size = max(body_min_size, int(template.summary_max_size * width_scale))
+        body_intro_gap = 10
+        body_fit_height = max(1, body_zone_h - body_intro_gap)
         body_font_size = self._fit_font_size_for_paragraphs(
             draw, _plain_content,
             template.bold_font_file, template.font_family,
-            max_width, body_zone_h, template.line_spacing,
+            max_width, body_fit_height, template.line_spacing,
             min_size=body_min_size,
             max_size=body_max_size,
         )
@@ -896,12 +901,13 @@ class PosterGenerator:
             width=3,
         )
         current_y += 17
+        current_y += body_intro_gap
 
         # ── Draw body (fills the body zone) ───────────────────────────
-        body_max_y = current_y + body_zone_h
-        body_paragraphs = self._split_paragraphs(clean_content)
+        body_max_y = current_y + body_fit_height
+        body_paragraphs = self._split_paragraphs(body_content)
         line_probe_bbox = draw.textbbox((0, 0), "Ag", font=summary_font)
-        paragraph_gap_h = max(6, int((line_probe_bbox[3] - line_probe_bbox[1]) * 0.8))
+        paragraph_gap_h = max(4, int((line_probe_bbox[3] - line_probe_bbox[1]) * 0.4))
         stop_render = False
         for paragraph_index, paragraph in enumerate(body_paragraphs):
             rich_segments = self._parse_rich_text(paragraph)
@@ -1047,6 +1053,21 @@ class PosterGenerator:
             return []
         return [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
 
+    def _format_body_for_readability(self, text: str) -> str:
+        """Format body text to improve scanability.
+
+        - Split sentences onto separate lines
+        """
+        raw = (text or "").strip()
+        if not raw:
+            return ""
+
+        sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", raw) if s.strip()]
+        if not sentences:
+            return raw
+
+        return "\n\n".join(sentences)
+
     def _measure_wrapped_paragraph_height(
         self,
         draw: ImageDraw.ImageDraw,
@@ -1054,7 +1075,7 @@ class PosterGenerator:
         font: ImageFont.ImageFont,
         max_width: int,
         line_spacing: float,
-        paragraph_gap_factor: float = 0.8,
+        paragraph_gap_factor: float = 0.4,
     ) -> int:
         """Measure total height for wrapped paragraphs including paragraph gaps."""
         if not paragraphs:
@@ -1085,7 +1106,7 @@ class PosterGenerator:
         line_spacing: float = 1.3,
         min_size: int = 12,
         max_size: int = 220,
-        paragraph_gap_factor: float = 0.8,
+        paragraph_gap_factor: float = 0.4,
     ) -> int:
         """Binary-search the largest font size that fits wrapped paragraphs."""
         paragraphs = self._split_paragraphs(text)
@@ -1275,6 +1296,7 @@ class PosterGenerator:
         text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', text)
 
         # Remove markdown formatting — keep **bold** intact, strip the rest
+        text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)
         text = re.sub(r'(?<!\*)\*(?!\*)([^*]+?)(?<!\*)\*(?!\*)', r'\1', text)
         text = re.sub(r'`([^`]+)`', r'\1', text)
         text = re.sub(r'\s+', ' ', text).strip()

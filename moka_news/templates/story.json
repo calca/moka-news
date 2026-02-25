@@ -40,8 +40,8 @@
     "summary_min_size": 12,
     "summary_max_size": 34,
     "font_family": "arial",
-    "font_file": "Inter-Regular.ttf",
-    "bold_font_file": "Inter-Bold.ttf"
+    "font_file": "OpenSans-Regular.ttf",
+    "bold_font_file": "OpenSans-Bold.ttf"
   },
   "elements": {
     "qr_code": false,
