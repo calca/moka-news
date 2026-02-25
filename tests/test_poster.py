@@ -915,13 +915,14 @@ class TestPosterTextExtraction:
         assert (bbox[2] - bbox[0]) <= 380
 
     @patch('moka_news.poster.PIL_AVAILABLE', True)
-    def test_story_template_uses_single_line_title(self, tmp_path):
-        """Story template should default to single-line title behavior."""
+    def test_story_template_uses_two_line_title(self, tmp_path):
+        """Story template should default to max-2-lines title behavior."""
         config = {"method": "local", "default_template": "story"}
         gen = PosterGenerator(config, posters_dir=tmp_path, templates_dir=tmp_path / "templates")
         template = gen.load_template("story")
 
-        assert template.title_single_line is True
+        assert template.title_single_line is False
+        assert template.title_max_lines == 2
         assert template.show_editorial_date is True
         assert template.show_logo is True
 
@@ -935,6 +936,20 @@ class TestPosterTextExtraction:
         assert parsed.year == 2026
         assert parsed.month == 2
         assert parsed.day == 25
+
+    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    def test_limit_wrapped_lines_caps_title_lines(self, tmp_path):
+        """Title helper should cap wrapped lines and keep line count within limit."""
+        from PIL import Image, ImageDraw
+        config = {"method": "local"}
+        gen = PosterGenerator(config, posters_dir=tmp_path)
+        img = Image.new("RGB", (1200, 800), "white")
+        draw = ImageDraw.Draw(img)
+        font = gen._load_font("OpenSans-Bold.ttf", "arial", 56)
+        text = "Titolo lungo per verificare che il wrapping resti entro due righe massime"
+        lines = gen._limit_wrapped_lines(draw, text, font, max_width=420, max_lines=2)
+
+        assert len(lines) == 2
 
     @patch('moka_news.poster.PIL_AVAILABLE', True)
     def test_resolve_logo_path_prefers_config_override(self, tmp_path):

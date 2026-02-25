@@ -92,6 +92,7 @@ class PosterTemplate:
         self.summary_font_size = typography.get("summary_size", 32)
         self.metadata_font_size = typography.get("metadata_size", 22)
         self.title_single_line = typography.get("title_single_line", False)
+        self.title_max_lines = typography.get("title_max_lines", 0)
         self.title_min_size = typography.get(
             "title_min_size", max(20, int(self.title_font_size * 0.7))
         )
@@ -406,12 +407,13 @@ class PosterGenerator:
                 "secondary": "#475569"
             },
             "typography": {
-                "title_size": 64,
+                "title_size": 76,
                 "summary_size": 34,
                 "metadata_size": 22,
-                "title_single_line": True,
-                "title_min_size": 34,
-                "title_max_size": 64,
+                "title_single_line": False,
+                "title_max_lines": 2,
+                "title_min_size": 46,
+                "title_max_size": 76,
                 "summary_min_size": 12,
                 "summary_max_size": 34,
                 "font_family": "arial",
@@ -674,6 +676,60 @@ class PosterGenerator:
                 return size
         return hard_floor
 
+    def _fit_font_size_with_line_limit(
+        self,
+        draw: ImageDraw.ImageDraw,
+        text: str,
+        font_file: Optional[str],
+        font_family: str,
+        max_width: int,
+        max_height: int,
+        max_lines: int,
+        line_spacing: float = 1.3,
+        min_size: int = 12,
+        max_size: int = 220,
+    ) -> int:
+        """Binary-search font size with wrapped-line count limit."""
+        best: Optional[int] = None
+        lo, hi = min_size, max_size
+        while lo <= hi:
+            mid = (lo + hi) // 2
+            font = self._load_font(font_file, font_family, mid)
+            lines = self._wrap_text(draw, text, font, max_width)
+            if len(lines) > max_lines:
+                hi = mid - 1
+                continue
+
+            total_h = 0
+            for line in lines:
+                bbox = draw.textbbox((0, 0), line, font=font)
+                total_h += int((bbox[3] - bbox[1]) * line_spacing)
+
+            if total_h <= max_height:
+                best = mid
+                lo = mid + 1
+            else:
+                hi = mid - 1
+
+        if best is not None:
+            return best
+
+        hard_floor = 8
+        for size in range(min_size - 1, hard_floor - 1, -1):
+            font = self._load_font(font_file, font_family, size)
+            lines = self._wrap_text(draw, text, font, max_width)
+            if len(lines) > max_lines:
+                continue
+
+            total_h = 0
+            for line in lines:
+                bbox = draw.textbbox((0, 0), line, font=font)
+                total_h += int((bbox[3] - bbox[1]) * line_spacing)
+            if total_h <= max_height:
+                return size
+
+        return hard_floor
+
     @staticmethod
     def _truncate_single_line_text(
         draw: ImageDraw.ImageDraw,
@@ -708,6 +764,24 @@ class PosterGenerator:
                 return trial
 
         return suffix if text_width(suffix) <= max_width else ""
+
+    def _limit_wrapped_lines(
+        self,
+        draw: ImageDraw.ImageDraw,
+        text: str,
+        font: ImageFont.ImageFont,
+        max_width: int,
+        max_lines: int,
+    ) -> List[str]:
+        """Wrap text and truncate final line so output has at most max_lines."""
+        lines = self._wrap_text(draw, text, font, max_width)
+        if max_lines <= 0 or len(lines) <= max_lines:
+            return lines
+
+        head = lines[:max_lines - 1]
+        tail_text = " ".join(lines[max_lines - 1:]).strip()
+        tail = self._truncate_single_line_text(draw, tail_text, font, max_width)
+        return head + [tail]
 
     def _generate_local_poster(
         self,
@@ -838,7 +912,7 @@ class PosterGenerator:
 
         # Remaining content split: title uses less height in single-line mode.
         usable_h = total_draw_h - footer_zone_h - divider_zone_h
-        title_ratio = 0.14 if template.title_single_line else 0.25
+        title_ratio = 0.14 if template.title_single_line else 0.30
         title_zone_h = max(int(usable_h * title_ratio), 40)
         body_zone_h = usable_h - title_zone_h
 
@@ -863,13 +937,27 @@ class PosterGenerator:
                 max_size=title_max_size,
             )
         else:
-            title_font_size = self._fit_font_size(
-                draw, title,
-                template.font_file, template.font_family,
-                max_width, title_zone_h, template.line_spacing,
-                min_size=title_min_size,
-                max_size=title_max_size,
-            )
+            if template.title_max_lines > 0:
+                title_font_size = self._fit_font_size_with_line_limit(
+                    draw,
+                    title,
+                    template.font_file,
+                    template.font_family,
+                    max_width,
+                    title_zone_h,
+                    max_lines=template.title_max_lines,
+                    line_spacing=template.line_spacing,
+                    min_size=title_min_size,
+                    max_size=title_max_size,
+                )
+            else:
+                title_font_size = self._fit_font_size(
+                    draw, title,
+                    template.font_file, template.font_family,
+                    max_width, title_zone_h, template.line_spacing,
+                    min_size=title_min_size,
+                    max_size=title_max_size,
+                )
         title_font = self._load_font(template.bold_font_file, template.font_family, title_font_size)
         logger.info(f"Title font: {title_font_size}px (zone {title_zone_h}px, max_width {max_width}px)")
 
@@ -895,7 +983,16 @@ class PosterGenerator:
         if template.title_single_line:
             title_lines = [self._truncate_single_line_text(draw, title, title_font, max_width)]
         else:
-            title_lines = self._wrap_text(draw, title, title_font, max_width)
+            if template.title_max_lines > 0:
+                title_lines = self._limit_wrapped_lines(
+                    draw,
+                    title,
+                    title_font,
+                    max_width,
+                    template.title_max_lines,
+                )
+            else:
+                title_lines = self._wrap_text(draw, title, title_font, max_width)
         for line in title_lines:
             draw.text((draw_x, current_y), line, fill=template.accent_color, font=title_font)
             bbox = draw.textbbox((draw_x, current_y), line, font=title_font)

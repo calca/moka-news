@@ -31,12 +31,13 @@
     "secondary": "#475569"
   },
   "typography": {
-    "title_size": 64,
+    "title_size": 76,
     "summary_size": 34,
     "metadata_size": 22,
-    "title_single_line": true,
-    "title_min_size": 34,
-    "title_max_size": 64,
+    "title_single_line": false,
+    "title_max_lines": 2,
+    "title_min_size": 46,
+    "title_max_size": 76,
     "summary_min_size": 12,
     "summary_max_size": 34,
     "font_family": "arial",
