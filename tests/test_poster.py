@@ -40,6 +40,7 @@ class TestPosterTemplate:
         assert template.title_min_size == 50
         assert template.summary_min_size == 24
         assert template.show_editorial_date is True
+        assert template.show_logo is True
     
     def test_template_initialization_with_custom_values(self):
         """Test template initialization with custom values"""
@@ -922,6 +923,7 @@ class TestPosterTextExtraction:
 
         assert template.title_single_line is True
         assert template.show_editorial_date is True
+        assert template.show_logo is True
 
     @patch('moka_news.poster.PIL_AVAILABLE', True)
     def test_parse_editorial_datetime_from_iso_string(self, tmp_path):
@@ -933,6 +935,34 @@ class TestPosterTextExtraction:
         assert parsed.year == 2026
         assert parsed.month == 2
         assert parsed.day == 25
+
+    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    def test_resolve_logo_path_prefers_config_override(self, tmp_path):
+        """Configured logo path should be used when available."""
+        from PIL import Image
+        logo_path = tmp_path / "custom-logo.png"
+        Image.new("RGBA", (32, 32), (255, 255, 255, 255)).save(logo_path)
+
+        config = {
+            "method": "local",
+            "local": {"logo_path": str(logo_path)},
+        }
+        gen = PosterGenerator(config, posters_dir=tmp_path)
+        assert gen._resolve_logo_path() == logo_path
+
+    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    def test_add_logo_skips_when_missing(self, tmp_path):
+        """Logo rendering should be skipped gracefully if no logo file is found."""
+        from PIL import Image
+        config = {"method": "local", "default_template": "story"}
+        gen = PosterGenerator(config, posters_dir=tmp_path)
+        template = gen.load_template("story")
+
+        # Force a missing logo path regardless of fallback locations
+        gen._resolve_logo_path = lambda: None
+        img = Image.new("RGB", (400, 400), "white")
+        result = gen._add_logo(img, template, draw_x=20, draw_y=20, max_width=300, total_draw_h=300)
+        assert result is img
 
     @patch('moka_news.poster.PIL_AVAILABLE', True)
     def test_short_text_unchanged_word_count(self, tmp_path):

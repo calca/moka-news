@@ -110,6 +110,8 @@ class PosterTemplate:
         self.show_timestamp = elements.get("timestamp", True)
         self.show_source = elements.get("source", True)
         self.show_editorial_date = elements.get("editorial_date", True)
+        self.show_logo = elements.get("logo", True)
+        self.logo_position = elements.get("logo_position", "bottom_right")
         self.qr_position = elements.get("qr_position", "bottom_right")
     
     @classmethod
@@ -344,6 +346,10 @@ class PosterGenerator:
         # Configuration
         self.generation_method = "local"
         self.default_template = config.get("default_template", "story")
+        self.logo_path_override = (
+            config.get("logo_path")
+            or config.get("local", {}).get("logo_path")
+        )
         requested_method = config.get("method", "local")
         if requested_method != "local":
             logger.warning(
@@ -417,6 +423,8 @@ class PosterGenerator:
                 "timestamp": False,
                 "source": True,
                 "editorial_date": True,
+                "logo": True,
+                "logo_position": "bottom_right",
                 "qr_position": "bottom_center"
             }
         }
@@ -961,6 +969,16 @@ class PosterGenerator:
                     fill=template.secondary_color, font=metadata_font,
                 )
 
+        # Add logo if enabled
+        img = self._add_logo(
+            img,
+            template,
+            draw_x=draw_x,
+            draw_y=draw_y,
+            max_width=max_width,
+            total_draw_h=total_draw_h,
+        )
+
         # Generate filename
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
         filename = f"{timestamp}_poster.png"
@@ -999,6 +1017,87 @@ class PosterGenerator:
             lines.append(current_line)
         
         return lines
+
+    def _resolve_logo_path(self) -> Optional[Path]:
+        """Resolve logo path from config override or known project locations."""
+        candidates: List[Path] = []
+
+        if self.logo_path_override:
+            candidates.append(Path(self.logo_path_override).expanduser())
+
+        package_dir = Path(__file__).resolve().parent
+        candidates.append(package_dir.parent / "assets" / "moka-news-logo.png")
+        candidates.append(package_dir / "assets" / "moka-news-logo.png")
+
+        for candidate in candidates:
+            try:
+                if candidate.exists() and candidate.is_file():
+                    return candidate
+            except OSError:
+                continue
+        return None
+
+    def _add_logo(
+        self,
+        img: Image.Image,
+        template: PosterTemplate,
+        draw_x: int,
+        draw_y: int,
+        max_width: int,
+        total_draw_h: int,
+    ) -> Image.Image:
+        """Add branded logo to poster if enabled and available."""
+        if not template.show_logo:
+            return img
+
+        logo_path = self._resolve_logo_path()
+        if logo_path is None:
+            logger.debug("Logo not found, skipping logo rendering.")
+            return img
+
+        try:
+            with Image.open(logo_path) as logo_raw:
+                logo_img = logo_raw.convert("RGBA")
+        except Exception as exc:
+            logger.warning("Could not load logo %s: %s", logo_path, exc)
+            return img
+
+        logo_w = getattr(logo_img, "width", 0)
+        logo_h = getattr(logo_img, "height", 0)
+        if not isinstance(logo_w, (int, float)) or not isinstance(logo_h, (int, float)):
+            logger.debug("Logo dimensions are not numeric, skipping logo rendering.")
+            return img
+        if logo_w <= 0 or logo_h <= 0:
+            return img
+
+        max_logo_w = max(80, int(max_width * 0.24))
+        max_logo_h = max(40, int(total_draw_h * 0.10))
+        scale = min(max_logo_w / logo_w, max_logo_h / logo_h, 1.0)
+        target_w = max(1, int(logo_w * scale))
+        target_h = max(1, int(logo_h * scale))
+        resampling = getattr(Image, "Resampling", Image)
+        logo_img = logo_img.resize((target_w, target_h), resampling.LANCZOS)
+
+        alpha = logo_img.getchannel("A").point(lambda p: int(p * 0.92))
+        logo_img.putalpha(alpha)
+
+        if template.logo_position == "top_left":
+            logo_x = draw_x
+            logo_y = draw_y
+        elif template.logo_position == "top_right":
+            logo_x = draw_x + max_width - target_w
+            logo_y = draw_y
+        elif template.logo_position == "bottom_left":
+            logo_x = draw_x
+            logo_y = draw_y + total_draw_h - target_h
+        else:
+            logo_x = draw_x + max_width - target_w
+            logo_y = draw_y + total_draw_h - target_h
+
+        if img.mode != "RGBA":
+            img = img.convert("RGBA")
+        img.alpha_composite(logo_img, (logo_x, logo_y))
+        return img
 
     @staticmethod
     def _parse_editorial_datetime(value: Any) -> Optional[datetime]:

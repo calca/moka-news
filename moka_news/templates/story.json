@@ -48,6 +48,8 @@
     "timestamp": false,
     "source": true,
     "editorial_date": true,
+    "logo": true,
+    "logo_position": "bottom_right",
     "qr_position": "bottom_center"
   }
 }
