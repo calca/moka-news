@@ -47,6 +47,7 @@
     "qr_code": false,
     "timestamp": false,
     "source": true,
+    "editorial_date": true,
     "qr_position": "bottom_center"
   }
 }

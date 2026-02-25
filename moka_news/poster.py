@@ -109,6 +109,7 @@ class PosterTemplate:
         self.show_qr_code = elements.get("qr_code", True)
         self.show_timestamp = elements.get("timestamp", True)
         self.show_source = elements.get("source", True)
+        self.show_editorial_date = elements.get("editorial_date", True)
         self.qr_position = elements.get("qr_position", "bottom_right")
     
     @classmethod
@@ -415,6 +416,7 @@ class PosterGenerator:
                 "qr_code": False,
                 "timestamp": False,
                 "source": True,
+                "editorial_date": True,
                 "qr_position": "bottom_center"
             }
         }
@@ -813,7 +815,11 @@ class PosterGenerator:
 
         # Footer zone: one line per active metadata item + a small top gap
         footer_line_h = template.metadata_font_size + 8
-        footer_lines = int(template.show_timestamp) + int(template.show_source)
+        footer_lines = (
+            int(template.show_timestamp)
+            + int(template.show_source)
+            + int(template.show_source and template.show_editorial_date)
+        )
         footer_zone_h = max(footer_lines * footer_line_h + 20, 20)
 
         # Divider between title and body
@@ -941,6 +947,13 @@ class PosterGenerator:
                 (draw_x, footer_y), "MoKa News Editorial",
                 fill=template.secondary_color, font=metadata_font,
             )
+            footer_y += footer_line_h
+            if template.show_editorial_date:
+                editorial_date = self._get_editorial_date_label(editorial)
+                draw.text(
+                    (draw_x, footer_y), f"Editorial date: {editorial_date}",
+                    fill=template.secondary_color, font=metadata_font,
+                )
 
         # Generate filename
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
@@ -980,6 +993,52 @@ class PosterGenerator:
             lines.append(current_line)
         
         return lines
+
+    @staticmethod
+    def _parse_editorial_datetime(value: Any) -> Optional[datetime]:
+        """Best-effort parse of editorial timestamp values."""
+        if value is None:
+            return None
+        if isinstance(value, datetime):
+            return value
+        if isinstance(value, (int, float)):
+            try:
+                return datetime.fromtimestamp(value)
+            except (OverflowError, OSError, ValueError):
+                return None
+        if isinstance(value, str):
+            raw = value.strip()
+            if not raw:
+                return None
+
+            normalized = raw
+            if normalized.endswith("Z"):
+                normalized = normalized[:-1] + "+00:00"
+
+            candidates = [normalized]
+            if " " in normalized and "T" not in normalized:
+                candidates.append(normalized.replace(" ", "T", 1))
+
+            for candidate in candidates:
+                try:
+                    return datetime.fromisoformat(candidate)
+                except ValueError:
+                    continue
+
+            for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%Y-%m-%d_%H-%M"):
+                try:
+                    return datetime.strptime(raw, fmt)
+                except ValueError:
+                    continue
+
+        return None
+
+    def _get_editorial_date_label(self, editorial: Dict[str, Any]) -> str:
+        """Return formatted editorial date for footer display."""
+        parsed = self._parse_editorial_datetime(editorial.get("timestamp"))
+        if parsed is None:
+            parsed = datetime.now()
+        return parsed.strftime("%B %d, %Y")
 
     @staticmethod
     def _split_paragraphs(text: str) -> List[str]:
@@ -1149,7 +1208,7 @@ class PosterGenerator:
         return lines
 
     def _extract_poster_paragraph(self, markdown_content: str) -> str:
-        """Extract and clean the editorial body for poster text."""
+        """Extract and clean the first editorial paragraph for poster text."""
         content = markdown_content or ""
 
         # Ignore trailing sources section if present.
@@ -1159,14 +1218,10 @@ class PosterGenerator:
         # Normalize TITLE:/SUMMARY: format to body-only content.
         _, content = self._extract_title_and_body(content)
 
-        cleaned_blocks: List[str] = []
         for block in re.split(r"\n\s*\n", content):
             cleaned = self._clean_content_for_poster(block)
             if cleaned:
-                cleaned_blocks.append(cleaned)
-
-        if cleaned_blocks:
-            return "\n\n".join(cleaned_blocks)
+                return cleaned
 
         return "No editorial content available."
 

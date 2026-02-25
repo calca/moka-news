@@ -39,6 +39,7 @@ class TestPosterTemplate:
         assert template.summary_max_size == 32
         assert template.title_min_size == 50
         assert template.summary_min_size == 24
+        assert template.show_editorial_date is True
     
     def test_template_initialization_with_custom_values(self):
         """Test template initialization with custom values"""
@@ -897,6 +898,18 @@ class TestPosterTextExtraction:
         template = gen.load_template("story")
 
         assert template.title_single_line is True
+        assert template.show_editorial_date is True
+
+    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    def test_parse_editorial_datetime_from_iso_string(self, tmp_path):
+        """Footer editorial date parser should accept ISO timestamps."""
+        config = {"method": "local"}
+        gen = PosterGenerator(config, posters_dir=tmp_path)
+        parsed = gen._parse_editorial_datetime("2026-02-25T08:15:00")
+        assert parsed is not None
+        assert parsed.year == 2026
+        assert parsed.month == 2
+        assert parsed.day == 25
 
     @patch('moka_news.poster.PIL_AVAILABLE', True)
     def test_short_text_unchanged_word_count(self, tmp_path):
@@ -960,8 +973,8 @@ class TestPosterTextExtraction:
         assert template.bold_font_file == "Roboto-Regular.ttf"
 
     @patch('moka_news.poster.PIL_AVAILABLE', True)
-    def test_extract_editorial_body_includes_multiple_paragraphs(self, tmp_path):
-        """Extraction includes all editorial paragraphs and skips sources."""
+    def test_extract_editorial_body_uses_first_paragraph(self, tmp_path):
+        """Extraction keeps only the first editorial paragraph and skips sources."""
         config = {"method": "local"}
         gen = PosterGenerator(config, posters_dir=tmp_path)
         editorial_md = """# Morning Brief
@@ -979,14 +992,13 @@ Second paragraph should be included too.
 - [Item](https://example.com)
 """
         result = gen._extract_poster_paragraph(editorial_md)
-        assert "First paragraph with **focus** and source." in result
-        assert "Second paragraph should be included too." in result
-        assert "\n\n" in result
+        assert result == "First paragraph with **focus** and source."
+        assert "Second paragraph should be included too." not in result
         assert "Item" not in result
 
     @patch('moka_news.poster.PIL_AVAILABLE', True)
     def test_extract_title_and_body_from_title_format(self, tmp_path):
-        """When content starts with TITLE:, the full body is extracted."""
+        """When content starts with TITLE:, only first paragraph is extracted."""
         config = {"method": "local"}
         gen = PosterGenerator(config, posters_dir=tmp_path)
         editorial_text = """TITLE: Morning Brief
@@ -1000,11 +1012,11 @@ Second paragraph is included.
 
         assert title == "Morning Brief"
         assert body.startswith("First paragraph")
-        assert paragraph == "First paragraph for the poster body.\n\nSecond paragraph is included."
+        assert paragraph == "First paragraph for the poster body."
 
     @patch('moka_news.poster.PIL_AVAILABLE', True)
     def test_extract_body_from_legacy_title_summary_format(self, tmp_path):
-        """Legacy TITLE:/SUMMARY: content is normalized for full extraction."""
+        """Legacy TITLE:/SUMMARY: content keeps first paragraph only."""
         config = {"method": "local"}
         gen = PosterGenerator(config, posters_dir=tmp_path)
         editorial_text = """TITLE: Legacy Brief
@@ -1017,7 +1029,7 @@ Second paragraph is included.
 
         assert title == "Legacy Brief"
         assert body.startswith("First paragraph from summary.")
-        assert paragraph == "First paragraph from summary.\n\nSecond paragraph is included."
+        assert paragraph == "First paragraph from summary."
 
     @patch('moka_news.poster.PIL_AVAILABLE', True)
     def test_extract_title_from_body_when_markdown_heading_exists(self, tmp_path):

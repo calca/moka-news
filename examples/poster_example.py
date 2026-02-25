@@ -3,7 +3,7 @@
 
 The poster now uses:
 1. Editorial title
-2. Cleaned editorial body text
+2. First cleaned editorial paragraph
 
 No GenAI prompt or poster summarization is used.
 """
@@ -57,7 +57,7 @@ def main() -> None:
 
         print(f"✓ Poster saved: {poster_path}")
         print(f"  File size: {poster_path.stat().st_size // 1024} KB")
-        print("  Body text source: cleaned editorial body (automatic)")
+        print("  Body text source: first cleaned editorial paragraph (automatic)")
 
 
 if __name__ == "__main__":
