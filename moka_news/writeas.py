@@ -1,6 +1,7 @@
 """Write.as publisher integration for creating posts via API."""
 
 import os
+import re
 from typing import Any, Dict, Optional
 
 try:
@@ -101,12 +102,12 @@ class WriteAsPublisher:
         else:
             endpoint = f"{self.api_base}/posts"
 
+        clean_title = self._clean_optional_text(title) or self.default_title
         payload: Dict[str, Any] = {
-            "body": clean_content,
+            "body": self._prepare_body_for_posting(clean_content, clean_title or ""),
             "rtl": self.default_rtl,
         }
 
-        clean_title = self._clean_optional_text(title) or self.default_title
         if clean_title:
             payload["title"] = clean_title
 
@@ -271,3 +272,61 @@ class WriteAsPublisher:
             return None
         text = str(value).strip()
         return text if text else None
+
+    def _prepare_body_for_posting(self, content: str, title: str) -> str:
+        """Remove leading duplicate title markers/headings from markdown body."""
+        lines = content.splitlines()
+        if not lines:
+            return content
+
+        normalized_title = self._normalize_title_text(title)
+        if not normalized_title:
+            return content
+
+        def first_non_empty_idx() -> Optional[int]:
+            for idx, line in enumerate(lines):
+                if line.strip():
+                    return idx
+            return None
+
+        idx = first_non_empty_idx()
+        if idx is None:
+            return content
+
+        title_marker_re = re.compile(
+            r"^\s*(?:\*\*)?TITLE(?:\*\*)?\s*:\s*(.+?)\s*$",
+            re.IGNORECASE,
+        )
+        heading_re = re.compile(r"^\s*#{1,6}\s+(.+?)\s*$")
+
+        # Strip leading "TITLE: ..." line if it matches the chosen title.
+        marker_match = title_marker_re.match(lines[idx])
+        if marker_match:
+            marker_title = self._normalize_title_text(marker_match.group(1))
+            if marker_title == normalized_title:
+                del lines[idx]
+                while idx < len(lines) and not lines[idx].strip():
+                    del lines[idx]
+
+        idx = first_non_empty_idx()
+        if idx is None:
+            return content
+
+        # Strip leading markdown heading if it matches the chosen title.
+        heading_match = heading_re.match(lines[idx])
+        if heading_match:
+            heading_title = self._normalize_title_text(heading_match.group(1))
+            if heading_title == normalized_title:
+                del lines[idx]
+                while idx < len(lines) and not lines[idx].strip():
+                    del lines[idx]
+
+        body = "\n".join(lines).strip()
+        return body or content
+
+    @staticmethod
+    def _normalize_title_text(value: str) -> str:
+        text = (value or "").strip().lower()
+        text = re.sub(r"[*_`]", "", text)
+        text = re.sub(r"\s+", " ", text)
+        return text.strip(" -:#")
