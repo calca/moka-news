@@ -158,10 +158,6 @@ Feed Management:
     )
 
     parser.add_argument(
-        "--no-tui", action="store_true", help="Print articles to console instead of TUI"
-    )
-
-    parser.add_argument(
         "--language",
         choices=list(SUPPORTED_LANGUAGES.keys()),
         default=None,
@@ -295,8 +291,6 @@ Feed Management:
         else:
             feed_urls = config["feeds"]["urls"]
 
-    use_tui = not args.no_tui if args.no_tui else config["ui"]["use_tui"]
-
     print("☕ Brewing your morning news...")
 
     # Initialize download tracker
@@ -375,104 +369,84 @@ Feed Management:
             print("ℹ️  No previous editorial available")
 
     # Step 3: The Cup - Display in TUI
-    if not use_tui:
-        print("\n" + "=" * 80)
-        if articles:
-            for i, article in enumerate(articles, 1):
-                print(f"\n[{i}] {article.get('ai_title', article['title'])}")
-                print(f"    Source: {article.get('source', 'Unknown')}")
-                print(f"    {article.get('ai_summary', article['summary'][:200])}")
-                print(f"    Link: {article.get('link', 'N/A')}")
-        else:
-            print("\n📰 No new articles found.")
-            print("   Try refreshing later or check your RSS feed configuration.")
-        print("\n" + "=" * 80)
+    print("☕ Serving your news...\n")
 
-        # Print editorial if available
-        if editorial_content:
-            print("\n📰 MORNING EDITORIAL")
-            print("=" * 80)
-            print(editorial_content)
-            print("=" * 80)
+    # Create refresh callback for the TUI
+    def refresh_callback():
+        return fetch_and_brew(feed_urls, config, ai_provider, download_tracker)
+
+    # Get theme configuration
+    theme = config["ui"].get("theme", "rose-pine")
+    theme_light = config["ui"].get("theme_light", "rose-pine-dawn")
+    theme_dark = config["ui"].get("theme_dark", "rose-pine")
+
+    # Initialize refresh manager if configuration is available
+    refresh_manager = None
+    if config.get("refresh", {}).get("require_confirmation_outside_hours", True):
+        refresh_manager = RefreshManager()
+
+        # Configure refresh times from config
+        refresh_config = config.get("refresh", {})
+        allowed_times = refresh_config.get("allowed_times", ["08:00", "20:00"])
+
+        # Parse allowed times and set them in the refresh manager
+        parsed_times = []
+        for time_str in allowed_times:
+            try:
+                hour, minute = time_str.split(":")
+                parsed_times.append(time(int(hour), int(minute)))
+            except ValueError:
+                logger.warning(f"Invalid time format in config: {time_str}")
+
+        if parsed_times:
+            refresh_manager.allowed_refresh_times = parsed_times
+
+        # Configure auto refresh window from config (in minutes)
+        auto_refresh_window = refresh_config.get("auto_refresh_window", 60)
+        refresh_manager.auto_refresh_window = auto_refresh_window
+
+    # Get editorial opener command
+    opener_command = editorial_config.get("opener_command", None)
+
+    # Get config path for info dialog
+    config_path = str(args.config) if args.config else str(get_config_path())
+
+    # Get actual editorials directory (use editorial_generator's dir if not explicitly configured)
+    actual_editorials_dir = str(editorial_generator.editorials_dir)
+
+    # Get posters directory (from config or default)
+    poster_config = config.get("poster", {})
+    posters_dir_path = poster_config.get("posters_dir")
+    if posters_dir_path:
+        actual_posters_dir = str(Path(posters_dir_path).expanduser().resolve())
     else:
-        print("☕ Serving your news...\n")
+        actual_posters_dir = str(Path.home() / ".config" / "moka-news" / "posters")
 
-        # Create refresh callback for the TUI
-        def refresh_callback():
-            return fetch_and_brew(feed_urls, config, ai_provider, download_tracker)
+    # Get logs directory
+    actual_logs_dir = str(Path.home() / ".config" / "moka-news" / "logs")
 
-        # Get theme configuration
-        theme = config["ui"].get("theme", "rose-pine")
-        theme_light = config["ui"].get("theme_light", "rose-pine-dawn")
-        theme_dark = config["ui"].get("theme_dark", "rose-pine")
+    # Write.as publishing configuration
+    writeas_config = config.get("writeas", {})
 
-        # Initialize refresh manager if configuration is available
-        refresh_manager = None
-        if config.get("refresh", {}).get("require_confirmation_outside_hours", True):
-            refresh_manager = RefreshManager()
-
-            # Configure refresh times from config
-            refresh_config = config.get("refresh", {})
-            allowed_times = refresh_config.get("allowed_times", ["08:00", "20:00"])
-
-            # Parse allowed times and set them in the refresh manager
-            parsed_times = []
-            for time_str in allowed_times:
-                try:
-                    hour, minute = time_str.split(":")
-                    parsed_times.append(time(int(hour), int(minute)))
-                except ValueError:
-                    logger.warning(f"Invalid time format in config: {time_str}")
-
-            if parsed_times:
-                refresh_manager.allowed_refresh_times = parsed_times
-
-            # Configure auto refresh window from config (in minutes)
-            auto_refresh_window = refresh_config.get("auto_refresh_window", 60)
-            refresh_manager.auto_refresh_window = auto_refresh_window
-
-        # Get editorial opener command
-        opener_command = editorial_config.get("opener_command", None)
-
-        # Get config path for info dialog
-        config_path = str(args.config) if args.config else str(get_config_path())
-        
-        # Get actual editorials directory (use editorial_generator's dir if not explicitly configured)
-        actual_editorials_dir = str(editorial_generator.editorials_dir)
-
-        # Get posters directory (from config or default)
-        poster_config = config.get("poster", {})
-        posters_dir_path = poster_config.get("posters_dir")
-        if posters_dir_path:
-            actual_posters_dir = str(Path(posters_dir_path).expanduser().resolve())
-        else:
-            actual_posters_dir = str(Path.home() / ".config" / "moka-news" / "posters")
-
-        # Get logs directory
-        actual_logs_dir = str(Path.home() / ".config" / "moka-news" / "logs")
-        
-        # Write.as publishing configuration
-        writeas_config = config.get("writeas", {})
-
-        serve(
-            articles,
-            last_update,
-            refresh_callback,
-            editorial_content=editorial_content,
-            editorial_generator=editorial_generator,
-            theme=theme,
-            theme_light=theme_light,
-            theme_dark=theme_dark,
-            refresh_manager=refresh_manager,
-            opener_command=opener_command,
-            current_editorial_path=editorial_path,
-            config_path=config_path,
-            editorials_dir=actual_editorials_dir,
-            posters_dir=actual_posters_dir,
-            logs_dir=actual_logs_dir,
-            poster_config=poster_config,
-            writeas_config=writeas_config,
-        )
+    serve(
+        articles,
+        last_update,
+        refresh_callback,
+        editorial_content=editorial_content,
+        editorial_generator=editorial_generator,
+        theme=theme,
+        theme_light=theme_light,
+        theme_dark=theme_dark,
+        refresh_manager=refresh_manager,
+        opener_command=opener_command,
+        current_editorial_path=editorial_path,
+        config_path=config_path,
+        editorials_dir=actual_editorials_dir,
+        posters_dir=actual_posters_dir,
+        logs_dir=actual_logs_dir,
+        poster_config=poster_config,
+        writeas_config=writeas_config,
+    )
 
 
 if __name__ == "__main__":
