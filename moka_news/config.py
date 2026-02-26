@@ -119,6 +119,20 @@ DEFAULT_CONFIG = {
             "add_watermark": True  # Add MoKa News watermark to generated posters
         }
     },
+    "writeas": {
+        "enabled": False,  # Set true to enable publishing to Write.as from TUI
+        "api_base": "https://write.as/api",  # Write.as API base URL
+        "alias": None,  # Write.as account alias (or WRITEAS_ALIAS)
+        "pass": None,  # Write.as password (or app password) (or WRITEAS_PASS)
+        "collection_alias": None,  # Optional collection alias (WRITEAS_COLLECTION_ALIAS)
+        "font": "serif",  # serif, sans, wrap, mono, code
+        "lang": None,  # Optional ISO language code
+        "rtl": False,  # Right-to-left text direction
+        "created": None,  # Optional ISO timestamp for created date
+        "title": None,  # Optional default title override
+        "timeout_seconds": 20,  # API timeout for publish requests
+        "verify_ssl": True,  # Verify TLS certificate
+    },
 }
 
 
@@ -180,6 +194,16 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
         config["ai"]["api_keys"]["gemini"] = os.getenv("GEMINI_API_KEY")
     if os.getenv("MISTRAL_API_KEY"):
         config["ai"]["api_keys"]["mistral"] = os.getenv("MISTRAL_API_KEY")
+    if os.getenv("WRITEAS_ALIAS"):
+        config["writeas"]["alias"] = os.getenv("WRITEAS_ALIAS")
+    if os.getenv("WRITEAS_PASS"):
+        config["writeas"]["pass"] = os.getenv("WRITEAS_PASS")
+    if os.getenv("WRITEAS_COLLECTION_ALIAS"):
+        config["writeas"]["collection_alias"] = os.getenv("WRITEAS_COLLECTION_ALIAS")
+    if os.getenv("WRITEAS_COLLECTION"):
+        config["writeas"]["collection_alias"] = os.getenv("WRITEAS_COLLECTION")
+    if os.getenv("WRITEAS_API_BASE"):
+        config["writeas"]["api_base"] = os.getenv("WRITEAS_API_BASE")
 
     return config
 
@@ -338,6 +362,21 @@ editorial:
 poster:
   method: local              # Generation method: local (PIL/Pillow)
   default_template: story    # Built-in template: story (create your own in templates_dir if needed)
+
+# Write.as Publishing (press 'u' in TUI or use the Publish button)
+writeas:
+  enabled: false
+  api_base: https://write.as/api
+  alias: null                # required (WRITEAS_ALIAS)
+  pass: null                 # required (WRITEAS_PASS)
+  collection_alias: null     # optional (WRITEAS_COLLECTION_ALIAS)
+  font: serif                # serif, sans, wrap, mono, code
+  lang: null
+  rtl: false
+  created: null
+  title: null
+  timeout_seconds: 20
+  verify_ssl: true
 """
 
     with open(path, "w") as f:

@@ -413,12 +413,24 @@ class Cup(App):
         text-align: right;
         color: $text-muted;
     }
+
+    #action-bar {
+        height: auto;
+        padding: 0 1;
+        background: $panel;
+        border-top: solid $primary;
+    }
+
+    #action-bar Button {
+        margin: 0 1 1 0;
+    }
     """
 
     BINDINGS = [
         Binding("q", "quit", "Quit", priority=True),
         Binding("r", "refresh", "Refresh"),
         Binding("g", "generate_poster", "Generate Poster"),
+        Binding("u", "publish_writeas", "Publish Write.as"),
         Binding("h", "show_history", "History"),
         Binding("i", "show_info", "Info"),
         Binding("o", "open_external", "Open External"),
@@ -449,6 +461,7 @@ class Cup(App):
         posters_dir: Optional[str] = None,
         logs_dir: Optional[str] = None,
         poster_config: Optional[Dict[str, Any]] = None,
+        writeas_config: Optional[Dict[str, Any]] = None,
     ):
         super().__init__()
         self.articles = articles or []
@@ -472,6 +485,11 @@ class Cup(App):
         self.posters_dir = posters_dir
         self.logs_dir = logs_dir
         self.poster_config = poster_config or {"method": "local", "default_template": "story"}
+        self.writeas_config = writeas_config or {
+            "enabled": False,
+            "api_base": "https://write.as/api",
+        }
+        self._manual_refresh_in_progress = False
         
         # Navigation properties for editorials
         self.editorial_list: List[Dict[str, Any]] = []
@@ -581,6 +599,10 @@ class Cup(App):
                     "• Check your feed configuration if this persists",
                     id="empty-state",
                 )
+
+        with Horizontal(id="action-bar"):
+            yield Button("Generate Poster", variant="primary", id="generate-poster-button")
+            yield Button("Publish to Write.as", variant="success", id="publish-writeas-button")
 
         yield Footer()
 
@@ -722,64 +744,40 @@ class Cup(App):
             self.notify(f"Error during auto-refresh: {e}", severity="error")
 
     def action_refresh(self) -> None:
-        """Refresh the news feed"""
+        """Refresh the news feed in the background."""
         if not self.refresh_callback:
             self.notify("Refresh functionality not available", severity="warning")
             return
 
-        # Ask for confirmation via callback (no push_screen_wait needed)
-        dialog = ConfirmationDialog(
-            message="Refresh feeds and generate a new editorial?",
-            title="☕ Refresh",
-        )
-        self.push_screen(dialog, callback=self._on_refresh_confirmed)
-
-    def _on_refresh_confirmed(self, confirmed: bool) -> None:
-        """Handle refresh confirmation result"""
-        if not confirmed:
-            self.notify("Refresh cancelled", severity="information")
+        if self._manual_refresh_in_progress:
             return
-        # Kick off the actual refresh work
+
+        self._manual_refresh_in_progress = True
         self._do_refresh()
 
     @work(exclusive=True)
     async def _do_refresh(self) -> None:
-        """Perform the full refresh cycle in a worker thread"""
-        loading_dialog = LoadingDialog("Starting refresh...")
-        self.app.push_screen(loading_dialog)
-        await asyncio.sleep(0.2)  # Give dialog time to render
+        """Perform the full refresh cycle in a background worker."""
 
         try:
             import concurrent.futures
 
-            loop = asyncio.get_event_loop()
-
-            # Step 1: Fetch RSS feeds
-            loading_dialog.update_message("Fetching RSS feeds...")
-            await asyncio.sleep(0.1)
+            loop = asyncio.get_running_loop()
 
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 new_articles, new_update_time = await loop.run_in_executor(
                     executor, self.refresh_callback
                 )
 
-            if not new_articles:
-                loading_dialog.dismiss()
-                self.notify("No new articles found", severity="warning")
-                return
+                if not new_articles:
+                    self.notify("No new articles found", severity="information")
+                    return
 
-            # Step 2: Generate editorial
-            loading_dialog.update_message(
-                f"Generating editorial from {len(new_articles)} articles..."
-            )
-            await asyncio.sleep(0.1)
+                self.articles = new_articles
+                self.last_update = new_update_time
+                self.sub_title = self._format_subtitle()
 
-            self.articles = new_articles
-            self.last_update = new_update_time
-            self.sub_title = self._format_subtitle()
-
-            if self.editorial_generator:
-                with concurrent.futures.ThreadPoolExecutor() as executor:
+                if self.editorial_generator:
                     editorial = await loop.run_in_executor(
                         executor,
                         self.editorial_generator.generate_editorial,
@@ -797,16 +795,8 @@ class Cup(App):
                         editorial_path,
                     )
 
-            # Step 3: Prepare updated view
-            loading_dialog.update_message("Building view...")
-            await asyncio.sleep(0.1)
-
             # Reload editorial list for navigation
             self._load_editorial_list()
-
-            # Dismiss loading dialog BEFORE rebuilding view
-            loading_dialog.dismiss()
-            await asyncio.sleep(0.1)
 
             # Rebuild the UI with new editorial
             await self._force_editorial_only_view()
@@ -824,10 +814,6 @@ class Cup(App):
             )
 
         except Exception as e:
-            try:
-                loading_dialog.dismiss()
-            except Exception:
-                pass
             if self._load_previous_editorial_fallback():
                 await self._force_editorial_only_view()
                 self.notify(
@@ -836,6 +822,17 @@ class Cup(App):
                 )
             else:
                 self.notify(f"Error refreshing: {e}", severity="error")
+        finally:
+            self._manual_refresh_in_progress = False
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle action bar button presses."""
+        if event.button.id == "generate-poster-button":
+            event.stop()
+            self.action_generate_poster()
+        elif event.button.id == "publish-writeas-button":
+            event.stop()
+            self.action_publish_writeas()
 
     def action_quit(self) -> None:
         """Quit the application"""
@@ -1015,6 +1012,57 @@ class Cup(App):
         self.notify("Generating poster in background…", severity="information")
         self._generate_poster_background()
 
+    def action_publish_writeas(self) -> None:
+        """Publish current editorial to Write.as using full editorial content."""
+        if not self.editorial_content:
+            self.notify("No editorial available to publish", severity="warning")
+            return
+
+        if not self.writeas_config.get("enabled", False):
+            self.notify(
+                "Write.as publishing disabled. Set 'writeas.enabled: true' in config.",
+                severity="warning",
+            )
+            return
+
+        self.notify("Publishing to Write.as in background…", severity="information")
+        self._publish_writeas_background()
+
+    @work(thread=True, exclusive=True)
+    def _publish_writeas_background(self) -> None:
+        """Publish editorial to Write.as in a background thread."""
+        logger.info("Write.as publish started (background thread)")
+        try:
+            from moka_news.writeas import WriteAsPublisher
+
+            publisher = WriteAsPublisher(self.writeas_config)
+            if not publisher.is_configured():
+                raise ValueError(
+                    "Missing writeas auth configuration."
+                )
+
+            content = str(self.editorial_content or "")
+            title = self._extract_editorial_title(content)
+            post_data = publisher.publish_post(
+                title=title,
+                content=content,
+                collection_alias=self.writeas_config.get("collection_alias"),
+            )
+
+            post_url = post_data.get("url")
+            message = "✓ Published to Write.as"
+            if post_url:
+                message = f"✓ Published to Write.as: {post_url}"
+
+            self.call_from_thread(self.notify, message, severity="success")
+        except Exception as e:
+            logger.exception(f"Write.as publish failed: {e}")
+            self.call_from_thread(
+                self.notify,
+                f"Error publishing to Write.as: {e}",
+                severity="error",
+            )
+
     @work(thread=True, exclusive=True)
     def _generate_poster_background(self) -> None:
         """Generate poster in a background thread without blocking the TUI"""
@@ -1110,6 +1158,7 @@ def serve(
     posters_dir: Optional[str] = None,
     logs_dir: Optional[str] = None,
     poster_config: Optional[Dict[str, Any]] = None,
+    writeas_config: Optional[Dict[str, Any]] = None,
 ):
     """
     Display articles in the TUI
@@ -1132,6 +1181,7 @@ def serve(
         posters_dir: Path to the posters directory
         logs_dir: Path to the logs directory
         poster_config: Configuration for poster generation
+        writeas_config: Configuration for Write.as publishing
     """
     app = Cup(
         articles,
@@ -1151,5 +1201,6 @@ def serve(
         posters_dir,
         logs_dir,
         poster_config,
+        writeas_config,
     )
     app.run()

@@ -71,3 +71,41 @@ def test_format_subtitle_with_different_times():
     app3 = Cup([], evening)
     assert "20:45:30" in app3.sub_title
     assert "25/12/2026" in app3.sub_title
+
+
+def test_action_refresh_starts_background_refresh_without_dialog(monkeypatch):
+    """Manual refresh should start immediately without opening dialogs."""
+    app = Cup([], refresh_callback=lambda: ([], datetime.now()))
+
+    calls = {"refresh": 0, "push_screen": 0}
+
+    def fake_do_refresh():
+        calls["refresh"] += 1
+
+    def fake_push_screen(*_args, **_kwargs):
+        calls["push_screen"] += 1
+
+    monkeypatch.setattr(app, "_do_refresh", fake_do_refresh)
+    monkeypatch.setattr(app, "push_screen", fake_push_screen)
+
+    app.action_refresh()
+
+    assert calls["refresh"] == 1
+    assert calls["push_screen"] == 0
+
+
+def test_action_refresh_is_ignored_when_already_running(monkeypatch):
+    """Manual refresh should not start another worker while one is in progress."""
+    app = Cup([], refresh_callback=lambda: ([], datetime.now()))
+    app._manual_refresh_in_progress = True
+
+    calls = {"refresh": 0}
+
+    def fake_do_refresh():
+        calls["refresh"] += 1
+
+    monkeypatch.setattr(app, "_do_refresh", fake_do_refresh)
+
+    app.action_refresh()
+
+    assert calls["refresh"] == 0

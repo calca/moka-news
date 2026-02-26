@@ -48,6 +48,7 @@ A beautiful Textual-based TUI that displays your personalized morning editorial 
 - 🔄 **Scheduled refreshes** - Automatic updates at morning (8 AM) and evening (8 PM)
 - ⚠️  **Smart refresh control** - Asks for confirmation when refreshing outside scheduled times
 - 📅 **Last update display** - Always know when your feed was refreshed
+- ✍️ **Publish to Write.as** - Send current editorial to Write.as via API directly from TUI
 - 🔗 Source links in editorial markdown for easy access
 - 🚀 Fast and lightweight
 - 💾 RSS feed management with OPML storage
@@ -240,6 +241,12 @@ export GEMINI_API_KEY=your-gemini-api-key-here
 
 # For Mistral AI
 export MISTRAL_API_KEY=your-mistral-api-key-here
+
+# For Write.as publishing
+export WRITEAS_ALIAS=your-writeas-alias
+export WRITEAS_PASS=your-writeas-pass
+export WRITEAS_COLLECTION_ALIAS=your-collection-alias
+export WRITEAS_API_BASE=https://write.as/api
 ```
 
 Or create a `.env` file in the project root with the same variables.
@@ -435,6 +442,8 @@ While in the TUI:
 
 - `q` or `Ctrl+C` - Quit the application
 - `r` - Refresh feed (asks for confirmation if outside scheduled hours)
+- `g` - Generate poster from current editorial
+- `u` - Publish current editorial to Write.as
 - `h` - Browse past editorials (history)
 - `o` - Open current editorial in external app (requires configuration)
 - `t` - Toggle between light and dark theme
@@ -503,6 +512,26 @@ This allows you to fine-tune:
 - How topics are connected
 - The level of detail
 - Focus areas and priorities
+
+### Publishing To Write.as
+
+From the TUI you can publish the current editorial with:
+- `u` (keyboard shortcut), or
+- `Publish to Write.as` button.
+
+Add this section to `config.yaml`:
+
+```yaml
+writeas:
+  enabled: true
+  api_base: https://write.as/api
+  alias: null            # use WRITEAS_ALIAS env var
+  pass: null             # use WRITEAS_PASS env var
+  collection_alias: my-blog
+  font: serif
+```
+
+The app always obtains the token via `POST /auth/login` using `alias` and `pass`.
 
 Example editorial structure:
 ```markdown

@@ -120,3 +120,18 @@ poster:
     default_font: arial    # Default font family: arial, times, helvetica
     optimize_output: true  # Optimize PNG for smaller file sizes
     add_watermark: true    # Add MoKa News watermark to generated posters
+
+# Write.as Publishing (press 'u' in TUI or click Publish to Write.as)
+writeas:
+  enabled: false
+  api_base: https://write.as/api
+  alias: null              # WRITEAS_ALIAS
+  pass: null               # WRITEAS_PASS
+  collection_alias: null   # Optional (WRITEAS_COLLECTION_ALIAS)
+  font: serif              # serif, sans, wrap, mono, code
+  lang: null
+  rtl: false
+  created: null
+  title: null
+  timeout_seconds: 20
+  verify_ssl: true

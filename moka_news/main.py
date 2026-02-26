@@ -450,6 +450,9 @@ Feed Management:
 
         # Get logs directory
         actual_logs_dir = str(Path.home() / ".config" / "moka-news" / "logs")
+        
+        # Write.as publishing configuration
+        writeas_config = config.get("writeas", {})
 
         serve(
             articles,
@@ -468,6 +471,7 @@ Feed Management:
             posters_dir=actual_posters_dir,
             logs_dir=actual_logs_dir,
             poster_config=poster_config,
+            writeas_config=writeas_config,
         )
 
 

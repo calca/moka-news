@@ -165,3 +165,27 @@ def test_merge_configs_preserves_editorial_settings():
     assert result["editorial"]["editorials_dir"] == "/custom/path"
     assert result["editorial"]["opener_command"] == "code"
     assert result["ai"]["provider"] == "simple"  # Preserved from default
+
+
+def test_default_config_includes_writeas():
+    """Test that default config includes writeas configuration."""
+    assert "writeas" in DEFAULT_CONFIG
+    assert DEFAULT_CONFIG["writeas"]["enabled"] is False
+    assert DEFAULT_CONFIG["writeas"]["api_base"] == "https://write.as/api"
+    assert "alias" in DEFAULT_CONFIG["writeas"]
+    assert "pass" in DEFAULT_CONFIG["writeas"]
+
+
+def test_config_respects_writeas_env_vars(monkeypatch):
+    """Test Write.as environment variable override."""
+    monkeypatch.setenv("WRITEAS_ALIAS", "username")
+    monkeypatch.setenv("WRITEAS_PASS", "password")
+    monkeypatch.setenv("WRITEAS_COLLECTION_ALIAS", "my-blog")
+    monkeypatch.setenv("WRITEAS_API_BASE", "https://write.as/api")
+
+    config = load_config("/nonexistent/path/config.yaml")
+
+    assert config["writeas"]["alias"] == "username"
+    assert config["writeas"]["pass"] == "password"
+    assert config["writeas"]["collection_alias"] == "my-blog"
+    assert config["writeas"]["api_base"] == "https://write.as/api"

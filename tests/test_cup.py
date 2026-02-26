@@ -139,3 +139,8 @@ def test_extract_editorial_title_falls_back_to_markdown_heading():
 Body paragraph.
 """
     assert Cup._extract_editorial_title(content) == "Heading Title"
+
+
+def test_cup_default_writeas_config_disabled():
+    app = Cup()
+    assert app.writeas_config["enabled"] is False

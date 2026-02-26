@@ -48,6 +48,10 @@ export OPENAI_API_KEY="your-api-key-here"
 export ANTHROPIC_API_KEY="your-api-key-here"
 export GEMINI_API_KEY="your-api-key-here"
 export MISTRAL_API_KEY="your-api-key-here"
+export WRITEAS_ALIAS="your-writeas-alias"
+export WRITEAS_PASS="your-writeas-pass"
+export WRITEAS_COLLECTION_ALIAS="your-collection-alias" # optional
+export WRITEAS_API_BASE="https://write.as/api"          # optional override
 ```
 
 ### 📰 RSS Feeds Configuration (`feeds`)
@@ -109,6 +113,22 @@ Popular opener commands:
 - `"nano"` - Nano editor
 - `"open"` - Default app (macOS)
 - `"xdg-open"` - Default app (Linux)
+
+### ✍️ Write.as Publishing (`writeas`)
+
+Publish the currently opened editorial directly from TUI (shortcut: `u`), always as full editorial:
+
+```yaml
+writeas:
+  enabled: true
+  api_base: https://write.as/api
+  alias: null            # Prefer WRITEAS_ALIAS env var
+  pass: null             # Prefer WRITEAS_PASS env var
+  collection_alias: my-blog
+  font: serif
+```
+
+MoKa News ottiene sempre il token con login `POST /auth/login` usando `alias` e `pass`.
 
 ### 🎯 Keywords and Prompts
 
