@@ -413,17 +413,6 @@ class Cup(App):
         text-align: right;
         color: $text-muted;
     }
-
-    #action-bar {
-        height: auto;
-        padding: 0 1;
-        background: $panel;
-        border-top: solid $primary;
-    }
-
-    #action-bar Button {
-        margin: 0 1 1 0;
-    }
     """
 
     BINDINGS = [
@@ -599,10 +588,6 @@ class Cup(App):
                     "• Check your feed configuration if this persists",
                     id="empty-state",
                 )
-
-        with Horizontal(id="action-bar"):
-            yield Button("Generate Poster", variant="primary", id="generate-poster-button")
-            yield Button("Publish to Write.as", variant="success", id="publish-writeas-button")
 
         yield Footer()
 
@@ -824,15 +809,6 @@ class Cup(App):
                 self.notify(f"Error refreshing: {e}", severity="error")
         finally:
             self._manual_refresh_in_progress = False
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        """Handle action bar button presses."""
-        if event.button.id == "generate-poster-button":
-            event.stop()
-            self.action_generate_poster()
-        elif event.button.id == "publish-writeas-button":
-            event.stop()
-            self.action_publish_writeas()
 
     def action_quit(self) -> None:
         """Quit the application"""
