@@ -483,12 +483,16 @@ def launch_moka_news():
     # Setup OPML manager
     opml_manager = OPMLManager()
     
-    # Get feed URLs
-    feed_urls = config.get("feeds", {}).get("urls", [])
-    if not feed_urls:
-        # Use default tech feeds if none configured
-        from moka_news.constants import DEFAULT_TECH_FEEDS
-        feed_urls = [feed["url"] for feed in DEFAULT_TECH_FEEDS[:3]]
+    # Get feed URLs: OPML > config fallback > built-in defaults
+    opml_feeds = opml_manager.list_feeds()
+    if opml_feeds:
+        feed_urls = [feed["url"] for feed in opml_feeds]
+    else:
+        feed_urls = config.get("feeds", {}).get("urls", [])
+        if not feed_urls:
+            # Use default tech feeds if none configured anywhere
+            from moka_news.constants import DEFAULT_TECH_FEEDS
+            feed_urls = [feed["url"] for feed in DEFAULT_TECH_FEEDS[:3]]
     
     # Create AI provider
     ai_config = config.get("ai", {})

@@ -19,14 +19,6 @@ ai:
   max_content_length: 2500
   max_tokens: 300
 
-feeds:
-  urls:
-    - https://news.ycombinator.com/rss
-    - https://www.wired.com/feed/rss
-    - https://www.nature.com/nature.rss
-    - https://feeds.bbci.co.uk/news/science_and_environment/rss.xml
-    - https://www.scientificamerican.com/rss/news/
-
 ui:
   use_tui: true
   theme: dracula  # Elegant theme

@@ -108,7 +108,7 @@ On your first run, MoKa News will launch an interactive setup wizard that will:
 
 1. **Select your AI provider** - Choose from OpenAI, Anthropic, Gemini, Mistral, or CLI-based providers
 2. **Configure keywords** (optional) - Set keywords to focus AI editorials on topics you care about
-3. **Configure RSS feeds** - Accept our curated list of 5 tech feeds or configure your own later
+3. **Configure RSS feeds** - Accept our curated list of 5 tech feeds (stored as OPML) or add your own later with `moka-news --add-feed`
 
 Simply run:
 
@@ -151,6 +151,9 @@ moka-news --create-config
 Edit the `moka-news.yaml` file:
 
 ```yaml
+# Note: RSS feeds are managed via OPML (moka-news --add-feed / --list-feeds),
+# not in this YAML file.
+
 # AI Provider Configuration
 ai:
   provider: gemini-cli  # Options: openai, anthropic, gemini, mistral, copilot-cli, gemini-cli, mistral-cli

@@ -31,27 +31,6 @@ ai:
 
       Structure with clear sections and bullet points where appropriate.
 
-# Curated for professional relevance
-feeds:
-  urls:
-    # Business News
-    - https://feeds.bloomberg.com/news/us/
-    - https://www.ft.com/rss/home/us
-    - https://hbr.org/feed
-    
-    # Technology & Innovation
-    - https://news.ycombinator.com/rss
-    - https://techcrunch.com/feed/
-    - https://www.wired.com/feed/rss
-    
-    # Productivity & Management
-    - https://feeds.wsj.com/wsj/xml/rss/US-Business.xml
-    - https://www.fastcompany.com/rss
-    
-    # Startups & Venture
-    - https://venturebeat.com/feed/
-    - https://techcrunch.com/category/startups/feed/
-
 ui:
   use_tui: true
   theme: github-light  # Clean, professional appearance

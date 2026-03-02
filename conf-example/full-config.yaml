@@ -49,26 +49,6 @@ ai:
   max_content_length: 1500  # Max characters sent to AI (balance detail vs cost)
   max_tokens: 300           # Max AI response tokens (balance quality vs cost)
 
-# RSS Feed Sources
-feeds:
-  urls:
-    # Technology News
-    - https://news.ycombinator.com/rss
-    - https://www.reddit.com/r/programming/.rss
-    - https://github.blog/feed/
-    - https://feeds.bbci.co.uk/news/technology/rss.xml
-    - https://techcrunch.com/feed/
-    - https://www.theverge.com/rss/index.xml
-    
-    # Development & AI
-    - https://blog.openai.com/rss/
-    - https://ai.googleblog.com/feeds/posts/default
-    - https://stackoverflow.blog/feed/
-    
-    # Business & Startups
-    - https://feeds.feedburner.com/venturebeat/SZYF
-    - https://www.wired.com/feed/rss
-
 # User Interface Configuration  
 ui:
   use_tui: true            # Enable beautiful Terminal UI

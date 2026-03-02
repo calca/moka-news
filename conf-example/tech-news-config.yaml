@@ -19,37 +19,6 @@ ai:
     - startups
     - open source
 
-# Curated tech news feeds
-feeds:
-  urls:
-    # Core Tech News
-    - https://news.ycombinator.com/rss
-    - https://www.reddit.com/r/programming/.rss
-    - https://stackoverflow.blog/feed/
-    
-    # Development Blogs
-    - https://github.blog/feed/
-    - https://blog.jetbrains.com/feed/
-    - https://code.visualstudio.com/feed.xml
-    
-    # AI & ML
-    - https://blog.openai.com/rss/
-    - https://ai.googleblog.com/feeds/posts/default
-    - https://research.fb.com/feed/
-    
-    # Cloud & DevOps
-    - https://cloud.google.com/blog/rss/
-    - https://aws.amazon.com/blogs/aws/feed/
-    - https://azure.microsoft.com/en-us/blog/feed/
-    
-    # Security
-    - https://krebsonsecurity.com/feed/
-    - https://www.schneier.com/blog/atom.xml
-    
-    # Industry News
-    - https://techcrunch.com/category/startups/feed/
-    - https://www.theverge.com/rss/index.xml
-
 ui:
   use_tui: true
   theme: monokai  # Developer-friendly dark theme

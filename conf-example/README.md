@@ -7,7 +7,8 @@ This directory contains complete configuration examples for different use cases.
 1. **Copy a configuration file**: Choose one that matches your needs
 2. **Rename to `moka-news.yaml`**: Place it in your project root or user config directory
 3. **Set up API keys**: Either in the config file or as environment variables
-4. **Run MoKa News**: `./moka-news` or `python -m moka_news.main`
+4. **Add your RSS feeds**: Use `moka-news --add-feed URL` (feeds are managed via OPML, not YAML)
+5. **Run MoKa News**: `./moka-news` or `python -m moka_news.main`
 
 ## 🗂️ Available Configuration Examples
 
@@ -54,17 +55,23 @@ export WRITEAS_COLLECTION_ALIAS="your-collection-alias" # optional
 export WRITEAS_API_BASE="https://write.as/api"          # optional override
 ```
 
-### 📰 RSS Feeds Configuration (`feeds`)
+### 📰 RSS Feed Management (OPML)
 
-Add your favorite RSS feeds:
+RSS feeds are managed via OPML, not through the YAML configuration file. The feed list is stored at `~/.config/moka-news/feeds.opml`.
 
-```yaml
-feeds:
-  urls:
-    - https://news.ycombinator.com/rss
-    - https://www.reddit.com/r/programming/.rss
-    - https://feeds.bbci.co.uk/news/technology/rss.xml
+**Managing feeds from the command line:**
+```bash
+moka-news --add-feed https://news.ycombinator.com/rss     # Add a feed
+moka-news --remove-feed https://news.ycombinator.com/rss  # Remove a feed
+moka-news --list-feeds                                     # List all feeds
 ```
+
+You can also import an existing OPML file:
+```bash
+moka-news --opml /path/to/your/feeds.opml
+```
+
+Feeds are automatically configured during first-run setup. The YAML `feeds` section in the internal default config is only a last-resort fallback if no OPML file exists.
 
 ### 🎨 UI Configuration (`ui`)
 
@@ -187,6 +194,7 @@ MoKa News searches for configuration files in this order:
 - Verify the file is in a searched location
 
 **RSS feeds not loading:**
+- Verify your feeds with `moka-news --list-feeds`
 - Test feed URLs in a browser
 - Check internet connectivity
 - Some feeds may require user agents or have rate limits

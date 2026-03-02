@@ -281,7 +281,7 @@ Feed Management:
     # CLI arguments override config file
     ai_provider = args.ai if args.ai else config["ai"]["provider"]
 
-    # Get feeds from: CLI args > OPML manager > config file
+    # Get feeds from: CLI args > OPML manager > config fallback (internal default only)
     if args.feeds:
         feed_urls = args.feeds
     else:

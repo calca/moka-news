@@ -21,15 +21,6 @@ ai:
   max_content_length: 1800
   max_tokens: 275
 
-feeds:
-  urls:
-    - https://blog.google/technology/ai/rss/
-    - https://ai.googleblog.com/feeds/posts/default
-    - https://cloud.google.com/blog/rss/
-    - https://developers.googleblog.com/feeds/posts/default
-    - https://news.ycombinator.com/rss
-    - https://techcrunch.com/category/artificial-intelligence/feed/
-
 ui:
   use_tui: true
   theme: rose-pine  # Google-friendly colors

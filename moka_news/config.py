@@ -87,7 +87,8 @@ DEFAULT_CONFIG = {
     "feeds": {
         "urls": [
             feed["url"] for feed in DEFAULT_TECH_FEEDS[:3]
-        ]  # Use first 3 feeds from constants
+        ]  # Internal fallback only — used when no OPML file exists and no --feeds CLI arg is provided.
+           # Users should manage feeds via OPML: moka-news --add-feed / --remove-feed / --list-feeds
     },
     "ui": {
         "use_tui": True,
@@ -318,11 +319,12 @@ ai:
   max_tokens: 250           # Maximum tokens for AI to generate in response (default: 250)
 
 # RSS Feed Configuration
-feeds:
-  urls:
-    - https://news.ycombinator.com/rss
-    - https://www.reddit.com/r/programming/.rss
-    - https://github.blog/feed/
+# Feeds are managed via OPML, not this YAML file.
+# Use the CLI to manage your feeds:
+#   moka-news --add-feed URL      Add a feed
+#   moka-news --remove-feed URL   Remove a feed
+#   moka-news --list-feeds         List all feeds
+# Feeds are stored in: ~/.config/moka-news/feeds.opml
 
 # UI Configuration
 ui:

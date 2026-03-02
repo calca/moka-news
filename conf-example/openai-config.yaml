@@ -19,13 +19,6 @@ ai:
   max_content_length: 2000  # GPT handles longer context well
   max_tokens: 250           # Good balance for summaries
 
-feeds:
-  urls:
-    - https://news.ycombinator.com/rss
-    - https://techcrunch.com/feed/
-    - https://www.theverge.com/rss/index.xml
-    - https://blog.openai.com/rss/
-
 ui:
   use_tui: true
   theme: monokai  # Clean theme for focused reading

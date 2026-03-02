@@ -61,7 +61,8 @@ def test_create_sample_config(tmp_path):
     content = config_path.read_text()
     assert "ai:" in content
     assert "provider:" in content
-    assert "feeds:" in content
+    assert "feeds:" not in content  # Feeds are managed via OPML, not YAML
+    assert "OPML" in content or "opml" in content  # Should mention OPML feed management
 
 
 def test_config_respects_env_vars(monkeypatch):
