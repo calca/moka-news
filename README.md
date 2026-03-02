@@ -445,7 +445,6 @@ While in the TUI:
 - `g` - Generate poster from current editorial
 - `u` - Publish current editorial to Write.as
 - `h` - Browse past editorials (history)
-- `o` - Open current editorial in external app (requires configuration)
 - `t` - Toggle between light and dark theme
 
 The TUI displays your morning editorial, with easy access to past editorials through the history feature. It automatically refreshes at 8:00 AM and 8:00 PM daily. Manual refreshes outside these times will prompt for confirmation to maintain editorial quality. ☕
@@ -460,7 +459,6 @@ MoKa News generates a single, AI-powered editorial that combines your news artic
 - **Markdown Archive**: Each editorial is saved as a markdown file (default: `~/.config/moka-news/editorials/`)
 - **Date-based Filename**: Editorials are saved as `YYYY-MM-DD_HH-MM.md` for easy organization
 - **History Access**: Press `h` in the TUI to browse and read past editorials
-- **External Editor Support**: Press `o` in the TUI to open the current editorial in your preferred editor
 - **Customizable Prompts**: Fine-tune how the AI generates editorials by customizing prompts in your config file
 - **Configurable Location**: Save editorials to any directory of your choice
 
@@ -472,10 +470,6 @@ You can customize editorial settings in your `config.yaml`:
 editorial:
   # Directory to save editorials (defaults to ~/.config/moka-news/editorials if not specified)
   editorials_dir: ~/Documents/my-news-editorials
-  
-  # Optional command to open editorials in external app
-  # Press 'o' in TUI to open current editorial with this command
-  opener_command: code  # Examples: "code", "vim", "nano", "open", "xdg-open"
   
   # Smart article fetching
   min_articles: 10         # Minimum articles needed for quality editorial

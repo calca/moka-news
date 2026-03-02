@@ -36,7 +36,6 @@ ui:
 
 editorial:
   editorials_dir: ~/Documents/gemini-news
-  opener_command: "open"  # macOS default
 
 refresh:
   allowed_times: ["08:00", "20:00"]

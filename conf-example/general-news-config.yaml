@@ -55,7 +55,6 @@ ui:
 
 editorial:
   editorials_dir: ~/Documents/daily-news
-  opener_command: "open"  # System default
 
 refresh:
   allowed_times: ["07:30", "12:00", "19:00"]  # Morning, lunch, evening

@@ -405,9 +405,6 @@ Feed Management:
         auto_refresh_window = refresh_config.get("auto_refresh_window", 60)
         refresh_manager.auto_refresh_window = auto_refresh_window
 
-    # Get editorial opener command
-    opener_command = editorial_config.get("opener_command", None)
-
     # Get config path for info dialog
     config_path = str(args.config) if args.config else str(get_config_path())
 
@@ -438,7 +435,6 @@ Feed Management:
         theme_light=theme_light,
         theme_dark=theme_dark,
         refresh_manager=refresh_manager,
-        opener_command=opener_command,
         current_editorial_path=editorial_path,
         config_path=config_path,
         editorials_dir=actual_editorials_dir,

@@ -577,7 +577,6 @@ def launch_moka_news():
         theme_light=ui_config.get("theme_light", "rose-pine-dawn"),
         theme_dark=ui_config.get("theme_dark", "rose-pine"),
         refresh_manager=refresh_manager,
-        opener_command=editorial_config.get("opener_command"),
         current_editorial_path=editorial_path,
     )
 

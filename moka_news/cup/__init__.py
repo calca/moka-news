@@ -27,7 +27,6 @@ from datetime import datetime, time
 import webbrowser
 import asyncio
 import re
-import subprocess
 from moka_news import __version__
 from moka_news.logger import get_logger
 
@@ -422,7 +421,6 @@ class Cup(App):
         Binding("u", "publish_writeas", "Publish Write.as"),
         Binding("h", "show_history", "History"),
         Binding("i", "show_info", "Info"),
-        Binding("o", "open_external", "Open External"),
         Binding("t", "toggle_theme", "Toggle Theme"),
         Binding("p", "navigate_prev", "Prev Editorial"),
         Binding("n", "navigate_next", "Next Editorial"),
@@ -443,7 +441,6 @@ class Cup(App):
         theme_light: str = "rose-pine-dawn",
         theme_dark: str = "rose-pine",
         refresh_manager: Optional[Any] = None,
-        opener_command: Optional[str] = None,
         current_editorial_path: Optional[Path] = None,
         config_path: Optional[str] = None,
         editorials_dir: Optional[str] = None,
@@ -467,7 +464,6 @@ class Cup(App):
         self.theme_dark = theme_dark
         self.theme = theme
         self.refresh_manager = refresh_manager
-        self.opener_command = opener_command
         self.current_editorial_path = current_editorial_path  # Track current editorial path
         self.config_path = config_path
         self.editorials_dir = editorials_dir
@@ -843,36 +839,6 @@ class Cup(App):
         """Navigate to next editorial using keyboard shortcut"""
         self._navigate_next_editorial()
 
-    def action_open_external(self) -> None:
-        """Open current editorial in external application"""
-        if not self.opener_command:
-            self.notify(
-                "No opener command configured. Set 'editorial.opener_command' in config.",
-                severity="warning"
-            )
-            return
-        
-        if not self.current_editorial_path:
-            self.notify("No editorial available to open", severity="warning")
-            return
-        
-        try:
-            subprocess.Popen([self.opener_command, str(self.current_editorial_path)])
-            self.notify(
-                f"Opening editorial with {self.opener_command}",
-                severity="information"
-            )
-        except FileNotFoundError:
-            self.notify(
-                f"Command '{self.opener_command}' not found. Please check your configuration.",
-                severity="error"
-            )
-        except Exception as e:
-            self.notify(
-                f"Error opening editorial: {e}",
-                severity="error"
-            )
-
     def action_show_history(self) -> None:
         """Show past editorials"""
         if not self.editorial_generator:
@@ -1127,7 +1093,6 @@ def serve(
     theme_light: str = "rose-pine-dawn",
     theme_dark: str = "rose-pine",
     refresh_manager: Optional[Any] = None,
-    opener_command: Optional[str] = None,
     current_editorial_path: Optional[Path] = None,
     config_path: Optional[str] = None,
     editorials_dir: Optional[str] = None,
@@ -1150,7 +1115,6 @@ def serve(
         theme_light: Light theme option (default: rose-pine-dawn)
         theme_dark: Dark theme option (default: rose-pine)
         refresh_manager: Optional RefreshManager instance for controlling refresh times
-        opener_command: Optional command to open editorials in external app
         current_editorial_path: Path to the current editorial file
         config_path: Path to the configuration file
         editorials_dir: Path to the editorials directory
@@ -1170,7 +1134,6 @@ def serve(
         theme_light,
         theme_dark,
         refresh_manager,
-        opener_command,
         current_editorial_path,
         config_path,
         editorials_dir,

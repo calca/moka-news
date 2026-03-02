@@ -33,7 +33,6 @@ ui:
 
 editorial:
   editorials_dir: ~/Documents/claude-editorials
-  opener_command: "code"
 
 refresh:
   allowed_times: ["09:00", "18:00"]

@@ -60,7 +60,6 @@ ui:
 
 editorial:
   editorials_dir: ~/Documents/morning-briefings
-  opener_command: "open"
 
 refresh:
   allowed_times: ["07:00"]  # Single morning briefing

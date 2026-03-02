@@ -91,14 +91,6 @@ editorial:
   # Custom directory for saved editorials
   editorials_dir: ~/Documents/moka-news-editorials
   
-  # Command to open editorials in external editor (press 'o' in TUI)
-  opener_command: "code"   # VS Code
-  # Other options:
-  # opener_command: "vim"      # Vim
-  # opener_command: "nano"     # Nano
-  # opener_command: "open"     # Default app (macOS)
-  # opener_command: "xdg-open" # Default app (Linux)
-  
   # Article fetching configuration
   min_articles: 10         # Minimum articles needed for quality editorial
   extended_window_days: 3  # Days to look back if initial fetch has too few articles

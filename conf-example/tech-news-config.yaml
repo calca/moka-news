@@ -58,7 +58,6 @@ ui:
 
 editorial:
   editorials_dir: ~/Documents/tech-news
-  opener_command: "code"  # VS Code for developers
 
 refresh:
   allowed_times: ["09:00", "17:00"]  # Start of day and end of work
