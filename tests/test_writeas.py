@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from moka_news.writeas import WriteAsPublisher, WriteAsPublisherError
+from moka_news.publisher._writeas import WriteAsPublisher, WriteAsPublisherError
 
 
 def _mock_response(payload, status_code=200):
@@ -67,7 +67,7 @@ def test_publish_post_success_with_login_and_collection():
     }
 
     with patch(
-        "moka_news.writeas.requests.post",
+        "moka_news.publisher._writeas.requests.post",
         side_effect=[
             _mock_response(login_response),
             _mock_response(create_response, status_code=201),
@@ -127,7 +127,7 @@ def test_publish_post_raises_for_api_error():
     }
 
     with patch(
-        "moka_news.writeas.requests.post",
+        "moka_news.publisher._writeas.requests.post",
         side_effect=[
             _mock_response({"code": 200, "data": {"access_token": "token-abc"}}),
             _mock_response(error_payload, status_code=403),
@@ -166,7 +166,7 @@ Main body paragraph.
 """
 
     with patch(
-        "moka_news.writeas.requests.post",
+        "moka_news.publisher._writeas.requests.post",
         side_effect=[
             _mock_response(login_response),
             _mock_response(create_response, status_code=201),

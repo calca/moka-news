@@ -17,7 +17,7 @@ class WriteAsProvider(PublishProvider):
 
     def is_configured(self) -> bool:
         """Delegate to the underlying publisher's credential check."""
-        from moka_news.writeas import WriteAsPublisher
+        from moka_news.publisher._writeas import WriteAsPublisher
 
         publisher = WriteAsPublisher(self._config)
         return publisher.is_configured()
@@ -27,7 +27,7 @@ class WriteAsProvider(PublishProvider):
 
         Returns dict with at least ``url`` and ``provider`` keys.
         """
-        from moka_news.writeas import WriteAsPublisher, WriteAsPublisherError
+        from moka_news.publisher._writeas import WriteAsPublisher, WriteAsPublisherError
 
         if not self.enabled:
             raise PublishProviderError(

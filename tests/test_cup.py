@@ -141,6 +141,8 @@ Body paragraph.
     assert Cup._extract_editorial_title(content) == "Heading Title"
 
 
-def test_cup_default_writeas_config_disabled():
+def test_cup_default_publish_config():
     app = Cup()
-    assert app.writeas_config["enabled"] is False
+    # Cup no longer exposes a writeas_config attribute;
+    # publishing is handled via PublishManager.
+    assert not hasattr(app, "writeas_config")

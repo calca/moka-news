@@ -184,16 +184,8 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
         config["ai"]["api_keys"]["gemini"] = os.getenv("GEMINI_API_KEY")
     if os.getenv("MISTRAL_API_KEY"):
         config["ai"]["api_keys"]["mistral"] = os.getenv("MISTRAL_API_KEY")
-    if os.getenv("WRITEAS_ALIAS"):
-        config["writeas"]["alias"] = os.getenv("WRITEAS_ALIAS")
-    if os.getenv("WRITEAS_PASS"):
-        config["writeas"]["pass"] = os.getenv("WRITEAS_PASS")
-    if os.getenv("WRITEAS_COLLECTION_ALIAS"):
-        config["writeas"]["collection_alias"] = os.getenv("WRITEAS_COLLECTION_ALIAS")
-    if os.getenv("WRITEAS_COLLECTION"):
-        config["writeas"]["collection_alias"] = os.getenv("WRITEAS_COLLECTION")
-    if os.getenv("WRITEAS_API_BASE"):
-        config["writeas"]["api_base"] = os.getenv("WRITEAS_API_BASE")
+    # NOTE: Write.as env vars (WRITEAS_ALIAS, etc.) are read directly by
+    # WriteAsPublisher at construction time — no config-level override needed.
 
     return config
 

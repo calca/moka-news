@@ -376,7 +376,14 @@ class MistralCLIBarista(_CLIBarista):
 
 
 class Barista:
-    """Main Barista class that coordinates AI processing"""
+    """Main Barista class that coordinates AI processing.
+
+    .. deprecated::
+        The ``Barista`` wrapper is no longer used in the main pipeline.
+        ``main.py`` calls ``create_ai_provider()`` directly and passes the
+        provider to ``EditorialGenerator``.  This class is kept for backward
+        compatibility with existing tests and examples.
+    """
 
     def __init__(self, provider: Optional[AIProvider] = None, keywords: Optional[list] = None, prompts: Optional[Dict[str, str]] = None, max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS):
         """
@@ -478,21 +485,24 @@ def create_barista(
     max_content_length: int = MAX_CONTENT_LENGTH,
     max_tokens: int = MAX_TOKENS
 ) -> Barista:
-    """
-    Factory function to create a Barista (no AI processing for articles)
-    
+    """Factory function to create a Barista (no AI processing for articles).
+
+    .. deprecated::
+        Prefer ``create_ai_provider()`` which is used by the main pipeline.
+        This function is kept for backward compatibility.
+
     Args:
         provider_name: Name of AI provider (all providers work the same now)
         config: Configuration dictionary
         max_content_length: Maximum characters of content to include (unused)
         max_tokens: Maximum tokens for AI response (unused)
-    
+
     Returns:
         Configured Barista instance
     """
     logger.info(f"Creating barista with {provider_name} provider (no AI processing)")
-    
+
     # Get AI provider instance (always works now)
     provider = create_ai_provider(provider_name, config)
-    
+
     return Barista(provider, max_content_length, max_tokens)

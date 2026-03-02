@@ -163,25 +163,16 @@ def test_merge_configs_preserves_editorial_settings():
     assert result["ai"]["provider"] == "simple"  # Preserved from default
 
 
-def test_default_config_includes_writeas():
-    """Test that default config includes writeas configuration."""
-    assert "writeas" in DEFAULT_CONFIG
-    assert DEFAULT_CONFIG["writeas"]["enabled"] is False
-    assert DEFAULT_CONFIG["writeas"]["api_base"] == "https://write.as/api"
-    assert "alias" in DEFAULT_CONFIG["writeas"]
-    assert "pass" in DEFAULT_CONFIG["writeas"]
+def test_default_config_includes_publish():
+    """Test that default config includes publish configuration."""
+    assert "publish" in DEFAULT_CONFIG
+    assert "providers" in DEFAULT_CONFIG["publish"]
+    assert isinstance(DEFAULT_CONFIG["publish"]["providers"], list)
 
 
-def test_config_respects_writeas_env_vars(monkeypatch):
-    """Test Write.as environment variable override."""
-    monkeypatch.setenv("WRITEAS_ALIAS", "username")
-    monkeypatch.setenv("WRITEAS_PASS", "password")
-    monkeypatch.setenv("WRITEAS_COLLECTION_ALIAS", "my-blog")
-    monkeypatch.setenv("WRITEAS_API_BASE", "https://write.as/api")
-
+def test_writeas_env_vars_read_by_publisher_directly():
+    """Write.as env vars are read by WriteAsPublisher, not by load_config."""
     config = load_config("/nonexistent/path/config.yaml")
-
-    assert config["writeas"]["alias"] == "username"
-    assert config["writeas"]["pass"] == "password"
-    assert config["writeas"]["collection_alias"] == "my-blog"
-    assert config["writeas"]["api_base"] == "https://write.as/api"
+    # config no longer has a top-level "writeas" key;
+    # env vars are consumed by WriteAsPublisher.__init__ itself.
+    assert "writeas" not in config
