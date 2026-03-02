@@ -418,7 +418,7 @@ class Cup(App):
         Binding("q", "quit", "Quit", priority=True),
         Binding("r", "refresh", "Refresh"),
         Binding("g", "generate_poster", "Generate Poster"),
-        Binding("u", "publish_writeas", "Publish Write.as"),
+        Binding("u", "publish", "Publish"),
         Binding("h", "show_history", "History"),
         Binding("i", "show_info", "Info"),
         Binding("t", "toggle_theme", "Toggle Theme"),
@@ -447,7 +447,7 @@ class Cup(App):
         posters_dir: Optional[str] = None,
         logs_dir: Optional[str] = None,
         poster_config: Optional[Dict[str, Any]] = None,
-        writeas_config: Optional[Dict[str, Any]] = None,
+        publish_manager: Optional[Any] = None,
     ):
         super().__init__()
         self.articles = articles or []
@@ -470,10 +470,11 @@ class Cup(App):
         self.posters_dir = posters_dir
         self.logs_dir = logs_dir
         self.poster_config = poster_config or {"method": "local", "default_template": "story"}
-        self.writeas_config = writeas_config or {
-            "enabled": False,
-            "api_base": "https://write.as/api",
-        }
+        if publish_manager is not None:
+            self.publish_manager = publish_manager
+        else:
+            from moka_news.publisher import PublishManager
+            self.publish_manager = PublishManager([])
         self._manual_refresh_in_progress = False
         
         # Navigation properties for editorials
@@ -954,56 +955,46 @@ class Cup(App):
         self.notify("Generating poster in background…", severity="information")
         self._generate_poster_background()
 
-    def action_publish_writeas(self) -> None:
-        """Publish current editorial to Write.as using full editorial content."""
+    def action_publish(self) -> None:
+        """Publish current editorial to all enabled publish providers."""
         if not self.editorial_content:
             self.notify("No editorial available to publish", severity="warning")
             return
 
-        if not self.writeas_config.get("enabled", False):
+        if not self.publish_manager.has_enabled_providers():
             self.notify(
-                "Write.as publishing disabled. Set 'writeas.enabled: true' in config.",
+                "No publish providers enabled. Configure writeas or buttondown in config.",
                 severity="warning",
             )
             return
 
-        self.notify("Publishing to Write.as in background…", severity="information")
-        self._publish_writeas_background()
+        provider_names = ", ".join(self.publish_manager.get_enabled_provider_names())
+        self.notify(
+            f"Publishing to {provider_names} in background…",
+            severity="information",
+        )
+        self._publish_background()
 
     @work(thread=True, exclusive=True)
-    def _publish_writeas_background(self) -> None:
-        """Publish editorial to Write.as in a background thread."""
-        logger.info("Write.as publish started (background thread)")
-        try:
-            from moka_news.writeas import WriteAsPublisher
+    def _publish_background(self) -> None:
+        """Publish editorial to all enabled providers in a background thread."""
+        logger.info("Publish started (background thread)")
+        content = str(self.editorial_content or "")
+        title = self._extract_editorial_title(content)
+        results = self.publish_manager.publish_all(title, content)
 
-            publisher = WriteAsPublisher(self.writeas_config)
-            if not publisher.is_configured():
-                raise ValueError(
-                    "Missing writeas auth configuration."
+        for result in results:
+            if result.success:
+                msg = f"✓ Published to {result.provider}"
+                if result.url:
+                    msg += f": {result.url}"
+                self.call_from_thread(self.notify, msg, severity="success")
+            else:
+                self.call_from_thread(
+                    self.notify,
+                    f"Error publishing to {result.provider}: {result.error}",
+                    severity="error",
                 )
-
-            content = str(self.editorial_content or "")
-            title = self._extract_editorial_title(content)
-            post_data = publisher.publish_post(
-                title=title,
-                content=content,
-                collection_alias=self.writeas_config.get("collection_alias"),
-            )
-
-            post_url = post_data.get("url")
-            message = "✓ Published to Write.as"
-            if post_url:
-                message = f"✓ Published to Write.as: {post_url}"
-
-            self.call_from_thread(self.notify, message, severity="success")
-        except Exception as e:
-            logger.exception(f"Write.as publish failed: {e}")
-            self.call_from_thread(
-                self.notify,
-                f"Error publishing to Write.as: {e}",
-                severity="error",
-            )
 
     @work(thread=True, exclusive=True)
     def _generate_poster_background(self) -> None:
@@ -1099,7 +1090,7 @@ def serve(
     posters_dir: Optional[str] = None,
     logs_dir: Optional[str] = None,
     poster_config: Optional[Dict[str, Any]] = None,
-    writeas_config: Optional[Dict[str, Any]] = None,
+    publish_manager: Optional[Any] = None,
 ):
     """
     Display articles in the TUI
@@ -1121,7 +1112,7 @@ def serve(
         posters_dir: Path to the posters directory
         logs_dir: Path to the logs directory
         poster_config: Configuration for poster generation
-        writeas_config: Configuration for Write.as publishing
+        publish_manager: PublishManager instance for multi-provider publishing
     """
     app = Cup(
         articles,
@@ -1140,6 +1131,6 @@ def serve(
         posters_dir,
         logs_dir,
         poster_config,
-        writeas_config,
+        publish_manager,
     )
     app.run()

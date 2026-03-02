@@ -119,19 +119,9 @@ DEFAULT_CONFIG = {
             "add_watermark": True  # Add MoKa News watermark to generated posters
         }
     },
-    "writeas": {
-        "enabled": False,  # Set true to enable publishing to Write.as from TUI
-        "api_base": "https://write.as/api",  # Write.as API base URL
-        "alias": None,  # Write.as account alias (or WRITEAS_ALIAS)
-        "pass": None,  # Write.as password (or app password) (or WRITEAS_PASS)
-        "collection_alias": None,  # Optional collection alias (WRITEAS_COLLECTION_ALIAS)
-        "font": "serif",  # serif, sans, wrap, mono, code
-        "lang": None,  # Optional ISO language code
-        "rtl": False,  # Right-to-left text direction
-        "created": None,  # Optional ISO timestamp for created date
-        "title": None,  # Optional default title override
-        "timeout_seconds": 20,  # API timeout for publish requests
-        "verify_ssl": True,  # Verify TLS certificate
+    "publish": {
+        "providers": [],  # List of publish provider configs. Each entry needs "type" + provider-specific keys.
+        # Supported types: "writeas", "buttondown"
     },
 }
 
@@ -354,20 +344,34 @@ poster:
   method: local              # Generation method: local (PIL/Pillow)
   default_template: story    # Built-in template: story (create your own in templates_dir if needed)
 
-# Write.as Publishing (press 'u' in TUI or use the Publish button)
-writeas:
-  enabled: false
-  api_base: https://write.as/api
-  alias: null                # required (WRITEAS_ALIAS)
-  pass: null                 # required (WRITEAS_PASS)
-  collection_alias: null     # optional (WRITEAS_COLLECTION_ALIAS)
-  font: serif                # serif, sans, wrap, mono, code
-  lang: null
-  rtl: false
-  created: null
-  title: null
-  timeout_seconds: 20
-  verify_ssl: true
+# ── Publishing (press 'u' in TUI) ────────────────────────────
+# All enabled providers execute when you publish.
+# Each provider entry needs "type" plus provider-specific settings.
+
+publish:
+    providers:
+        # Write.as
+        # - type: writeas
+        #   enabled: false
+        #   api_base: https://write.as/api
+        #   alias: null              # required (WRITEAS_ALIAS env var)
+        #   pass: null               # required (WRITEAS_PASS env var)
+        #   collection_alias: null   # optional (WRITEAS_COLLECTION_ALIAS env var)
+        #   font: serif              # serif, sans, wrap, mono, code
+        #   lang: null
+        #   rtl: false
+        #   timeout_seconds: 20
+        #   verify_ssl: true
+
+        # Buttondown Newsletter
+        # - type: buttondown
+        #   enabled: false
+        #   api_key: null            # required (BUTTONDOWN_API_KEY env var)
+        #   api_base: https://api.buttondown.com/v1
+        #   status: draft            # draft or about_to_send
+        #   email_type: public       # public or private
+        #   timeout_seconds: 20
+        #   verify_ssl: true
 """
 
     with open(path, "w") as f:

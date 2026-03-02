@@ -422,8 +422,10 @@ Feed Management:
     # Get logs directory
     actual_logs_dir = str(Path.home() / ".config" / "moka-news" / "logs")
 
-    # Write.as publishing configuration
-    writeas_config = config.get("writeas", {})
+    # Publishing configuration — build multi-provider manager
+    from moka_news.publisher import create_publish_providers, PublishManager
+    publish_providers = create_publish_providers(config)
+    publish_manager = PublishManager(publish_providers)
 
     serve(
         articles,
@@ -441,7 +443,7 @@ Feed Management:
         posters_dir=actual_posters_dir,
         logs_dir=actual_logs_dir,
         poster_config=poster_config,
-        writeas_config=writeas_config,
+        publish_manager=publish_manager,
     )
 
 

@@ -93,17 +93,31 @@ poster:
     optimize_output: true  # Optimize PNG for smaller file sizes
     add_watermark: true    # Add MoKa News watermark to generated posters
 
-# Write.as Publishing (press 'u' in TUI or click Publish to Write.as)
-writeas:
-  enabled: false
-  api_base: https://write.as/api
-  alias: null              # WRITEAS_ALIAS
-  pass: null               # WRITEAS_PASS
-  collection_alias: null   # Optional (WRITEAS_COLLECTION_ALIAS)
-  font: serif              # serif, sans, wrap, mono, code
-  lang: null
-  rtl: false
-  created: null
-  title: null
-  timeout_seconds: 20
-  verify_ssl: true
+# ── Publishing (press 'u' in TUI) ────────────────────────────
+# All enabled providers execute when you publish.
+# Each provider entry needs "type" plus provider-specific settings.
+
+publish:
+  providers:
+    # Write.as
+    - type: writeas
+      enabled: false
+      api_base: https://write.as/api
+      alias: null              # required (WRITEAS_ALIAS env var)
+      pass: null               # required (WRITEAS_PASS env var)
+      collection_alias: null   # optional (WRITEAS_COLLECTION_ALIAS env var)
+      font: serif              # serif, sans, wrap, mono, code
+      lang: null
+      rtl: false
+      timeout_seconds: 20
+      verify_ssl: true
+
+    # Buttondown Newsletter
+    - type: buttondown
+      enabled: false
+      api_key: null            # required (BUTTONDOWN_API_KEY env var)
+      api_base: https://api.buttondown.com/v1
+      status: draft            # draft or about_to_send
+      email_type: public       # public or private
+      timeout_seconds: 20
+      verify_ssl: true
