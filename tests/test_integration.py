@@ -2,8 +2,21 @@
 Integration tests for MoKa News
 """
 
-from moka_news.barista import Barista, SimpleBarista
+from moka_news.barista import SimpleBarista
 from moka_news.cup import Cup
+
+
+def _process_articles(articles):
+    """Process articles through SimpleBarista, adding ai_title/ai_summary."""
+    provider = SimpleBarista()
+    processed = []
+    for article in articles:
+        result = provider.generate_summary(article)
+        processed_article = article.copy()
+        processed_article["ai_title"] = result["title"]
+        processed_article["ai_summary"] = result["summary"]
+        processed.append(processed_article)
+    return processed
 
 
 def test_full_pipeline_with_mock_data():
@@ -26,9 +39,8 @@ def test_full_pipeline_with_mock_data():
         },
     ]
 
-    # Process with Barista
-    barista = Barista(SimpleBarista())
-    processed = barista.brew(mock_articles)
+    # Process with SimpleBarista
+    processed = _process_articles(mock_articles)
 
     # Verify processing
     assert len(processed) == 2
@@ -46,9 +58,8 @@ def test_empty_pipeline():
     # Empty grinder result
     articles = []
 
-    # Process with Barista
-    barista = Barista(SimpleBarista())
-    processed = barista.brew(articles)
+    # Process with SimpleBarista
+    processed = _process_articles(articles)
 
     # Create Cup app
     app = Cup(processed)

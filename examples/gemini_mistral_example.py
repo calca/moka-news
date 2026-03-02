@@ -6,8 +6,20 @@ This example demonstrates how to use the new Gemini and Mistral AI providers
 in MoKa News for article summarization.
 """
 
-from moka_news.barista import Barista, GeminiBarista, MistralBarista, SimpleBarista
+from moka_news.barista import GeminiBarista, MistralBarista, SimpleBarista
 import os
+
+
+def _brew(provider, articles):
+    """Process articles through an AI provider, adding ai_title/ai_summary."""
+    processed = []
+    for article in articles:
+        result = provider.generate_summary(article)
+        out = article.copy()
+        out["ai_title"] = result["title"]
+        out["ai_summary"] = result["summary"]
+        processed.append(out)
+    return processed
 
 # Sample article for demonstration
 sample_articles = [
@@ -43,18 +55,18 @@ def demo_gemini():
     if not os.getenv("GEMINI_API_KEY"):
         print("⚠️  GEMINI_API_KEY not set. Using SimpleBarista instead.")
         print("   To use Gemini, set: export GEMINI_API_KEY='your-key'")
-        barista = Barista(SimpleBarista())
+        provider = SimpleBarista()
     else:
         try:
             print("✓ Using Google Gemini for summarization")
-            barista = Barista(GeminiBarista())
+            provider = GeminiBarista()
         except ImportError as e:
             print(f"⚠️  Error: {e}")
             print("   Install with: pip install -e '.[gemini]'")
-            barista = Barista(SimpleBarista())
+            provider = SimpleBarista()
 
     # Process articles
-    processed = barista.brew(sample_articles)
+    processed = _brew(provider, sample_articles)
 
     # Display results
     for i, article in enumerate(processed, 1):
@@ -72,18 +84,18 @@ def demo_mistral():
     if not os.getenv("MISTRAL_API_KEY"):
         print("⚠️  MISTRAL_API_KEY not set. Using SimpleBarista instead.")
         print("   To use Mistral, set: export MISTRAL_API_KEY='your-key'")
-        barista = Barista(SimpleBarista())
+        provider = SimpleBarista()
     else:
         try:
             print("✓ Using Mistral AI for summarization")
-            barista = Barista(MistralBarista())
+            provider = MistralBarista()
         except ImportError as e:
             print(f"⚠️  Error: {e}")
             print("   Install with: pip install -e '.[mistral]'")
-            barista = Barista(SimpleBarista())
+            provider = SimpleBarista()
 
     # Process articles
-    processed = barista.brew(sample_articles)
+    processed = _brew(provider, sample_articles)
 
     # Display results
     for i, article in enumerate(processed, 1):

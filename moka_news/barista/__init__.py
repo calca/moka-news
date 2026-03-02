@@ -375,65 +375,6 @@ class MistralCLIBarista(_CLIBarista):
     cli_command = "mistral"
 
 
-class Barista:
-    """Main Barista class that coordinates AI processing.
-
-    .. deprecated::
-        The ``Barista`` wrapper is no longer used in the main pipeline.
-        ``main.py`` calls ``create_ai_provider()`` directly and passes the
-        provider to ``EditorialGenerator``.  This class is kept for backward
-        compatibility with existing tests and examples.
-    """
-
-    def __init__(self, provider: Optional[AIProvider] = None, keywords: Optional[list] = None, prompts: Optional[Dict[str, str]] = None, max_content_length: int = MAX_CONTENT_LENGTH, max_tokens: int = MAX_TOKENS):
-        """
-        Initialize the Barista (articles are no longer AI-processed)
-
-        Args:
-            provider: AI provider instance (defaults to SimpleBarista)
-            keywords: Optional list of keywords for editorial generation
-            prompts: Optional custom prompts (kept for compatibility)
-            max_content_length: Maximum characters of content to include (unused)
-            max_tokens: Maximum tokens for AI response (unused)
-        """
-        self.provider = provider or SimpleBarista()
-        self.keywords = keywords or []
-        self.prompts = prompts
-        self.max_content_length = max_content_length
-        self.max_tokens = max_tokens
-
-    def brew(self, articles: list) -> list:
-        """
-        Process a list of articles (no AI processing, returns articles as-is)
-
-        Args:
-            articles: List of article dictionaries
-
-        Returns:
-            List of articles with ai_title and ai_summary same as original
-        """
-        processed = []
-
-        for article in articles:
-            try:
-                enhanced = self.provider.generate_summary(
-                    article, 
-                    self.max_content_length,
-                    self.max_tokens
-                )
-                processed_article = article.copy()
-                processed_article["ai_title"] = enhanced["title"]
-                processed_article["ai_summary"] = enhanced["summary"]
-                processed.append(processed_article)
-            except Exception as e:
-                logger.error(f"Error processing article: {e}", exc_info=True)
-                article["ai_title"] = article["title"]
-                article["ai_summary"] = article["summary"][:SUMMARY_TRUNCATE_LENGTH]
-                processed.append(article)
-
-        return processed
-
-
 def create_ai_provider(provider_name: str, config: Dict[str, Any]) -> AIProvider:
     """
     Create an AI provider instance.
@@ -477,32 +418,3 @@ def create_ai_provider(provider_name: str, config: Dict[str, Any]) -> AIProvider
             return SimpleBarista()
     else:
         return provider_class()
-
-
-def create_barista(
-    provider_name: str,
-    config: Dict[str, Any],
-    max_content_length: int = MAX_CONTENT_LENGTH,
-    max_tokens: int = MAX_TOKENS
-) -> Barista:
-    """Factory function to create a Barista (no AI processing for articles).
-
-    .. deprecated::
-        Prefer ``create_ai_provider()`` which is used by the main pipeline.
-        This function is kept for backward compatibility.
-
-    Args:
-        provider_name: Name of AI provider (all providers work the same now)
-        config: Configuration dictionary
-        max_content_length: Maximum characters of content to include (unused)
-        max_tokens: Maximum tokens for AI response (unused)
-
-    Returns:
-        Configured Barista instance
-    """
-    logger.info(f"Creating barista with {provider_name} provider (no AI processing)")
-
-    # Get AI provider instance (always works now)
-    provider = create_ai_provider(provider_name, config)
-
-    return Barista(provider, max_content_length, max_tokens)

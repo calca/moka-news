@@ -2,8 +2,21 @@
 Example script demonstrating MoKa News with mock data
 """
 
-from moka_news.barista import Barista, SimpleBarista
+from moka_news.barista import SimpleBarista
 from moka_news.cup import serve
+
+
+def _process_articles(articles):
+    """Process articles through SimpleBarista, adding ai_title/ai_summary."""
+    provider = SimpleBarista()
+    processed = []
+    for article in articles:
+        result = provider.generate_summary(article)
+        out = article.copy()
+        out["ai_title"] = result["title"]
+        out["ai_summary"] = result["summary"]
+        processed.append(out)
+    return processed
 
 
 def create_mock_articles():
@@ -56,10 +69,9 @@ def main():
     articles = create_mock_articles()
     print(f"📰 Created {len(articles)} mock articles")
 
-    # Process with Barista (using SimpleBarista since we don't have API keys)
+    # Process with SimpleBarista (no API keys needed)
     print("🤖 Processing articles with SimpleBarista...")
-    barista = Barista(SimpleBarista())
-    processed = barista.brew(articles)
+    processed = _process_articles(articles)
     print(f"✓ Processed {len(processed)} articles\n")
 
     # Display in console

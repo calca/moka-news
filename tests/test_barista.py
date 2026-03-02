@@ -4,7 +4,6 @@ Tests for The Barista component
 
 import pytest
 from moka_news.barista import (
-    Barista,
     SimpleBarista,
     AIProvider,
     GeminiBarista,
@@ -35,9 +34,9 @@ def test_simple_barista_generates_summary():
     assert len(result["summary"]) <= 200
 
 
-def test_barista_brew_processes_articles():
-    """Test that Barista processes a list of articles"""
-    barista = Barista(SimpleBarista())
+def test_simple_barista_processes_articles():
+    """Test that SimpleBarista processes a list of articles via generate_summary"""
+    provider = SimpleBarista()
     articles = [
         {
             "title": "Article 1",
@@ -55,17 +54,22 @@ def test_barista_brew_processes_articles():
         },
     ]
 
-    processed = barista.brew(articles)
+    processed = []
+    for article in articles:
+        result = provider.generate_summary(article)
+        processed_article = article.copy()
+        processed_article["ai_title"] = result["title"]
+        processed_article["ai_summary"] = result["summary"]
+        processed.append(processed_article)
 
     assert len(processed) == 2
     assert all("ai_title" in article for article in processed)
     assert all("ai_summary" in article for article in processed)
 
 
-def test_barista_brew_with_keywords():
-    """Test that Barista processes articles with keywords"""
-    keywords = ["technology", "AI", "programming"]
-    barista = Barista(SimpleBarista(), keywords)
+def test_simple_barista_with_keywords():
+    """Test that SimpleBarista processes articles (keywords do not affect pass-through)"""
+    provider = SimpleBarista()
     articles = [
         {
             "title": "Article 1",
@@ -76,18 +80,17 @@ def test_barista_brew_with_keywords():
         },
     ]
 
-    processed = barista.brew(articles)
+    result = provider.generate_summary(articles[0])
 
-    assert len(processed) == 1
-    assert "ai_title" in processed[0]
-    assert "ai_summary" in processed[0]
-    assert barista.keywords == keywords
+    assert "title" in result
+    assert "summary" in result
 
 
-def test_barista_handles_empty_list():
-    """Test that Barista handles empty article list"""
-    barista = Barista(SimpleBarista())
-    processed = barista.brew([])
+def test_simple_barista_handles_empty_list():
+    """Test that processing empty list returns empty"""
+    provider = SimpleBarista()
+    articles = []
+    processed = [provider.generate_summary(a) for a in articles]
     assert processed == []
 
 

@@ -7,7 +7,7 @@ on specific topics or aspects you're interested in.
 """
 
 from moka_news.config import load_config, create_sample_config
-from moka_news.barista import Barista, SimpleBarista
+from moka_news.barista import SimpleBarista
 
 # Example 1: Create a config file with keywords
 print("=" * 80)
@@ -74,16 +74,22 @@ articles = [
     }
 ]
 
-# Create barista with keywords
+# Create provider (keywords are used at the editorial level, not individual articles)
 keywords = config["ai"]["keywords"]
-barista = Barista(SimpleBarista(), keywords)
+provider = SimpleBarista()
 
 print(f"\nProcessing {len(articles)} articles with keywords: {keywords}")
 print("\nNote: With SimpleBarista, the functionality is demonstrated but AI providers")
 print("      will use these keywords to focus their summary generation.\n")
 
 # Process articles
-processed_articles = barista.brew(articles)
+processed_articles = []
+for article in articles:
+    result = provider.generate_summary(article)
+    out = article.copy()
+    out["ai_title"] = result["title"]
+    out["ai_summary"] = result["summary"]
+    processed_articles.append(out)
 
 for i, article in enumerate(processed_articles, 1):
     print(f"\n[{i}] {article['ai_title']}")

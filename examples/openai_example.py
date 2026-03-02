@@ -12,8 +12,20 @@ Before running this example:
 import os
 from dotenv import load_dotenv
 from examples.demo import create_mock_articles
-from moka_news.barista import Barista, OpenAIBarista, SimpleBarista
+from moka_news.barista import OpenAIBarista, SimpleBarista
 from moka_news.cup import serve
+
+
+def _brew(provider, articles):
+    """Process articles through an AI provider, adding ai_title/ai_summary."""
+    processed = []
+    for article in articles:
+        result = provider.generate_summary(article)
+        out = article.copy()
+        out["ai_title"] = result["title"]
+        out["ai_summary"] = result["summary"]
+        processed.append(out)
+    return processed
 
 
 def main():
@@ -30,23 +42,23 @@ def main():
         print("   Please set your API key:")
         print("   export OPENAI_API_KEY='your-key-here'")
         print("\n   Falling back to SimpleBarista...")
-        barista = Barista(SimpleBarista())
+        provider = SimpleBarista()
     else:
         print("✓ OpenAI API key found")
         print("🤖 Using OpenAI for intelligent summaries...\n")
         try:
-            barista = Barista(OpenAIBarista())
+            provider = OpenAIBarista()
         except Exception as e:
             print(f"⚠️  Error initializing OpenAI: {e}")
             print("   Falling back to SimpleBarista...")
-            barista = Barista(SimpleBarista())
+            provider = SimpleBarista()
 
     # Get mock articles
     articles = create_mock_articles()
     print(f"📰 Processing {len(articles)} articles...")
 
-    # Process with barista
-    processed = barista.brew(articles)
+    # Process with provider
+    processed = _brew(provider, articles)
     print(f"✓ Processed {len(processed)} articles\n")
 
     # Display results

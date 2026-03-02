@@ -3,7 +3,7 @@ Example: Using custom RSS feeds with MoKa News
 """
 
 from moka_news.grinder import Grinder
-from moka_news.barista import Barista, SimpleBarista
+from moka_news.barista import SimpleBarista
 from moka_news.cup import serve
 
 
@@ -40,8 +40,14 @@ def main():
     print("🤖 Processing with SimpleBarista...")
 
     # Process articles
-    barista = Barista(SimpleBarista())
-    processed = barista.brew(articles)
+    provider = SimpleBarista()
+    processed = []
+    for article in articles:
+        result = provider.generate_summary(article)
+        out = article.copy()
+        out["ai_title"] = result["title"]
+        out["ai_summary"] = result["summary"]
+        processed.append(out)
 
     print(f"✓ Processed {len(processed)} articles")
     print("☕ Launching TUI...\n")

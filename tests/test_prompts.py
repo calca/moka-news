@@ -4,7 +4,7 @@ Tests for external prompts functionality
 
 import pytest
 from moka_news.config import load_config
-from moka_news.barista import _build_prompt, Barista, SimpleBarista
+from moka_news.barista import _build_prompt, SimpleBarista
 
 
 # Note: DEFAULT_PROMPTS removed as individual articles are no longer AI-processed
@@ -81,44 +81,23 @@ def test_build_prompt_with_custom_prompts_compatibility():
     assert "Return JSON" in prompt
 
 
-def test_barista_with_prompts():
-    """Test that Barista accepts and stores prompts"""
-    custom_prompts = {
-        "user_prompt": "Custom: {title}",
-        "keywords_section": "",
-        "format_section": ""
+def test_simple_barista_pass_through():
+    """Test that SimpleBarista passes through article data without AI"""
+    provider = SimpleBarista()
+    article = {
+        "title": "Article 1",
+        "summary": "Summary 1",
+        "link": "https://example.com/1",
+        "published": "2026-01-01",
+        "source": "Test Source",
     }
-    
-    barista = Barista(SimpleBarista(), keywords=[], prompts=custom_prompts)
-    
-    assert barista.prompts == custom_prompts
 
+    result = provider.generate_summary(article)
 
-def test_barista_processes_articles_with_custom_prompts():
-    """Test that Barista processes articles with custom prompts (compatibility only)"""
-    custom_prompts = {
-        "user_prompt": "Summarize: {title} - {content}",
-        "keywords_section": "",
-        "format_section": "\nTITLE: <title>\nSUMMARY: <summary>"
-    }
-    
-    barista = Barista(SimpleBarista(), keywords=[], prompts=custom_prompts)
-    
-    articles = [
-        {
-            "title": "Article 1",
-            "summary": "Summary 1",
-            "link": "https://example.com/1",
-            "published": "2026-01-01",
-            "source": "Test Source",
-        }
-    ]
-    
-    processed = barista.brew(articles)
-    
-    assert len(processed) == 1
-    assert "ai_title" in processed[0]
-    assert "ai_summary" in processed[0]
+    assert "title" in result
+    assert "summary" in result
+    assert result["title"] == "Article 1"
+    assert result["summary"] == "Summary 1"
 
 
 def test_config_excludes_article_prompts():

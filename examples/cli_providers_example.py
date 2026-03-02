@@ -7,12 +7,23 @@ Gemini CLI, Mistral CLI) in MoKa News for article summarization.
 """
 
 from moka_news.barista import (
-    Barista,
     GitHubCopilotCLIBarista,
     GeminiCLIBarista,
     MistralCLIBarista,
     SimpleBarista,
 )
+
+
+def _brew(provider, articles):
+    """Process articles through an AI provider, adding ai_title/ai_summary."""
+    processed = []
+    for article in articles:
+        result = provider.generate_summary(article)
+        out = article.copy()
+        out["ai_title"] = result["title"]
+        out["ai_summary"] = result["summary"]
+        processed.append(out)
+    return processed
 
 # Sample article for demonstration
 sample_articles = [
@@ -37,7 +48,7 @@ def demo_github_copilot_cli():
 
     try:
         print("✓ Initializing GitHub Copilot CLI provider")
-        barista = Barista(GitHubCopilotCLIBarista())
+        provider = GitHubCopilotCLIBarista()
         print("✓ GitHub Copilot CLI is available")
 
         print("\nℹ️  Note: This requires 'gh' CLI to be installed and authenticated")
@@ -46,7 +57,7 @@ def demo_github_copilot_cli():
 
         # Process articles
         print("\n🤖 Processing article with GitHub Copilot CLI...")
-        processed = barista.brew(sample_articles)
+        processed = _brew(provider, sample_articles)
 
         # Display results
         for i, article in enumerate(processed, 1):
@@ -56,8 +67,7 @@ def demo_github_copilot_cli():
     except RuntimeError as e:
         print(f"⚠️  Error: {e}")
         print("   Using SimpleBarista fallback instead")
-        barista = Barista(SimpleBarista())
-        processed = barista.brew(sample_articles)
+        processed = _brew(SimpleBarista(), sample_articles)
         for i, article in enumerate(processed, 1):
             print(f"\n[{i}] {article['ai_title']}")
             print(f"    {article['ai_summary']}")
@@ -71,7 +81,7 @@ def demo_gemini_cli():
 
     try:
         print("✓ Initializing Gemini CLI provider")
-        barista = Barista(GeminiCLIBarista())
+        provider = GeminiCLIBarista()
         print("✓ Gemini CLI (gcloud) is available")
 
         print("\nℹ️  Note: This requires 'gcloud' CLI to be installed and configured")
@@ -80,7 +90,7 @@ def demo_gemini_cli():
 
         # Process articles
         print("\n🤖 Processing article with Gemini CLI...")
-        processed = barista.brew(sample_articles)
+        processed = _brew(provider, sample_articles)
 
         # Display results
         for i, article in enumerate(processed, 1):
@@ -90,8 +100,7 @@ def demo_gemini_cli():
     except RuntimeError as e:
         print(f"⚠️  Error: {e}")
         print("   Using SimpleBarista fallback instead")
-        barista = Barista(SimpleBarista())
-        processed = barista.brew(sample_articles)
+        processed = _brew(SimpleBarista(), sample_articles)
         for i, article in enumerate(processed, 1):
             print(f"\n[{i}] {article['ai_title']}")
             print(f"    {article['ai_summary']}")
@@ -105,7 +114,7 @@ def demo_mistral_cli():
 
     try:
         print("✓ Initializing Mistral CLI provider")
-        barista = Barista(MistralCLIBarista())
+        provider = MistralCLIBarista()
         print("✓ Mistral CLI is available")
 
         print("\nℹ️  Note: This requires 'mistral' CLI to be installed")
@@ -114,7 +123,7 @@ def demo_mistral_cli():
 
         # Process articles
         print("\n🤖 Processing article with Mistral CLI...")
-        processed = barista.brew(sample_articles)
+        processed = _brew(provider, sample_articles)
 
         # Display results
         for i, article in enumerate(processed, 1):
@@ -124,8 +133,7 @@ def demo_mistral_cli():
     except RuntimeError as e:
         print(f"⚠️  Error: {e}")
         print("   Using SimpleBarista fallback instead")
-        barista = Barista(SimpleBarista())
-        processed = barista.brew(sample_articles)
+        processed = _brew(SimpleBarista(), sample_articles)
         for i, article in enumerate(processed, 1):
             print(f"\n[{i}] {article['ai_title']}")
             print(f"    {article['ai_summary']}")
