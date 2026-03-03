@@ -162,7 +162,7 @@ def truncate_single_line_text(
 
     def text_width(value: str) -> int:
         bbox = draw.textbbox((0, 0), value, font=font)
-        return bbox[2] - bbox[0]
+        return int(bbox[2] - bbox[0])
 
     if text_width(raw) <= max_width:
         return raw
@@ -228,7 +228,7 @@ def wrap_rich_lines(
         font = bold_font if is_bold else regular_font
         display = (" " + word) if current_line else word
         bbox = draw.textbbox((0, 0), display, font=font)
-        token_w = bbox[2] - bbox[0]
+        token_w = int(bbox[2] - bbox[0])
 
         if current_width + token_w <= max_width:
             current_line.append((display, is_bold, font))
@@ -238,7 +238,7 @@ def wrap_rich_lines(
                 lines.append(current_line)
             current_line = [(word, is_bold, font)]
             bbox = draw.textbbox((0, 0), word, font=font)
-            current_width = bbox[2] - bbox[0]
+            current_width = int(bbox[2] - bbox[0])
 
     if current_line:
         lines.append(current_line)

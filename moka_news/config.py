@@ -6,7 +6,7 @@ Supports YAML configuration files for customization
 import os
 import copy
 import yaml
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, cast
 from pathlib import Path
 from moka_news.constants import DEFAULT_TECH_FEEDS, MAX_CONTENT_LENGTH, MAX_TOKENS
 from moka_news.paths import CONFIG_SEARCH_LOCATIONS, THEME_DARK, THEME_LIGHT
@@ -15,7 +15,7 @@ from moka_news.logger import get_logger
 logger = get_logger(__name__)
 
 
-DEFAULT_EDITORIAL_PROMPTS = {
+DEFAULT_EDITORIAL_PROMPTS: Dict[str, str] = {
     "system_message": (
         "You are a brilliant morning newspaper editor with a warm, conversational voice. "
         "You write editorials that feel like chatting with a well-informed friend over coffee — "
@@ -70,7 +70,7 @@ TITLE: <a crisp, evocative editorial title that captures the day's mood>
 SUMMARY: <the full editorial content in Markdown, written in flowing prose with NO bullet points or numbered lists>""",
 }
 
-DEFAULT_CONFIG = {
+DEFAULT_CONFIG: Dict[str, Any] = {
     "ai": {
         "provider": "gemini-cli",  # Default AI provider - requires gcloud CLI
         "language": "en",  # Editorial language: en, it, es, fr
@@ -129,7 +129,7 @@ DEFAULT_CONFIG = {
 }
 
 
-def get_config_path() -> Path:
+def get_config_path() -> Optional[Path]:
     """
     Get the path to the configuration file
 
@@ -157,6 +157,7 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
     # Use a deep copy so nested defaults are never mutated at runtime.
     config = copy.deepcopy(DEFAULT_CONFIG)
 
+    config_file: Optional[Path]
     if config_path:
         config_file = Path(config_path)
     else:
@@ -166,21 +167,23 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
         try:
             with open(config_file, "r") as f:
                 user_config = yaml.safe_load(f)
-                if user_config:
+                if isinstance(user_config, dict):
                     # Deep merge user config with defaults
                     config = merge_configs(config, user_config)
         except Exception as e:
             logger.warning("Could not load config file: %s", e)
 
     # Override with environment variables
+    ai_config = cast(Dict[str, Any], config.setdefault("ai", {}))
+    api_keys = cast(Dict[str, Any], ai_config.setdefault("api_keys", {}))
     if os.getenv("OPENAI_API_KEY"):
-        config["ai"]["api_keys"]["openai"] = os.getenv("OPENAI_API_KEY")
+        api_keys["openai"] = os.getenv("OPENAI_API_KEY")
     if os.getenv("ANTHROPIC_API_KEY"):
-        config["ai"]["api_keys"]["anthropic"] = os.getenv("ANTHROPIC_API_KEY")
+        api_keys["anthropic"] = os.getenv("ANTHROPIC_API_KEY")
     if os.getenv("GEMINI_API_KEY"):
-        config["ai"]["api_keys"]["gemini"] = os.getenv("GEMINI_API_KEY")
+        api_keys["gemini"] = os.getenv("GEMINI_API_KEY")
     if os.getenv("MISTRAL_API_KEY"):
-        config["ai"]["api_keys"]["mistral"] = os.getenv("MISTRAL_API_KEY")
+        api_keys["mistral"] = os.getenv("MISTRAL_API_KEY")
     # NOTE: Write.as env vars (WRITEAS_ALIAS, etc.) are read directly by
     # WriteAsPublisher at construction time — no config-level override needed.
 
@@ -209,7 +212,7 @@ def merge_configs(default: Dict[str, Any], user: Dict[str, Any]) -> Dict[str, An
     return result
 
 
-def create_sample_config(path: str = "moka-news.yaml"):
+def create_sample_config(path: str = "moka-news.yaml") -> None:
     """
     Create a sample configuration file
 

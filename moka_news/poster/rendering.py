@@ -1,7 +1,7 @@
 """Poster rendering — gradient backgrounds, rounded boxes, and shadow effects."""
 
 import re
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple
 
 try:
     from PIL import Image, ImageDraw, ImageColor, ImageFilter
@@ -14,6 +14,10 @@ from moka_news.constants import (
     DEFAULT_SHADOW_OFFSET,
     DEFAULT_SHADOW_BLUR,
 )
+
+
+RGBColor = Tuple[int, int, int]
+RGBAColor = Tuple[int, int, int, int]
 
 
 def create_gradient_background(
@@ -37,11 +41,11 @@ def create_gradient_background(
     if not colors or len(colors) < 2:
         return Image.new("RGB", (width, height), colors[0] if colors else "#000000")
 
-    rgb_colors = []
-    for color in colors:
+    rgb_colors: List[RGBColor] = []
+    for color_hex in colors:
         try:
-            rgb = ImageColor.getrgb(color)
-            rgb_colors.append(rgb)
+            rgb = ImageColor.getrgb(color_hex)
+            rgb_colors.append((rgb[0], rgb[1], rgb[2]))
         except Exception:
             rgb_colors.append((0, 0, 0))
 
@@ -53,19 +57,19 @@ def create_gradient_background(
             for x in range(width):
                 distance = (x**2 + y**2) ** 0.5
                 ratio = distance / max_distance
-                color = _interpolate_colors(rgb_colors, ratio)
-                img.putpixel((x, y), color)
+                pixel_color: RGBColor = _interpolate_colors(rgb_colors, ratio)
+                img.putpixel((x, y), pixel_color)
     else:
         for y in range(height):
             ratio = y / height
-            color = _interpolate_colors(rgb_colors, ratio)
+            pixel_color = _interpolate_colors(rgb_colors, ratio)
             for x in range(width):
-                img.putpixel((x, y), color)
+                img.putpixel((x, y), pixel_color)
 
     return img
 
 
-def _interpolate_colors(colors: List[tuple], ratio: float) -> tuple:
+def _interpolate_colors(colors: List[RGBColor], ratio: float) -> RGBColor:
     """Interpolate between multiple colors based on ratio (0-1)."""
     if len(colors) == 1:
         return colors[0]
@@ -116,6 +120,7 @@ def draw_rounded_box_with_shadow(
     shadow_color_str = shadow_config.get("color", "rgba(0,0,0,0.15)")
 
     try:
+        shadow_color: RGBAColor
         if "rgba" in shadow_color_str:
             match = re.match(r"rgba\((\d+),(\d+),(\d+),([\d.]+)\)", shadow_color_str)
             if match:
@@ -130,7 +135,7 @@ def draw_rounded_box_with_shadow(
                 shadow_color = (0, 0, 0, 38)
         else:
             rgb = ImageColor.getrgb(shadow_color_str)
-            shadow_color = rgb + (38,)
+            shadow_color = (rgb[0], rgb[1], rgb[2], 38)
     except Exception:
         shadow_color = (0, 0, 0, 38)
 

@@ -1,5 +1,9 @@
 """HTTP compatibility shim for optional requests dependency."""
 
+from typing import Any
+
+requests: Any
+
 try:
     import requests as _requests
 except (

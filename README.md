@@ -569,6 +569,9 @@ ruff check moka_news tests examples
 
 # Check formatting with black (same as CI)
 black --check moka_news tests examples
+
+# Type check critical modules
+mypy
 ```
 
 ## Default Configuration

@@ -188,7 +188,7 @@ class PosterGenerator:
         font_file: Optional[str],
         font_family: str,
         size: int,
-    ) -> "ImageFont.ImageFont":
+    ) -> Any:
         return load_font(font_file, font_family, size)
 
     def _fit_font_size(

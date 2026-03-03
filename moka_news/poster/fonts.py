@@ -1,6 +1,6 @@
 """Poster fonts — loading, platform fallback chains, and auto-sizing."""
 
-from typing import List, Optional
+from typing import Any, List, Optional
 
 try:
     from PIL import ImageDraw, ImageFont
@@ -22,7 +22,7 @@ def load_font(
     font_file: Optional[str],
     font_family: str,
     size: int,
-) -> "ImageFont.ImageFont":
+) -> Any:
     """
     Load a font with fallback chain:
     custom font → bundled font → system font → default.
@@ -32,13 +32,15 @@ def load_font(
         try:
             import importlib.resources as pkg_resources
 
-            try:
-                fonts_path = pkg_resources.files("moka_news") / "fonts" / font_file
-                if fonts_path.exists():
-                    font = ImageFont.truetype(str(fonts_path), size)
+            files_fn = getattr(pkg_resources, "files", None)
+            as_file_fn = getattr(pkg_resources, "as_file", None)
+            if callable(files_fn) and callable(as_file_fn):
+                bundled_ref = files_fn("moka_news") / "fonts" / font_file
+                with as_file_fn(bundled_ref) as bundled_path:
+                    font = ImageFont.truetype(str(bundled_path), size)
                     logger.debug(f"Loaded bundled font: {font_file!r} @ {size}px")
                     return font
-            except AttributeError:
+            else:
                 with pkg_resources.path("moka_news.fonts", font_file) as font_path:
                     if font_path.exists():
                         font = ImageFont.truetype(str(font_path), size)

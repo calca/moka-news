@@ -29,7 +29,7 @@ class WriteAsPublisher:
         self.passphrase = str(
             cfg.get("pass") or os.getenv("WRITEAS_PASS") or ""
         ).strip()
-        self._access_token_cache = None
+        self._access_token_cache: Optional[str] = None
 
         self.collection_alias = str(
             cfg.get("collection_alias")

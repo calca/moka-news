@@ -49,6 +49,12 @@ jobs:
         source venv/bin/activate
         pytest tests/ -v
 
+    - name: Type check with mypy
+      if: matrix.python-version == '3.11'
+      run: |
+        source venv/bin/activate
+        mypy
+
   build:
     runs-on: ubuntu-latest
     needs: test
