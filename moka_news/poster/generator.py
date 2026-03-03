@@ -482,49 +482,32 @@ class PosterGenerator:
             qr_img = qr_img.convert("RGBA")
         img.paste(qr_img, qr_pos, qr_img)
 
-    # -- local poster generation ----------------------------------------------
-
-    def _generate_local_poster(
-        self,
-        editorial: Dict[str, Any],
-        template_name: Optional[str] = None,
-        custom_options: Optional[Dict[str, Any]] = None,
-    ) -> Path:
-        """Generate poster locally using PIL/Pillow."""
-        logger.info(
-            f"_generate_local_poster: start "
-            f"(template={template_name or self.default_template!r})"
-        )
-        template_name = template_name or self.default_template
-        template = self.load_template(template_name)
-        logger.debug(
-            f"Template loaded: {template.name} ({template.width}x{template.height}), "
-            f"gradient={template.gradient_enabled}, content_box={template.content_box_enabled}"
-        )
-
-        # Apply custom options
-        if custom_options:
-            for key, value in custom_options.items():
-                if key == "gradient" and isinstance(value, dict):
-                    for gk, gv in value.items():
-                        attr = f"gradient_{gk}"
-                        if hasattr(template, attr):
-                            setattr(template, attr, gv)
-                elif key == "content_box" and isinstance(value, dict):
-                    for ck, cv in value.items():
-                        if ck == "shadow" and isinstance(cv, dict):
-                            for sk, sv in cv.items():
-                                attr = f"shadow_{sk}"
-                                if hasattr(template, attr):
-                                    setattr(template, attr, sv)
-                        else:
-                            attr = f"content_box_{ck}"
+    def _apply_custom_options(self, template: PosterTemplate, custom_options) -> None:
+        """Apply runtime custom options to template attributes."""
+        if not custom_options:
+            return
+        for key, value in custom_options.items():
+            if key == "gradient" and isinstance(value, dict):
+                for gk, gv in value.items():
+                    attr = f"gradient_{gk}"
+                    if hasattr(template, attr):
+                        setattr(template, attr, gv)
+            elif key == "content_box" and isinstance(value, dict):
+                for ck, cv in value.items():
+                    if ck == "shadow" and isinstance(cv, dict):
+                        for sk, sv in cv.items():
+                            attr = f"shadow_{sk}"
                             if hasattr(template, attr):
-                                setattr(template, attr, cv)
-                elif hasattr(template, key):
-                    setattr(template, key, value)
+                                setattr(template, attr, sv)
+                    else:
+                        attr = f"content_box_{ck}"
+                        if hasattr(template, attr):
+                            setattr(template, attr, cv)
+            elif hasattr(template, key):
+                setattr(template, key, value)
 
-        # Create base image
+    def _create_canvas(self, template: PosterTemplate):
+        """Create base image and return drawing layout metrics."""
         if template.gradient_enabled and template.gradient_colors:
             img = create_gradient_background(
                 template.width,
@@ -537,7 +520,7 @@ class PosterGenerator:
                 "RGB", (template.width, template.height), template.background_color
             )
 
-        # Content box
+        box_height = None
         if template.content_box_enabled:
             box_width = int(template.width * 0.9)
             margin = (template.width - box_width) // 2
@@ -568,9 +551,15 @@ class PosterGenerator:
             draw_y = template.padding
             max_width = template.width - (template.padding * 2)
 
-        draw = ImageDraw.Draw(img)
+        total_draw_h = (
+            box_height - (template.content_box_padding * 2)
+            if template.content_box_enabled and box_height is not None
+            else template.height - (template.padding * 2)
+        )
+        return img, draw_x, draw_y, max_width, total_draw_h
 
-        # Text content
+    def _extract_poster_content(self, editorial: Dict[str, Any]):
+        """Extract title/body content from editorial payload."""
         content = str(editorial.get("content") or "")
         title = str(editorial.get("title") or "Morning Editorial").strip()
         title_from_content, _ = poster_text.extract_title_and_body(content)
@@ -578,13 +567,10 @@ class PosterGenerator:
             title = title_from_content
         clean_content = poster_text.extract_poster_paragraph(content)
         body_content = poster_text.format_body_for_readability(clean_content)
+        return title, body_content
 
-        # Zone calculation
-        if template.content_box_enabled:
-            total_draw_h = box_height - (template.content_box_padding * 2)
-        else:
-            total_draw_h = template.height - (template.padding * 2)
-
+    def _compute_layout_zones(self, template: PosterTemplate, total_draw_h: int):
+        """Compute title/body/footer drawing zones."""
         footer_line_h = template.metadata_font_size + 8
         footer_lines = (
             int(template.show_timestamp)
@@ -598,8 +584,19 @@ class PosterGenerator:
         title_ratio = 0.14 if template.title_single_line else 0.30
         title_zone_h = max(int(usable_h * title_ratio), 40)
         body_zone_h = usable_h - title_zone_h
+        return footer_line_h, footer_zone_h, title_zone_h, body_zone_h
 
-        # Auto-fit fonts
+    def _build_fonts(
+        self,
+        draw,
+        template: PosterTemplate,
+        title: str,
+        body_content: str,
+        max_width: int,
+        title_zone_h: int,
+        body_zone_h: int,
+    ):
+        """Auto-fit and load title/body/footer fonts."""
         metadata_font = load_font(
             template.font_file,
             template.font_family,
@@ -650,14 +647,14 @@ class PosterGenerator:
             template.bold_font_file, template.font_family, title_font_size
         )
 
-        _plain = re.sub(r"\*\*([^*]+)\*\*", r"\1", body_content)
+        plain_body = re.sub(r"\*\*([^*]+)\*\*", r"\1", body_content)
         body_min = max(8, int(template.summary_min_size * width_scale))
         body_max = max(body_min, int(template.summary_max_size * width_scale))
         body_intro_gap = 10
         body_fit_height = max(1, body_zone_h - body_intro_gap)
         body_font_size = fit_font_size(
             draw,
-            _plain,
+            plain_body,
             template.bold_font_file,
             template.font_family,
             max_width,
@@ -673,8 +670,27 @@ class PosterGenerator:
         summary_bold_font = load_font(
             template.bold_font_file, template.font_family, body_font_size
         )
+        return (
+            metadata_font,
+            title_font,
+            summary_font,
+            summary_bold_font,
+            body_intro_gap,
+            body_fit_height,
+        )
 
-        # Draw title
+    def _draw_title_and_divider(
+        self,
+        draw,
+        template: PosterTemplate,
+        title: str,
+        title_font,
+        draw_x: int,
+        draw_y: int,
+        max_width: int,
+        body_intro_gap: int,
+    ) -> int:
+        """Draw title and divider, return body start Y."""
         current_y = draw_y
         if template.title_single_line:
             title_lines = [
@@ -699,21 +715,34 @@ class PosterGenerator:
             bbox = draw.textbbox((draw_x, current_y), line, font=title_font)
             current_y += int((bbox[3] - bbox[1]) * template.line_spacing)
 
-        # Divider
         current_y += 12
         draw.line(
             [(draw_x, current_y), (draw_x + max_width, current_y)],
             fill=template.accent_color,
             width=3,
         )
-        current_y += 17
-        current_y += body_intro_gap
+        current_y += 17 + body_intro_gap
+        return current_y
 
-        # Draw body
+    def _draw_body_text(
+        self,
+        draw,
+        template: PosterTemplate,
+        body_content: str,
+        summary_font,
+        summary_bold_font,
+        draw_x: int,
+        start_y: int,
+        max_width: int,
+        body_fit_height: int,
+    ) -> None:
+        """Draw wrapped body text with rich formatting support."""
+        current_y = start_y
         body_max_y = current_y + body_fit_height
         body_paragraphs = poster_text.split_paragraphs(body_content)
         line_probe_bbox = draw.textbbox((0, 0), "Ag", font=summary_font)
         paragraph_gap_h = max(4, int((line_probe_bbox[3] - line_probe_bbox[1]) * 0.4))
+
         stop_render = False
         for pidx, paragraph in enumerate(body_paragraphs):
             rich_segments = poster_text.parse_rich_text(paragraph)
@@ -750,7 +779,19 @@ class PosterGenerator:
                     break
                 current_y += paragraph_gap_h
 
-        # Footer
+    def _draw_footer(
+        self,
+        draw,
+        template: PosterTemplate,
+        editorial: Dict[str, Any],
+        metadata_font,
+        draw_x: int,
+        draw_y: int,
+        total_draw_h: int,
+        footer_zone_h: int,
+        footer_line_h: int,
+    ) -> None:
+        """Draw footer metadata lines."""
         footer_y = draw_y + total_draw_h - footer_zone_h + 20
         if template.show_timestamp:
             ts = datetime.now().strftime("%B %d, %Y")
@@ -777,6 +818,82 @@ class PosterGenerator:
                     fill=template.secondary_color,
                     font=metadata_font,
                 )
+
+    # -- local poster generation ----------------------------------------------
+
+    def _generate_local_poster(
+        self,
+        editorial: Dict[str, Any],
+        template_name: Optional[str] = None,
+        custom_options: Optional[Dict[str, Any]] = None,
+    ) -> Path:
+        """Generate poster locally using PIL/Pillow."""
+        logger.info(
+            f"_generate_local_poster: start "
+            f"(template={template_name or self.default_template!r})"
+        )
+        template_name = template_name or self.default_template
+        template = self.load_template(template_name)
+        logger.debug(
+            f"Template loaded: {template.name} ({template.width}x{template.height}), "
+            f"gradient={template.gradient_enabled}, content_box={template.content_box_enabled}"
+        )
+        self._apply_custom_options(template, custom_options)
+
+        img, draw_x, draw_y, max_width, total_draw_h = self._create_canvas(template)
+        draw = ImageDraw.Draw(img)
+        title, body_content = self._extract_poster_content(editorial)
+        footer_line_h, footer_zone_h, title_zone_h, body_zone_h = self._compute_layout_zones(
+            template, total_draw_h
+        )
+        (
+            metadata_font,
+            title_font,
+            summary_font,
+            summary_bold_font,
+            body_intro_gap,
+            body_fit_height,
+        ) = self._build_fonts(
+            draw,
+            template,
+            title,
+            body_content,
+            max_width,
+            title_zone_h,
+            body_zone_h,
+        )
+        body_start_y = self._draw_title_and_divider(
+            draw,
+            template,
+            title,
+            title_font,
+            draw_x,
+            draw_y,
+            max_width,
+            body_intro_gap,
+        )
+        self._draw_body_text(
+            draw,
+            template,
+            body_content,
+            summary_font,
+            summary_bold_font,
+            draw_x,
+            body_start_y,
+            max_width,
+            body_fit_height,
+        )
+        self._draw_footer(
+            draw,
+            template,
+            editorial,
+            metadata_font,
+            draw_x,
+            draw_y,
+            total_draw_h,
+            footer_zone_h,
+            footer_line_h,
+        )
 
         # Logo
         img = self._add_logo(

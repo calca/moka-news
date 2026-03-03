@@ -96,12 +96,8 @@ def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
     return articles, last_update
 
 
-def main():
-    """Main entry point for MoKa News"""
-    # Load environment variables from .env file
-    load_dotenv()
-
-    # Parse command line arguments
+def _build_parser() -> argparse.ArgumentParser:
+    """Build CLI argument parser."""
     parser = argparse.ArgumentParser(
         description="☕ MoKa News - Your Morning News",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -190,67 +186,64 @@ Feed Management:
         metavar="PATH",
         help="Path to OPML file (default: ~/.config/moka-news/feeds.opml)",
     )
+    return parser
 
-    args = parser.parse_args()
 
-    # Setup logger — always write WARNING+ to a daily log file so errors are
-    # captured even when the TUI is running (which hides stderr).
-    # --debug bumps both console and file to DEBUG level.
+def _setup_main_logger(debug: bool) -> None:
+    """Configure application logger."""
     global logger
     import logging as _logging
     from datetime import datetime as _dt
 
-    _logs_dir = LOGS_DIR
-    _logs_dir.mkdir(parents=True, exist_ok=True)
-    _log_file = _logs_dir / f"moka-news-{_dt.now().strftime('%Y-%m-%d')}.log"
+    logs_dir = LOGS_DIR
+    logs_dir.mkdir(parents=True, exist_ok=True)
+    log_file = logs_dir / f"moka-news-{_dt.now().strftime('%Y-%m-%d')}.log"
 
-    if args.debug:
+    if debug:
         setup_logger(
             "moka_news",
             level=_logging.DEBUG,
-            log_file=str(_log_file),
+            log_file=str(log_file),
             file_level=_logging.DEBUG,
         )
         logger = get_logger(__name__)
         logger.info(f"\n{'='*60}")
         logger.info("🔍 DEBUG MODE ENABLED")
-        logger.info(f"📝 Logging to: {_log_file}")
+        logger.info(f"📝 Logging to: {log_file}")
         logger.info(f"🕐 Session started at: {_dt.now().strftime('%H:%M:%S')}")
         logger.info(f"{'='*60}")
-        print(f"🔍 DEBUG MODE ENABLED - Logs appended to: {_log_file}", file=sys.stderr)
-    else:
-        # Console stays at WARNING; file captures INFO+ so nothing is lost
-        setup_logger(
-            "moka_news",
-            level=_logging.INFO,
-            log_file=str(_log_file),
-            file_level=_logging.INFO,
-        )
-        logger = get_logger(__name__)
-        logger.debug(f"Log file: {_log_file}")
-
-    # Initialize OPML manager
-    opml_manager = OPMLManager(args.opml)
-
-    # Check for first run and run setup wizard if needed
-    # Skip setup wizard for specific commands that don't need it
-    skip_setup = (
-        args.create_config or args.add_feed or args.remove_feed or args.list_feeds
-    )
-
-    if is_first_run() and not skip_setup:
-        run_first_run_setup(opml_manager)
-        # After setup, the wizard may have already launched MoKa News
+        print(f"🔍 DEBUG MODE ENABLED - Logs appended to: {log_file}", file=sys.stderr)
         return
 
-    # Handle feed management commands
+    # Setup logger — always write WARNING+ to a daily log file so errors are
+    # captured even when the TUI is running (which hides stderr).
+    # --debug bumps both console and file to DEBUG level.
+    setup_logger(
+        "moka_news",
+        level=_logging.INFO,
+        log_file=str(log_file),
+        file_level=_logging.INFO,
+    )
+    logger = get_logger(__name__)
+    logger.debug(f"Log file: {log_file}")
+
+
+def _should_skip_first_run_setup(args: argparse.Namespace) -> bool:
+    """Return True when command does not need setup wizard."""
+    return bool(args.create_config or args.add_feed or args.remove_feed or args.list_feeds)
+
+
+def _handle_feed_management_commands(
+    args: argparse.Namespace, opml_manager: OPMLManager
+) -> bool:
+    """Handle feed-management CLI commands. Returns True if command handled."""
     if args.add_feed:
         if opml_manager.add_feed(args.add_feed):
             print(f"✓ Added feed: {args.add_feed}")
             print(f"  Saved to: {opml_manager.opml_path}")
         else:
             print(f"⚠️  Feed already exists: {args.add_feed}")
-        return
+        return True
 
     if args.remove_feed:
         if opml_manager.remove_feed(args.remove_feed):
@@ -258,7 +251,7 @@ Feed Management:
             print(f"  Updated: {opml_manager.opml_path}")
         else:
             print(f"⚠️  Feed not found: {args.remove_feed}")
-        return
+        return True
 
     if args.list_feeds:
         feeds = opml_manager.list_feeds()
@@ -273,63 +266,36 @@ Feed Management:
         else:
             print("No feeds configured.")
             print("Add feeds with: moka-news --add-feed URL")
-        return
+        return True
 
-    # Handle --create-config
-    if args.create_config:
-        create_sample_config()
-        return
+    return False
 
-    # Load configuration
-    config = load_config(args.config)
 
-    # CLI arguments override config file
-    ai_provider = args.ai if args.ai else config["ai"]["provider"]
-
-    # Get feeds from: CLI args > OPML manager > config fallback (internal default only)
+def _resolve_feed_urls(
+    args: argparse.Namespace, opml_manager: OPMLManager, config
+):
+    """Resolve feed urls from CLI args, OPML, or config fallback."""
     if args.feeds:
-        feed_urls = args.feeds
-    else:
-        opml_feeds = opml_manager.list_feeds()
-        if opml_feeds:
-            feed_urls = [feed["url"] for feed in opml_feeds]
-        else:
-            feed_urls = config["feeds"]["urls"]
+        return args.feeds
 
-    print("☕ Brewing your morning news...")
+    opml_feeds = opml_manager.list_feeds()
+    if opml_feeds:
+        return [feed["url"] for feed in opml_feeds]
 
-    # Initialize download tracker
-    download_tracker = DownloadTracker()
+    return config["feeds"]["urls"]
 
-    # Fetch articles (no AI processing on individual articles)
-    articles, last_update = fetch_and_brew(
-        feed_urls, config, ai_provider, download_tracker
-    )
 
-    # Always continue to TUI even if no new articles are found
-    # This allows access to past editorials and manual refresh
-    if not articles:
-        print("No new articles found - launching TUI to access past editorials...")
-    else:
-        print(f"✓ Found {len(articles)} articles")
-
-    # Generate editorial
-    if articles:
-        print("📝 Generating morning editorial...")
-    else:
-        print("📝 No new articles for editorial - checking for previous editorial...")
+def _build_editorial_context(config, args, ai_provider, articles):
+    """Generate editorial content or fallback to most recent one."""
     editorial_content = None
 
-    # Get AI provider instance for editorial generation
     keywords = config["ai"].get("keywords", [])
     editorial_prompts = config["ai"].get("editorial_prompts", None)
     language = args.language if args.language else config["ai"].get("language", "en")
 
-    # Get editorial configuration
     editorial_config = config.get("editorial", {})
     editorials_dir = editorial_config.get("editorials_dir", None)
 
-    # Try to get the AI provider, fall back to SimpleBarista if it fails
     ai_instance = create_ai_provider(ai_provider, config)
     if ai_instance is None:
         ai_instance = SimpleBarista()
@@ -345,26 +311,18 @@ Feed Management:
     editorial_path = None
     try:
         if articles:
-            # Generate new editorial from articles
             editorial = editorial_generator.generate_editorial(articles)
             editorial_path = editorial_generator.save_editorial(editorial)
             editorial_content = editorial_generator.load_editorial(editorial_path)
             print(f"✓ Editorial generated and saved to: {editorial_path}")
         else:
-            # Try to load the most recent editorial
             recent_editorials = editorial_generator.list_editorials()
             if recent_editorials:
-                # Load the most recent editorial
-                most_recent = recent_editorials[
-                    -1
-                ]  # list_editorials returns sorted by date (oldest first)
-                editorial_path = most_recent[
-                    "filepath"
-                ]  # Use the filepath from the dictionary
+                most_recent = recent_editorials[-1]
+                editorial_path = most_recent["filepath"]
                 editorial_content = editorial_generator.load_editorial(editorial_path)
                 print(f"✓ Loading most recent editorial: {editorial_path}")
             else:
-                editorial_content = None
                 print("ℹ️  No articles and no previous editorials found")
     except Exception as e:
         print(f"⚠️  Error with editorial: {e}")
@@ -374,65 +332,71 @@ Feed Management:
             editorial_content = previous_editorial["content"]
             print(f"↩️  Loaded previous editorial: {editorial_path}")
         else:
-            editorial_content = None
             editorial_path = None
             print("ℹ️  No previous editorial available")
 
-    # Step 3: The Cup - Display in TUI
-    print("☕ Serving your news...\n")
+    return editorial_generator, editorial_content, editorial_path
 
-    # Create refresh callback for the TUI
-    def refresh_callback():
-        return fetch_and_brew(feed_urls, config, ai_provider, download_tracker)
 
-    # Get theme configuration
-    theme = config["ui"].get("theme", THEME_DARK)
-    theme_light = config["ui"].get("theme_light", THEME_LIGHT)
-    theme_dark = config["ui"].get("theme_dark", THEME_DARK)
+def _build_refresh_manager(config):
+    """Create and configure refresh manager from config."""
+    if not config.get("refresh", {}).get("require_confirmation_outside_hours", True):
+        return None
 
-    # Initialize refresh manager if configuration is available
-    refresh_manager = None
-    if config.get("refresh", {}).get("require_confirmation_outside_hours", True):
-        refresh_manager = RefreshManager()
+    refresh_manager = RefreshManager()
+    refresh_config = config.get("refresh", {})
+    allowed_times = refresh_config.get("allowed_times", ["08:00", "20:00"])
 
-        # Configure refresh times from config
-        refresh_config = config.get("refresh", {})
-        allowed_times = refresh_config.get("allowed_times", ["08:00", "20:00"])
+    parsed_times = []
+    for time_str in allowed_times:
+        try:
+            hour, minute = time_str.split(":")
+            parsed_times.append(time(int(hour), int(minute)))
+        except ValueError:
+            logger.warning(f"Invalid time format in config: {time_str}")
 
-        # Parse allowed times and set them in the refresh manager
-        parsed_times = []
-        for time_str in allowed_times:
-            try:
-                hour, minute = time_str.split(":")
-                parsed_times.append(time(int(hour), int(minute)))
-            except ValueError:
-                logger.warning(f"Invalid time format in config: {time_str}")
+    if parsed_times:
+        refresh_manager.allowed_refresh_times = parsed_times
 
-        if parsed_times:
-            refresh_manager.allowed_refresh_times = parsed_times
+    refresh_manager.auto_refresh_window = refresh_config.get("auto_refresh_window", 60)
+    return refresh_manager
 
-        # Configure auto refresh window from config (in minutes)
-        auto_refresh_window = refresh_config.get("auto_refresh_window", 60)
-        refresh_manager.auto_refresh_window = auto_refresh_window
 
-    # Get config path for info dialog
-    config_path = str(args.config) if args.config else str(get_config_path())
-
-    # Get actual editorials directory (use editorial_generator's dir if not explicitly configured)
-    actual_editorials_dir = str(editorial_generator.editorials_dir)
-
-    # Get posters directory (from config or default)
+def _resolve_posters_dir(config) -> str:
+    """Resolve posters directory path for UI info."""
     poster_config = config.get("poster", {})
     posters_dir_path = poster_config.get("posters_dir")
     if posters_dir_path:
-        actual_posters_dir = str(Path(posters_dir_path).expanduser().resolve())
-    else:
-        actual_posters_dir = str(POSTERS_DIR)
+        return str(Path(posters_dir_path).expanduser().resolve())
+    return str(POSTERS_DIR)
 
-    # Get logs directory
+
+def _launch_cup(
+    args,
+    articles,
+    last_update,
+    feed_urls,
+    config,
+    ai_provider,
+    download_tracker,
+    editorial_generator,
+    editorial_content,
+    editorial_path,
+):
+    """Launch TUI with assembled runtime context."""
+    def refresh_callback():
+        return fetch_and_brew(feed_urls, config, ai_provider, download_tracker)
+
+    theme = config["ui"].get("theme", THEME_DARK)
+    theme_light = config["ui"].get("theme_light", THEME_LIGHT)
+    theme_dark = config["ui"].get("theme_dark", THEME_DARK)
+    refresh_manager = _build_refresh_manager(config)
+    config_path = str(args.config) if args.config else str(get_config_path())
+    actual_editorials_dir = str(editorial_generator.editorials_dir)
+    actual_posters_dir = _resolve_posters_dir(config)
     actual_logs_dir = str(LOGS_DIR)
+    poster_config = config.get("poster", {})
 
-    # Publishing configuration — build multi-provider manager
     from moka_news.publisher import create_publish_providers, PublishManager
 
     publish_providers = create_publish_providers(config)
@@ -455,6 +419,67 @@ Feed Management:
         logs_dir=actual_logs_dir,
         poster_config=poster_config,
         publish_manager=publish_manager,
+    )
+
+
+def main():
+    """Main entry point for MoKa News"""
+    load_dotenv()
+    parser = _build_parser()
+    args = parser.parse_args()
+    _setup_main_logger(args.debug)
+    opml_manager = OPMLManager(args.opml)
+
+    if is_first_run() and not _should_skip_first_run_setup(args):
+        run_first_run_setup(opml_manager)
+        return
+
+    if _handle_feed_management_commands(args, opml_manager):
+        return
+
+    if args.create_config:
+        create_sample_config()
+        return
+
+    config = load_config(args.config)
+    ai_provider = args.ai if args.ai else config["ai"]["provider"]
+    feed_urls = _resolve_feed_urls(args, opml_manager, config)
+
+    print("☕ Brewing your morning news...")
+
+    download_tracker = DownloadTracker()
+    articles, last_update = fetch_and_brew(
+        feed_urls, config, ai_provider, download_tracker
+    )
+
+    # Always continue to TUI even if no new articles are found
+    # This allows access to past editorials and manual refresh
+    if not articles:
+        print("No new articles found - launching TUI to access past editorials...")
+    else:
+        print(f"✓ Found {len(articles)} articles")
+
+    # Generate editorial
+    if articles:
+        print("📝 Generating morning editorial...")
+    else:
+        print("📝 No new articles for editorial - checking for previous editorial...")
+    editorial_generator, editorial_content, editorial_path = _build_editorial_context(
+        config, args, ai_provider, articles
+    )
+
+    print("☕ Serving your news...\n")
+    _launch_cup(
+        args,
+        articles,
+        last_update,
+        feed_urls,
+        config,
+        ai_provider,
+        download_tracker,
+        editorial_generator,
+        editorial_content,
+        editorial_path,
     )
 
 
