@@ -2,6 +2,8 @@
 Tests for configuration module
 """
 
+import yaml
+
 from moka_news.config import (
     load_config,
     merge_configs,
@@ -61,7 +63,8 @@ def test_create_sample_config(tmp_path):
     content = config_path.read_text()
     assert "ai:" in content
     assert "provider:" in content
-    assert "feeds:" not in content  # Feeds are managed via OPML, not YAML
+    parsed = yaml.safe_load(content)
+    assert "feeds" not in parsed  # Feeds are managed via OPML, not YAML top-level config
     assert "OPML" in content or "opml" in content  # Should mention OPML feed management
 
 

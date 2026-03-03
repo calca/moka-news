@@ -125,11 +125,11 @@ class TestPosterGenerator:
     
     def test_initialization_without_pil(self):
         """Test initialization fails when PIL is not available"""
-        with patch('moka_news.poster.PIL_AVAILABLE', False):
+        with patch('moka_news.poster.generator.PIL_AVAILABLE', False):
             with pytest.raises(PosterGenerationError, match="Pillow library is required"):
                 PosterGenerator({})
     
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_initialization_with_default_config(self):
         """Test successful initialization with default configuration"""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -141,7 +141,7 @@ class TestPosterGenerator:
             assert poster_gen.posters_dir.exists()
             assert poster_gen.templates_dir.exists()
     
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_list_templates(self):
         """Test listing available templates"""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -153,7 +153,7 @@ class TestPosterGenerator:
             
             assert templates == ["story"]
     
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_load_template(self):
         """Test loading a specific template"""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -166,7 +166,7 @@ class TestPosterGenerator:
             assert isinstance(template, PosterTemplate)
             assert template.name == "Story"
     
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_load_nonexistent_template(self):
         """Test error when loading non-existent template"""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -178,12 +178,12 @@ class TestPosterGenerator:
             with pytest.raises(PosterGenerationError, match="Template 'nonexistent' not found"):
                 poster_gen.load_template("nonexistent")
     
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
-    @patch('moka_news.poster.Image')
-    @patch('moka_news.poster.ImageDraw')
-    @patch('moka_news.poster.ImageFont')
-    @patch('moka_news.poster._create_gradient_background')
-    @patch('moka_news.poster._draw_rounded_box_with_shadow')
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.Image')
+    @patch('moka_news.poster.generator.ImageDraw')
+    @patch('moka_news.poster.generator.ImageFont')
+    @patch('moka_news.poster.generator.create_gradient_background')
+    @patch('moka_news.poster.generator.draw_rounded_box_with_shadow')
     def test_generate_local_poster_success(
         self, mock_box, mock_gradient, mock_font, mock_draw, mock_image
     ):
@@ -236,7 +236,7 @@ class TestPosterGenerator:
             # Verify save was called on the final RGB image
             mock_rgb_img.save.assert_called_once()
     
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_content_cleaning(self):
         """Test markdown content cleaning for poster display"""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -267,7 +267,7 @@ properly when there are many sentences and words."""
             assert "[link](" not in cleaned
             # Headers at start of line (no indent) should be removed
             assert not cleaned.startswith("# ")
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_non_local_method_falls_back_to_local(self):
         """Poster generator should always render locally, even with legacy methods."""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -275,9 +275,9 @@ properly when there are many sentences and words."""
             poster_gen = PosterGenerator(config, posters_dir=Path(temp_dir))
             assert poster_gen.generation_method == "local"
     
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
-    @patch('moka_news.poster.qrcode')
-    @patch('moka_news.poster.QRCODE_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.qrcode')
+    @patch('moka_news.poster.generator.QRCODE_AVAILABLE', True)
     def test_qr_code_generation(self, mock_qrcode):
         """Test QR code generation functionality"""
         # Mock qrcode components
@@ -307,7 +307,7 @@ properly when there are many sentences and words."""
             mock_qr.add_data.assert_called_once_with("https://example.com")
             mock_qr.make.assert_called_once()
     
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_wrap_text_functionality(self):
         """Test text wrapping functionality"""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -343,12 +343,12 @@ properly when there are many sentences and words."""
 class TestPosterIntegration:
     """Integration tests for poster generation"""
     
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
-    @patch('moka_news.poster.Image')
-    @patch('moka_news.poster.ImageDraw')
-    @patch('moka_news.poster.ImageFont')
-    @patch('moka_news.poster._create_gradient_background')
-    @patch('moka_news.poster._draw_rounded_box_with_shadow')
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.Image')
+    @patch('moka_news.poster.generator.ImageDraw')
+    @patch('moka_news.poster.generator.ImageFont')
+    @patch('moka_news.poster.generator.create_gradient_background')
+    @patch('moka_news.poster.generator.draw_rounded_box_with_shadow')
     def test_full_poster_generation_flow(
         self, mock_box, mock_gradient, mock_font, mock_draw, mock_image
     ):
@@ -423,7 +423,7 @@ approaches.
 class TestGradientGeneration:
     """Test gradient background generation functionality"""
     
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_gradient_background_vertical(self):
         """Test vertical gradient generation"""
         colors = ["#ff0000", "#0000ff"]  # Red to blue
@@ -444,7 +444,7 @@ class TestGradientGeneration:
         assert bottom_pixel[0] < 50   # Low red
         assert bottom_pixel[2] > 200  # High blue
     
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_gradient_background_diagonal(self):
         """Test diagonal gradient generation"""
         colors = ["#ffffff", "#000000"]  # White to black
@@ -462,7 +462,7 @@ class TestGradientGeneration:
         bottom_right = img.getpixel((99, 99))
         assert all(c < 100 for c in bottom_right)
     
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_gradient_with_preset(self):
         """Test gradient generation with preset colors"""
         preset_colors = DEFAULT_GRADIENT_PRESETS["purple-pink"]
@@ -472,7 +472,7 @@ class TestGradientGeneration:
         assert img is not None
         assert img.size == (100, 100)
     
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_gradient_fallback_single_color(self):
         """Test gradient fallback when only one color provided"""
         colors = ["#ff0000"]
@@ -519,10 +519,10 @@ class TestGradientGeneration:
 class TestContentBox:
     """Test content box with shadow functionality"""
     
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
-    @patch('moka_news.poster.Image')
-    @patch('moka_news.poster.ImageDraw')
-    @patch('moka_news.poster.ImageFilter')
+    @patch('moka_news.poster.rendering.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.rendering.Image')
+    @patch('moka_news.poster.rendering.ImageDraw')
+    @patch('moka_news.poster.rendering.ImageFilter')
     def test_rounded_box_with_shadow(self, mock_filter, mock_draw, mock_image):
         """Test drawing rounded box with shadow"""
         # Mock components
@@ -642,8 +642,8 @@ class TestContentBox:
 class TestFontLoading:
     """Test custom font loading functionality"""
     
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
-    @patch('moka_news.poster.ImageFont')
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.fonts.ImageFont')
     def test_load_font_with_bundled_font(self, mock_font):
         """Test loading bundled font files"""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -657,8 +657,8 @@ class TestFontLoading:
             
             assert font is not None
     
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
-    @patch('moka_news.poster.ImageFont')
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.fonts.ImageFont')
     def test_load_font_fallback_to_system(self, mock_font):
         """Test fallback to system font when custom font not found"""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -678,8 +678,8 @@ class TestFontLoading:
             font = poster_gen._load_font("nonexistent.ttf", "arial", 24)
             assert font is not None
     
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
-    @patch('moka_news.poster.ImageFont')
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.fonts.ImageFont')
     def test_load_font_fallback_to_default(self, mock_font):
         """Test fallback to default font when all else fails"""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -700,12 +700,12 @@ class TestFontLoading:
 class TestEnhancedPosterGeneration:
     """Test enhanced poster generation with gradients and content boxes"""
     
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
-    @patch('moka_news.poster.Image')
-    @patch('moka_news.poster.ImageDraw')
-    @patch('moka_news.poster.ImageFont')
-    @patch('moka_news.poster._create_gradient_background')
-    @patch('moka_news.poster._draw_rounded_box_with_shadow')
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.Image')
+    @patch('moka_news.poster.generator.ImageDraw')
+    @patch('moka_news.poster.generator.ImageFont')
+    @patch('moka_news.poster.generator.create_gradient_background')
+    @patch('moka_news.poster.generator.draw_rounded_box_with_shadow')
     def test_generate_poster_with_gradient_and_box(
         self, mock_box, mock_gradient, mock_font, mock_draw, mock_image
     ):
@@ -782,7 +782,7 @@ class TestEnhancedPosterGeneration:
             # Verify poster was saved
             assert poster_path.suffix == ".png"
     
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_custom_options_override_gradient(self):
         """Test that custom options can override gradient settings"""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -816,7 +816,7 @@ class TestEnhancedPosterGeneration:
 class TestParseRichText:
     """Tests for _parse_rich_text bold-markup parsing"""
 
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def _gen(self, tmp_path):
         config = {"method": "local"}
         return PosterGenerator(config, posters_dir=tmp_path)
@@ -867,7 +867,7 @@ class TestParseRichText:
 class TestPosterTextExtraction:
     """Tests for poster text cleaning and extraction."""
 
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_split_paragraphs_preserves_structure(self, tmp_path):
         """Paragraph splitter keeps blank-line paragraph boundaries."""
         config = {"method": "local"}
@@ -876,7 +876,7 @@ class TestPosterTextExtraction:
         paragraphs = gen._split_paragraphs(text)
         assert paragraphs == ["One paragraph.", "Second paragraph.", "Third paragraph."]
 
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_format_body_for_readability_breaks_sentences(self, tmp_path):
         """Body formatter should split at sentence boundaries without emphasis."""
         config = {"method": "local"}
@@ -887,7 +887,7 @@ class TestPosterTextExtraction:
         assert "\n\n" in formatted
         assert "**" not in formatted
 
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_format_body_for_readability_single_sentence(self, tmp_path):
         """Single sentence should remain on one block without emphasis."""
         config = {"method": "local"}
@@ -898,7 +898,7 @@ class TestPosterTextExtraction:
         assert "\n\n" not in formatted
         assert "**" not in formatted
 
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_truncate_single_line_text_adds_ellipsis(self, tmp_path):
         """Single-line title truncation should add trailing ellipsis when needed."""
         from PIL import Image, ImageDraw
@@ -914,7 +914,7 @@ class TestPosterTextExtraction:
         bbox = draw.textbbox((0, 0), truncated, font=font)
         assert (bbox[2] - bbox[0]) <= 380
 
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_story_template_uses_two_line_title(self, tmp_path):
         """Story template should default to max-2-lines title behavior."""
         config = {"method": "local", "default_template": "story"}
@@ -926,7 +926,7 @@ class TestPosterTextExtraction:
         assert template.show_editorial_date is True
         assert template.show_logo is True
 
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_parse_editorial_datetime_from_iso_string(self, tmp_path):
         """Footer editorial date parser should accept ISO timestamps."""
         config = {"method": "local"}
@@ -937,7 +937,7 @@ class TestPosterTextExtraction:
         assert parsed.month == 2
         assert parsed.day == 25
 
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_limit_wrapped_lines_caps_title_lines(self, tmp_path):
         """Title helper should cap wrapped lines and keep line count within limit."""
         from PIL import Image, ImageDraw
@@ -951,7 +951,7 @@ class TestPosterTextExtraction:
 
         assert len(lines) == 2
 
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_resolve_logo_path_prefers_config_override(self, tmp_path):
         """Configured logo path should be used when available."""
         from PIL import Image
@@ -965,7 +965,7 @@ class TestPosterTextExtraction:
         gen = PosterGenerator(config, posters_dir=tmp_path)
         assert gen._resolve_logo_path() == logo_path
 
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_add_logo_skips_when_missing(self, tmp_path):
         """Logo rendering should be skipped gracefully if no logo file is found."""
         from PIL import Image
@@ -979,7 +979,7 @@ class TestPosterTextExtraction:
         result = gen._add_logo(img, template, draw_x=20, draw_y=20, max_width=300, total_draw_h=300)
         assert result is img
 
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_short_text_unchanged_word_count(self, tmp_path):
         """Short text passes through unchanged."""
         config = {"method": "local"}
@@ -989,7 +989,7 @@ class TestPosterTextExtraction:
         assert "Breaking" in result
         assert "Markets" in result
 
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_long_text_not_truncated(self, tmp_path):
         """Long text should not be truncated by word-count limits."""
         config = {"method": "local"}
@@ -998,7 +998,7 @@ class TestPosterTextExtraction:
         result = gen._clean_content_for_poster(long_text)
         assert len(result.split()) == 220
 
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_bold_markers_preserved(self, tmp_path):
         """Bold ** markers in content are stripped by the cleaner."""
         config = {"method": "local"}
@@ -1008,7 +1008,7 @@ class TestPosterTextExtraction:
         assert "**AI revolution**" not in result
         assert "AI revolution" in result
 
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_markdown_italic_stripped(self, tmp_path):
         """Single-asterisk italic markup is still stripped."""
         config = {"method": "local"}
@@ -1018,7 +1018,7 @@ class TestPosterTextExtraction:
         assert "*very*" not in result
         assert "very" in result
 
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_bold_font_file_loaded_for_template(self, tmp_path):
         """PosterTemplate exposes bold_font_file from JSON typography section."""
         tmpl_data = {
@@ -1030,7 +1030,7 @@ class TestPosterTextExtraction:
         template = PosterTemplate(tmpl_data)
         assert template.bold_font_file == "Inter-Bold.ttf"
 
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_bold_font_file_fallback(self, tmp_path):
         """When bold_font_file is absent, falls back to font_file."""
         tmpl_data = {
@@ -1041,7 +1041,7 @@ class TestPosterTextExtraction:
         template = PosterTemplate(tmpl_data)
         assert template.bold_font_file == "Roboto-Regular.ttf"
 
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_extract_editorial_body_uses_first_paragraph(self, tmp_path):
         """Extraction keeps only the first editorial paragraph and skips sources."""
         config = {"method": "local"}
@@ -1065,7 +1065,7 @@ Second paragraph should be included too.
         assert "Second paragraph should be included too." not in result
         assert "Item" not in result
 
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_extract_title_and_body_from_title_format(self, tmp_path):
         """When content starts with TITLE:, only first paragraph is extracted."""
         config = {"method": "local"}
@@ -1083,7 +1083,7 @@ Second paragraph is included.
         assert body.startswith("First paragraph")
         assert paragraph == "First paragraph for the poster body."
 
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_extract_body_from_legacy_title_summary_format(self, tmp_path):
         """Legacy TITLE:/SUMMARY: content keeps first paragraph only."""
         config = {"method": "local"}
@@ -1100,7 +1100,7 @@ Second paragraph is included.
         assert body.startswith("First paragraph from summary.")
         assert paragraph == "First paragraph from summary."
 
-    @patch('moka_news.poster.PIL_AVAILABLE', True)
+    @patch('moka_news.poster.generator.PIL_AVAILABLE', True)
     def test_extract_title_from_body_when_markdown_heading_exists(self, tmp_path):
         """If markdown starts with # heading, TITLE: later in body still wins."""
         config = {"method": "local"}
