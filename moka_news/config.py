@@ -4,6 +4,7 @@ Supports YAML configuration files for customization
 """
 
 import os
+import copy
 import yaml
 from typing import Dict, Any, Optional
 from pathlib import Path
@@ -153,7 +154,8 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
     Returns:
         Configuration dictionary
     """
-    config = DEFAULT_CONFIG.copy()
+    # Use a deep copy so nested defaults are never mutated at runtime.
+    config = copy.deepcopy(DEFAULT_CONFIG)
 
     if config_path:
         config_file = Path(config_path)

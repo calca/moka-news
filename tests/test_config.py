@@ -2,6 +2,7 @@
 Tests for configuration module
 """
 
+import copy
 import yaml
 
 from moka_news.config import (
@@ -77,6 +78,28 @@ def test_config_respects_env_vars(monkeypatch):
     config = load_config()
 
     assert config["ai"]["api_keys"]["openai"] == "test-key-123"
+
+
+def test_load_config_does_not_mutate_default_config_with_env_override(monkeypatch):
+    """Environment overrides must not mutate DEFAULT_CONFIG."""
+    default_before = copy.deepcopy(DEFAULT_CONFIG)
+    monkeypatch.setenv("OPENAI_API_KEY", "env-openai-key")
+
+    loaded = load_config("/nonexistent/path/config.yaml")
+
+    assert loaded["ai"]["api_keys"]["openai"] == "env-openai-key"
+    assert DEFAULT_CONFIG == default_before
+
+
+def test_load_config_env_override_has_no_cross_call_side_effect(monkeypatch):
+    """A previous env override must not leak into later load_config() calls."""
+    monkeypatch.setenv("OPENAI_API_KEY", "first-key")
+    first = load_config("/nonexistent/path/config.yaml")
+    assert first["ai"]["api_keys"]["openai"] == "first-key"
+
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    second = load_config("/nonexistent/path/config.yaml")
+    assert second["ai"]["api_keys"]["openai"] is None
 
 
 def test_default_config_includes_keywords():
