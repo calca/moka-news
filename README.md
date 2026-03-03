@@ -553,15 +553,21 @@ The editorial feature respects your configured keywords and processes all articl
 
 ## Development
 
-For detailed information about building, testing, and distributing MoKa News, see [DISTRIBUTION.md](DISTRIBUTION.md).
+Build and quality checks are defined in [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+The CI pipeline runs:
+- `ruff check moka_news tests examples`
+- `black --check moka_news tests examples`
+- `pytest tests/ -v`
+- `mypy` (on Python 3.11 only)
 
-### Running Tests
+### Local Setup
 
 ```bash
-pytest tests/ -v
+# Install project with dev dependencies
+pip install -e ".[dev]"
 ```
 
-### Code Formatting
+### Run The Same Gates As CI
 
 ```bash
 # Lint with ruff
@@ -572,6 +578,9 @@ black --check moka_news tests examples
 
 # Type check critical modules
 mypy
+
+# Run tests
+pytest tests/ -v
 ```
 
 ## Default Configuration
@@ -604,15 +613,25 @@ moka-news/
 │       └── __init__.py
 ├── pyproject.toml        # Project configuration
 ├── CHANGELOG.md          # Version history
-├── DISTRIBUTION.md       # Build and distribution guide
-├── RELEASE.md            # Release checklist
+├── .github/workflows/ci.yml  # CI quality gates
 ├── README.md
 └── LICENSE
 ```
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome via Pull Request.
+
+Before opening a PR, run the same gates used in CI:
+
+```bash
+ruff check moka_news tests examples
+black --check moka_news tests examples
+pytest tests/ -v
+mypy
+```
+
+A PR is considered ready when all CI checks pass across the Python version matrix (`3.8` to `3.12`).
 
 ## License
 
