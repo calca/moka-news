@@ -6,6 +6,7 @@ import json
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
+from moka_news.paths import APP_CONFIG_DIR, DOWNLOAD_TRACKER_PATH
 from moka_news.logger import get_logger
 
 logger = get_logger(__name__)
@@ -24,9 +25,8 @@ class DownloadTracker:
         if tracker_file:
             self.tracker_file = Path(tracker_file)
         else:
-            config_dir = Path.home() / ".config" / "moka-news"
-            config_dir.mkdir(parents=True, exist_ok=True)
-            self.tracker_file = config_dir / "last_download.json"
+            APP_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+            self.tracker_file = DOWNLOAD_TRACKER_PATH
 
     def get_last_download(
         self, default_to_yesterday: bool = True, days_back: Optional[int] = None

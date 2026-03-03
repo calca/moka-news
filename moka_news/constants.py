@@ -57,6 +57,9 @@ SUPPORTED_LANGUAGES = {
 CLI_VERSION_CHECK_TIMEOUT = 5  # Seconds to wait for CLI version checks
 CLI_GENERATION_TIMEOUT = 30  # Seconds to wait for AI generation via CLI
 
+# Higher token limit for editorial generation (400-600 word articles need ~2k tokens)
+EDITORIAL_MAX_TOKENS = 4096
+
 # Poster generation constants
 POSTER_MAX_TOKENS = 300  # Maximum AI response tokens for poster content
 DEFAULT_BOX_PADDING = 40  # Padding inside content box

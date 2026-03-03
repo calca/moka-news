@@ -74,6 +74,7 @@ moka_news = [
     "templates/*.json",
     "fonts/*.ttf",
     "fonts/LICENSE",
+    "py.typed",
 ]
 
 [tool.black]
@@ -83,3 +84,10 @@ target-version = ['py38']
 [tool.ruff]
 line-length = 88
 target-version = "py38"
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true

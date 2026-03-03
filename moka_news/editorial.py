@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 from moka_news.barista import AIProvider
 from moka_news.constants import SUPPORTED_LANGUAGES
+from moka_news.paths import APP_CONFIG_DIR, EDITORIALS_DIR, POSTERS_DIR
 from moka_news.logger import get_logger
 
 logger = get_logger(__name__)
@@ -40,16 +41,16 @@ class EditorialGenerator:
         self.language = language
         
         # Set config directory
-        self.config_dir = Path.home() / ".config" / "moka-news"
+        self.config_dir = APP_CONFIG_DIR
         
         # Set editorials directory
         if editorials_dir:
             self.editorials_dir = Path(editorials_dir)
         else:
-            self.editorials_dir = self.config_dir / "editorials"
+            self.editorials_dir = EDITORIALS_DIR
         
         # Set posters directory
-        self.posters_dir = self.config_dir / "posters"
+        self.posters_dir = POSTERS_DIR
         
         # Create directories if they don't exist
         self.editorials_dir.mkdir(parents=True, exist_ok=True)
@@ -318,7 +319,7 @@ class EditorialGenerator:
                     "filename": filepath.name
                 })
             except Exception as e:
-                print(f"Error reading editorial {filepath}: {e}")
+                logger.warning("Error reading editorial %s: %s", filepath, e)
         
         return editorials
 

@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 from moka_news.opml_manager import OPMLManager
 from moka_news.constants import DEFAULT_TECH_FEEDS, SUPPORTED_LANGUAGES
+from moka_news.paths import CONFIG_SEARCH_LOCATIONS, DEFAULT_CONFIG_PATH
 
 
 # Suggested tech feeds for moka-cafè (directly use from constants)
@@ -73,14 +74,7 @@ def is_first_run() -> bool:
     Returns:
         True if this is the first run, False otherwise
     """
-    config_locations = [
-        Path.cwd() / "moka-news.yaml",
-        Path.cwd() / ".moka-news.yaml",
-        Path.home() / ".config" / "moka-news" / "config.yaml",
-        Path.home() / ".moka-news.yaml",
-    ]
-    
-    for location in config_locations:
+    for location in CONFIG_SEARCH_LOCATIONS:
         if location.exists():
             return False
     
@@ -390,7 +384,7 @@ def save_config(config_data: Dict[str, Any], config_path: Optional[Path] = None)
         Path where config was saved
     """
     if config_path is None:
-        config_path = Path.home() / ".config" / "moka-news" / "config.yaml"
+        config_path = DEFAULT_CONFIG_PATH
     
     # Ensure directory exists
     config_path.parent.mkdir(parents=True, exist_ok=True)
@@ -465,124 +459,11 @@ def prompt_launch_now(provider_config: Dict[str, Any], feeds_configured: bool) -
 
 def launch_moka_news():
     """
-    Launch MoKa News with the newly created configuration
-    This reuses the main application logic
+    Launch MoKa News with the newly created configuration.
+    Delegates to main() which will pick up the freshly-saved config.
     """
-    from moka_news.main import fetch_and_brew
-    from moka_news.config import load_config
-    from moka_news.cup import serve
-    from moka_news.barista import create_ai_provider
-    from moka_news.editorial import EditorialGenerator
-    from moka_news.refresh_manager import RefreshManager
-    from moka_news.download_tracker import DownloadTracker
-    from datetime import datetime, time
-    
-    # Load the fresh configuration
-    config = load_config()
-    
-    # Setup OPML manager
-    opml_manager = OPMLManager()
-    
-    # Get feed URLs: OPML > config fallback > built-in defaults
-    opml_feeds = opml_manager.list_feeds()
-    if opml_feeds:
-        feed_urls = [feed["url"] for feed in opml_feeds]
-    else:
-        feed_urls = config.get("feeds", {}).get("urls", [])
-        if not feed_urls:
-            # Use default tech feeds if none configured anywhere
-            from moka_news.constants import DEFAULT_TECH_FEEDS
-            feed_urls = [feed["url"] for feed in DEFAULT_TECH_FEEDS[:3]]
-    
-    # Create AI provider
-    ai_config = config.get("ai", {})
-    provider_name = ai_config.get("provider", "gemini-cli")
-    ai_provider = create_ai_provider(provider_name, config)
-    
-    if not ai_provider:
-        print(f"⚠️  Could not initialize {provider_name} provider. Using SimpleBarista.")
-        from moka_news.barista import SimpleBarista
-        ai_provider = SimpleBarista()
-    
-    # Fetch and process articles
-    print("📰 Fetching RSS feeds...")
-    articles, last_update = fetch_and_brew(feed_urls, config, ai_provider)
-    print(f"✓ Processed {len(articles)} articles")
-    
-    # Generate editorial
-    print("✍️  Generating morning editorial...")
-    ui_config = config.get("ui", {})
-    editorial_config = config.get("editorial", {})
-    refresh_config = config.get("refresh", {})
-    
-    editorial_generator = EditorialGenerator(
-        ai_provider=ai_provider,
-        keywords=ai_config.get("keywords", []),
-        editorial_prompts=ai_config.get("editorial_prompts", {}),
-        editorials_dir=editorial_config.get("editorials_dir"),
-        language=ai_config.get("language", "en"),
-    )
-    
-    try:
-        editorial = editorial_generator.generate_editorial(articles)
-        editorial_path = editorial_generator.save_editorial(editorial)
-        editorial_content = editorial_generator.load_editorial(editorial_path)
-        print(f"✓ Editorial generated and saved")
-    except Exception as e:
-        print(f"⚠️  Could not generate editorial: {e}")
-        previous_editorial = editorial_generator.load_most_recent_editorial()
-        if previous_editorial:
-            editorial_path = previous_editorial["filepath"]
-            editorial_content = previous_editorial["content"]
-            print(f"↩️  Loaded previous editorial: {editorial_path}")
-        else:
-            editorial_content = None
-            editorial_path = None
-    
-    # Setup refresh manager
-    refresh_manager = RefreshManager()
-    allowed_times = refresh_config.get("allowed_times", ["08:00", "20:00"])
-    refresh_manager.max_daily_refreshes = refresh_config.get("max_daily_refreshes", 2)
-    refresh_manager.require_confirmation_outside_hours = refresh_config.get(
-        "require_confirmation_outside_hours", True
-    )
-    
-    # Convert time strings to time objects
-    parsed_times = []
-    for time_str in allowed_times:
-        try:
-            hour, minute = map(int, time_str.split(":"))
-            parsed_times.append(time(hour, minute))
-        except ValueError:
-            print(f"⚠️  Invalid time format: {time_str}")
-    
-    if parsed_times:
-        refresh_manager.allowed_refresh_times = parsed_times
-    
-    # Configure auto refresh window from config (in minutes)
-    auto_refresh_window = refresh_config.get("auto_refresh_window", 60)
-    refresh_manager.auto_refresh_window = auto_refresh_window
-    
-    # Setup refresh callback
-    def refresh_callback():
-        download_tracker = DownloadTracker()
-        new_articles, new_update = fetch_and_brew(feed_urls, config, ai_provider, download_tracker)
-        return new_articles, new_update
-    
-    # Launch TUI
-    print("☕ Launching TUI...")
-    serve(
-        articles,
-        last_update,
-        refresh_callback,
-        editorial_content=editorial_content,
-        editorial_generator=editorial_generator,
-        theme=ui_config.get("theme", "rose-pine"),
-        theme_light=ui_config.get("theme_light", "rose-pine-dawn"),
-        theme_dark=ui_config.get("theme_dark", "rose-pine"),
-        refresh_manager=refresh_manager,
-        current_editorial_path=editorial_path,
-    )
+    from moka_news.main import main
+    main()
 
 
 def run_first_run_setup(opml_manager: OPMLManager) -> Dict[str, Any]:

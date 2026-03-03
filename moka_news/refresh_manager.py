@@ -7,6 +7,7 @@ from datetime import datetime, time, timedelta
 from pathlib import Path
 import json
 from typing import Optional, List, Tuple
+from moka_news.paths import APP_CONFIG_DIR
 from moka_news.logger import get_logger
 
 logger = get_logger(__name__)
@@ -25,7 +26,7 @@ class RefreshManager:
         if config_dir:
             self.config_dir = Path(config_dir)
         else:
-            self.config_dir = Path.home() / ".config" / "moka-news"
+            self.config_dir = APP_CONFIG_DIR
 
         self.config_dir.mkdir(parents=True, exist_ok=True)
         self.refresh_log_file = self.config_dir / "refresh_log.json"

@@ -8,12 +8,16 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from typing import List, Dict, Optional
 from pathlib import Path
+from moka_news.paths import FEEDS_OPML_PATH
+from moka_news.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class OPMLManager:
     """Manages RSS feeds stored in OPML format"""
 
-    DEFAULT_OPML_PATH = os.path.expanduser("~/.config/moka-news/feeds.opml")
+    DEFAULT_OPML_PATH = str(FEEDS_OPML_PATH)
 
     def __init__(self, opml_path: Optional[str] = None):
         """
@@ -80,14 +84,14 @@ class OPMLManager:
 
             return feeds
         except ET.ParseError as e:
-            print(f"Error parsing OPML file '{self.opml_path}': {e}")
-            print("The file may be corrupted. Try removing it and adding feeds again.")
+            logger.error(f"Error parsing OPML file '{self.opml_path}': {e}")
+            logger.error("The file may be corrupted. Try removing it and adding feeds again.")
             return []
         except PermissionError:
-            print(f"Permission denied reading OPML file: {self.opml_path}")
+            logger.error(f"Permission denied reading OPML file: {self.opml_path}")
             return []
         except Exception as e:
-            print(f"Unexpected error loading OPML file '{self.opml_path}': {e}")
+            logger.error(f"Unexpected error loading OPML file '{self.opml_path}': {e}")
             return []
 
     def save_feeds(self, feeds: List[Dict[str, str]]):
@@ -209,14 +213,14 @@ class OPMLManager:
 
             return feeds
         except ET.ParseError as e:
-            print(f"Error parsing OPML file '{self.opml_path}': {e}")
-            print("The file may be corrupted. Try removing it and adding feeds again.")
+            logger.error(f"Error parsing OPML file '{self.opml_path}': {e}")
+            logger.error("The file may be corrupted. Try removing it and adding feeds again.")
             return []
         except PermissionError:
-            print(f"Permission denied reading OPML file: {self.opml_path}")
+            logger.error(f"Permission denied reading OPML file: {self.opml_path}")
             return []
         except Exception as e:
-            print(f"Unexpected error loading OPML file '{self.opml_path}': {e}")
+            logger.error(f"Unexpected error loading OPML file '{self.opml_path}': {e}")
             return []
 
     def list_feeds(self) -> List[Dict[str, str]]:

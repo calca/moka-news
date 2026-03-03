@@ -18,6 +18,7 @@ except ImportError:
     QRCODE_AVAILABLE = False
 
 from moka_news.logger import get_logger
+from moka_news.paths import APP_CONFIG_DIR
 from moka_news.constants import (
     DEFAULT_GRADIENT_PRESETS,
     DEFAULT_BOX_PADDING,
@@ -328,8 +329,7 @@ class PosterGenerator:
         if posters_dir:
             self.posters_dir = Path(posters_dir)
         else:
-            config_dir = Path.home() / ".config" / "moka-news"
-            self.posters_dir = config_dir / "posters"
+            self.posters_dir = APP_CONFIG_DIR / "posters"
         
         # Set templates directory
         if templates_dir:

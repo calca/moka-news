@@ -8,6 +8,7 @@ import yaml
 from typing import Dict, Any, Optional
 from pathlib import Path
 from moka_news.constants import DEFAULT_TECH_FEEDS, MAX_CONTENT_LENGTH, MAX_TOKENS, SUPPORTED_LANGUAGES
+from moka_news.paths import CONFIG_SEARCH_LOCATIONS, THEME_DARK, THEME_LIGHT
 from moka_news.logger import get_logger
 
 logger = get_logger(__name__)
@@ -92,9 +93,9 @@ DEFAULT_CONFIG = {
     },
     "ui": {
         "use_tui": True,
-        "theme": "rose-pine",  # Default theme (dark, relaxing)
-        "theme_light": "rose-pine-dawn",  # Light theme option
-        "theme_dark": "rose-pine",  # Dark theme option
+        "theme": THEME_DARK,  # Default theme (dark, relaxing)
+        "theme_light": THEME_LIGHT,  # Light theme option
+        "theme_dark": THEME_DARK,  # Dark theme option
     },
     "refresh": {
         "allowed_times": ["08:00"],  # Single morning refresh to accumulate more articles overnight
@@ -133,15 +134,8 @@ def get_config_path() -> Path:
     Returns:
         Path to config file (checks multiple locations)
     """
-    # Check in order: current directory, user home, package directory
-    config_locations = [
-        Path.cwd() / "moka-news.yaml",
-        Path.cwd() / ".moka-news.yaml",
-        Path.home() / ".config" / "moka-news" / "config.yaml",
-        Path.home() / ".moka-news.yaml",
-    ]
-
-    for location in config_locations:
+    # Check in order: current directory, user config, user home
+    for location in CONFIG_SEARCH_LOCATIONS:
         if location.exists():
             return location
 
@@ -173,7 +167,7 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
                     # Deep merge user config with defaults
                     config = merge_configs(config, user_config)
         except Exception as e:
-            print(f"⚠️  Warning: Could not load config file: {e}")
+            logger.warning("Could not load config file: %s", e)
 
     # Override with environment variables
     if os.getenv("OPENAI_API_KEY"):

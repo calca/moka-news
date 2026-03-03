@@ -13,6 +13,7 @@ from moka_news.barista import create_ai_provider, SimpleBarista
 from moka_news.cup import serve
 from moka_news.config import load_config, create_sample_config, get_config_path
 from moka_news.constants import SUPPORTED_LANGUAGES
+from moka_news.paths import LOGS_DIR, POSTERS_DIR, THEME_DARK, THEME_LIGHT
 from moka_news.opml_manager import OPMLManager
 from moka_news.first_run_setup import is_first_run, run_first_run_setup
 from moka_news.download_tracker import DownloadTracker
@@ -195,7 +196,7 @@ Feed Management:
     global logger
     import logging as _logging
     from datetime import datetime as _dt
-    _logs_dir = Path.home() / ".config" / "moka-news" / "logs"
+    _logs_dir = LOGS_DIR
     _logs_dir.mkdir(parents=True, exist_ok=True)
     _log_file = _logs_dir / f"moka-news-{_dt.now().strftime('%Y-%m-%d')}.log"
 
@@ -235,7 +236,7 @@ Feed Management:
 
     if is_first_run() and not skip_setup:
         run_first_run_setup(opml_manager)
-        # After setup, user needs to run moka-news again
+        # After setup, the wizard may have already launched MoKa News
         return
 
     # Handle feed management commands
@@ -376,9 +377,9 @@ Feed Management:
         return fetch_and_brew(feed_urls, config, ai_provider, download_tracker)
 
     # Get theme configuration
-    theme = config["ui"].get("theme", "rose-pine")
-    theme_light = config["ui"].get("theme_light", "rose-pine-dawn")
-    theme_dark = config["ui"].get("theme_dark", "rose-pine")
+    theme = config["ui"].get("theme", THEME_DARK)
+    theme_light = config["ui"].get("theme_light", THEME_LIGHT)
+    theme_dark = config["ui"].get("theme_dark", THEME_DARK)
 
     # Initialize refresh manager if configuration is available
     refresh_manager = None
@@ -417,10 +418,10 @@ Feed Management:
     if posters_dir_path:
         actual_posters_dir = str(Path(posters_dir_path).expanduser().resolve())
     else:
-        actual_posters_dir = str(Path.home() / ".config" / "moka-news" / "posters")
+        actual_posters_dir = str(POSTERS_DIR)
 
     # Get logs directory
-    actual_logs_dir = str(Path.home() / ".config" / "moka-news" / "logs")
+    actual_logs_dir = str(LOGS_DIR)
 
     # Publishing configuration — build multi-provider manager
     from moka_news.publisher import create_publish_providers, PublishManager

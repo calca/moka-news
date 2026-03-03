@@ -4,7 +4,7 @@ Extracts data from RSS feeds using feedparser
 """
 
 import feedparser
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from moka_news.logger import get_logger
@@ -27,7 +27,7 @@ class Grinder:
         self.feed_urls = feed_urls
         self.since = since
 
-    def grind(self) -> tuple[List[Dict[str, Any]], datetime]:
+    def grind(self) -> Tuple[List[Dict[str, Any]], datetime]:
         """
         Parse all RSS feeds and extract articles
 
