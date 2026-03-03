@@ -3,13 +3,14 @@
 import argparse
 from datetime import time
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from moka_news.application.use_cases.fetch_articles import fetch_and_brew
 from moka_news.tui import serve
 from moka_news.infrastructure.config.loader import get_config_path
 from moka_news.infrastructure.storage import DownloadTracker, RefreshManager
 from moka_news.logger import get_logger
+from moka_news.models import Article
 from moka_news.paths import LOGS_DIR, POSTERS_DIR, THEME_DARK, THEME_LIGHT
 from moka_news.publisher import PublishManager, create_publish_providers
 
@@ -48,15 +49,15 @@ def resolve_posters_dir(config: Dict[str, Any]) -> str:
 
 def launch_cup(
     args: argparse.Namespace,
-    articles: List[Dict[str, Any]],
+    articles: List[Article],
     last_update: Any,
     feed_urls: List[str],
     config: Dict[str, Any],
     ai_provider: str,
     download_tracker: DownloadTracker,
     editorial_generator: Any,
-    editorial_content: str,
-    editorial_path: Any,
+    editorial_content: Optional[str],
+    editorial_path: Optional[Path],
 ) -> None:
     """Launch TUI with assembled runtime context."""
 

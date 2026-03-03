@@ -3,14 +3,16 @@
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple
+
+from moka_news.models import Article
 
 
 @dataclass
 class RefreshOutcome:
     """Normalized output of a refresh cycle."""
 
-    articles: List[Dict[str, Any]]
+    articles: List[Article]
     last_update: datetime
     editorial_path: Optional[Path] = None
     editorial_content: Optional[str] = None
@@ -18,7 +20,7 @@ class RefreshOutcome:
 
 def generate_editorial_artifacts(
     editorial_generator: Any,
-    articles: List[Dict[str, Any]],
+    articles: List[Article],
 ) -> Tuple[Optional[Path], Optional[str]]:
     """Generate editorial markdown and return (path, content)."""
     editorial = editorial_generator.generate_editorial(articles)
@@ -28,7 +30,7 @@ def generate_editorial_artifacts(
 
 
 def collect_refresh_outcome(
-    refresh_callback: Callable[[], Tuple[List[Dict[str, Any]], datetime]],
+    refresh_callback: Callable[[], Tuple[List[Article], datetime]],
     editorial_generator: Optional[Any] = None,
 ) -> RefreshOutcome:
     """Execute refresh callback and optional editorial generation."""

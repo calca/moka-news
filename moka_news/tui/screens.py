@@ -1,12 +1,14 @@
 """Screens used by the Cup TUI."""
 
-from typing import List, Dict, Any
+from typing import List, Optional
 
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import VerticalScroll
 from textual.screen import Screen
 from textual.widgets import Header, Footer, Static, Label, ListView, ListItem
+
+from moka_news.models import EditorialMetadata
 
 
 class EditorialListScreen(Screen):
@@ -43,10 +45,10 @@ class EditorialListScreen(Screen):
     }
     """
 
-    def __init__(self, editorials: List[Dict[str, Any]], *args, **kwargs):
+    def __init__(self, editorials: List[EditorialMetadata], *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.editorials = editorials
-        self.selected_editorial = None
+        self.selected_editorial: Optional[EditorialMetadata] = None
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -55,9 +57,9 @@ class EditorialListScreen(Screen):
             if self.editorials:
                 items = []
                 for editorial in self.editorials:
-                    timestamp = editorial["timestamp"]
+                    timestamp = editorial.timestamp
                     date_str = timestamp.strftime("%A, %B %d, %Y at %H:%M")
-                    title = editorial.get("title", "Untitled")
+                    title = editorial.title
                     item = ListItem(
                         Label(f"[bold]{title}[/bold]\n[dim]{date_str}[/dim]")
                     )

@@ -5,7 +5,7 @@ from textual import work
 from textual.containers import ScrollableContainer
 from textual.widgets import Header, Footer, Static
 from textual.binding import Binding
-from typing import List, Dict, Any, Callable, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 from pathlib import Path
 from datetime import datetime, time
 import asyncio
@@ -23,6 +23,7 @@ from moka_news.application.use_cases.tui_refresh import (
 )
 from moka_news.paths import THEME_DARK, THEME_LIGHT
 from moka_news.logger import get_logger
+from moka_news.models import Article, EditorialMetadata, LoadedEditorial
 from moka_news.tui.dialogs import InfoDialog
 from moka_news.tui.widgets import EditorialView
 from moka_news.tui.screens import EditorialListScreen
@@ -93,10 +94,10 @@ class Cup(App):
 
     def __init__(
         self,
-        articles: List[Dict[str, Any]] = None,
+        articles: Optional[List[Article]] = None,
         last_update: Optional[datetime] = None,
         refresh_callback: Optional[
-            Callable[[], Tuple[List[Dict[str, Any]], datetime]]
+            Callable[[], Tuple[List[Article], datetime]]
         ] = None,
         auto_refresh_time: Optional[time] = time(8, 0),
         editorial_content: Optional[str] = None,
@@ -114,7 +115,7 @@ class Cup(App):
         publish_manager: Optional[Any] = None,
     ):
         super().__init__()
-        self.articles = articles or []
+        self.articles: List[Article] = articles or []
         self.last_update = last_update or datetime.now()
         self.refresh_callback = refresh_callback
         self.auto_refresh_time = auto_refresh_time
@@ -146,7 +147,7 @@ class Cup(App):
         self._manual_refresh_in_progress = False
 
         # Navigation properties for editorials
-        self.editorial_list: List[Dict[str, Any]] = []
+        self.editorial_list: List[EditorialMetadata] = []
         self.current_editorial_index: int = 0
         self._load_editorial_list()
 
@@ -158,7 +159,7 @@ class Cup(App):
                 self.editorial_list = self.editorial_generator.list_editorials()
                 if self.current_editorial_path and self.editorial_list:
                     for i, editorial in enumerate(self.editorial_list):
-                        if editorial["filepath"] == self.current_editorial_path:
+                        if editorial.filepath == self.current_editorial_path:
                             self.current_editorial_index = i
                             break
             except Exception as e:
@@ -187,14 +188,14 @@ class Cup(App):
             return
         try:
             current_editorial = self.editorial_list[self.current_editorial_index]
-            editorial_path = current_editorial["filepath"]
+            editorial_path = current_editorial.filepath
             content = self.editorial_generator.load_editorial(editorial_path)
             self.editorial_content = content
             self.current_editorial_path = editorial_path
             self.sub_title = self._format_subtitle()
             self._rebuild_view()
             self.notify(
-                f"Loaded editorial: {current_editorial.get('title', 'Untitled')}",
+                f"Loaded editorial: {current_editorial.title}",
                 severity="information",
             )
         except Exception as e:
@@ -204,11 +205,13 @@ class Cup(App):
         if not self.editorial_generator:
             return False
         try:
-            previous_editorial = self.editorial_generator.load_most_recent_editorial()
+            previous_editorial: Optional[
+                LoadedEditorial
+            ] = self.editorial_generator.load_most_recent_editorial()
             if not previous_editorial:
                 return False
-            self.current_editorial_path = previous_editorial["filepath"]
-            self.editorial_content = previous_editorial["content"]
+            self.current_editorial_path = previous_editorial.filepath
+            self.editorial_content = previous_editorial.content
             self._load_editorial_list()
             return True
         except Exception as exc:
@@ -288,8 +291,11 @@ class Cup(App):
             await asyncio.sleep(60)
 
     async def _update_with_new_articles(
-        self, new_articles, new_update_time, notify_editorial: bool = False
-    ):
+        self,
+        new_articles: List[Article],
+        new_update_time: datetime,
+        notify_editorial: bool = False,
+    ) -> None:
         logger.info(f"Updating with {len(new_articles)} new articles")
         self.articles = new_articles
         self.last_update = new_update_time
@@ -446,15 +452,17 @@ class Cup(App):
                 self.notify("No past editorials found", severity="information")
                 return
             editorials = editorial_files
-            editorials.sort(key=lambda x: x["timestamp"], reverse=False)
+            editorials.sort(key=lambda x: x.timestamp, reverse=False)
             screen = EditorialListScreen(editorials)
             self.push_screen(screen, callback=self._handle_editorial_selection_wrapper)
         except Exception as e:
             self.notify(f"Error accessing editorial history: {e}", severity="error")
 
-    async def _handle_editorial_selection(self, result) -> None:
+    async def _handle_editorial_selection(
+        self, result: Optional[EditorialMetadata]
+    ) -> None:
         if result:
-            editorial_path = result["filepath"]
+            editorial_path = result.filepath
             try:
                 self.articles = []
                 content = self.editorial_generator.load_editorial(editorial_path)
@@ -463,7 +471,7 @@ class Cup(App):
                 self._load_editorial_list()
 
                 for i, editorial in enumerate(self.editorial_list):
-                    if editorial["filepath"] == editorial_path:
+                    if editorial.filepath == editorial_path:
                         self.current_editorial_index = i
                         break
 
@@ -474,12 +482,14 @@ class Cup(App):
                 container.scroll_home(animate=True)
 
                 self.notify(
-                    f"Loaded editorial: {result['title']}", severity="information"
+                    f"Loaded editorial: {result.title}", severity="information"
                 )
             except Exception as e:
                 self.notify(f"Error loading editorial: {e}", severity="error")
 
-    def _handle_editorial_selection_wrapper(self, result) -> None:
+    def _handle_editorial_selection_wrapper(
+        self, result: Optional[EditorialMetadata]
+    ) -> None:
         if result:
             asyncio.create_task(self._handle_editorial_selection(result))
 

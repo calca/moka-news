@@ -1,15 +1,9 @@
-"""
-Data models for MoKa News.
+"""Domain models for MoKa News."""
 
-Provides typed dataclasses to replace the implicit dictionaries used throughout
-the codebase. Every model includes a ``to_dict()`` helper for backward
-compatibility with code that still expects plain dicts.
-"""
-
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Mapping, Optional
 
 # ---------------------------------------------------------------------------
 # Exceptions
@@ -68,15 +62,25 @@ class Article:
         """Return the best available summary (AI → original)."""
         return self.ai_summary or self.summary or "No summary available."
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to plain dict for backward compatibility."""
-        return asdict(self)
-
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Article":
-        """Create an Article from a plain dict (ignoring unknown keys)."""
-        known = {f.name for f in cls.__dataclass_fields__.values()}
-        return cls(**{k: v for k, v in data.items() if k in known})
+    def from_mapping(cls, data: Mapping[str, Any]) -> "Article":
+        """Create an Article from a generic mapping."""
+        published_dt_raw = data.get("published_dt")
+        published_dt = (
+            published_dt_raw if isinstance(published_dt_raw, datetime) else None
+        )
+        return cls(
+            title=str(data.get("title", "No Title")),
+            link=str(data.get("link", "")),
+            summary=str(data.get("summary", "")),
+            published=str(data.get("published", "")),
+            published_dt=published_dt,
+            source=str(data.get("source", "")),
+            ai_title=(str(data["ai_title"]) if data.get("ai_title") is not None else None),
+            ai_summary=(
+                str(data["ai_summary"]) if data.get("ai_summary") is not None else None
+            ),
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -103,51 +107,20 @@ class Editorial:
     sources: List[EditorialSource] = field(default_factory=list)
     article_count: int = 0
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to plain dict for backward compatibility."""
-        return {
-            "title": self.title,
-            "content": self.content,
-            "timestamp": self.timestamp,
-            "sources": [asdict(s) for s in self.sources],
-            "article_count": self.article_count,
-        }
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Editorial":
-        """Create an Editorial from a plain dict."""
-        sources_raw = data.get("sources", [])
-        sources = [
-            EditorialSource(**s) if isinstance(s, dict) else s for s in sources_raw
-        ]
-        return cls(
-            title=data.get("title", "Good Morning!"),
-            content=data.get("content", ""),
-            timestamp=data.get("timestamp", datetime.now()),
-            sources=sources,
-            article_count=data.get("article_count", 0),
-        )
-
-
-# ---------------------------------------------------------------------------
-# Editorial metadata (for listing saved editorials)
-# ---------------------------------------------------------------------------
-
-
 @dataclass
 class EditorialMetadata:
     """Lightweight metadata for a saved editorial file."""
 
-    title: str = "Untitled"
-    timestamp: datetime = field(default_factory=datetime.now)
-    filepath: Optional[Path] = None
-    filename: str = ""
+    title: str
+    timestamp: datetime
+    filepath: Path
+    filename: str
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to plain dict for backward compatibility."""
-        return {
-            "title": self.title,
-            "timestamp": self.timestamp,
-            "filepath": self.filepath,
-            "filename": self.filename,
-        }
+
+@dataclass
+class LoadedEditorial:
+    """Loaded editorial document with metadata."""
+
+    filepath: Path
+    content: str
+    title: str = "Untitled"

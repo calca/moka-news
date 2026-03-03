@@ -1,11 +1,13 @@
 """Use-case helpers for editorial generation context."""
 
 import argparse
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from moka_news.barista import SimpleBarista, create_ai_provider
 from moka_news.editorial import EditorialGenerator
 from moka_news.logger import get_logger
+from moka_news.models import Article
 
 logger = get_logger(__name__)
 
@@ -14,8 +16,8 @@ def build_editorial_context(
     config: Dict[str, Any],
     args: argparse.Namespace,
     ai_provider: str,
-    articles: List[Dict[str, Any]],
-) -> Tuple[EditorialGenerator, Optional[str], Optional[Any]]:
+    articles: List[Article],
+) -> Tuple[EditorialGenerator, Optional[str], Optional[Path]]:
     """Generate editorial content or fallback to the most recent saved editorial."""
     editorial_content: Optional[str] = None
 
@@ -49,7 +51,7 @@ def build_editorial_context(
             recent_editorials = editorial_generator.list_editorials()
             if recent_editorials:
                 most_recent = recent_editorials[-1]
-                editorial_path = most_recent["filepath"]
+                editorial_path = most_recent.filepath
                 editorial_content = editorial_generator.load_editorial(editorial_path)
                 print(f"✓ Loading most recent editorial: {editorial_path}")
             else:
@@ -59,8 +61,8 @@ def build_editorial_context(
         print(f"⚠️  Error with editorial: {exc}")
         previous_editorial = editorial_generator.load_most_recent_editorial()
         if previous_editorial:
-            editorial_path = previous_editorial["filepath"]
-            editorial_content = previous_editorial["content"]
+            editorial_path = previous_editorial.filepath
+            editorial_content = previous_editorial.content
             print(f"↩️  Loaded previous editorial: {editorial_path}")
         else:
             editorial_path = None

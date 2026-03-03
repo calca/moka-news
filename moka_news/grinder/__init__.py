@@ -4,12 +4,13 @@ Extracts data from RSS feeds using feedparser
 """
 
 import feedparser
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Optional, Tuple
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 import time
 from moka_news.logger import get_logger
 from moka_news.constants import DEFAULT_TECH_FEEDS
+from moka_news.models import Article
 
 logger = get_logger(__name__)
 
@@ -28,7 +29,7 @@ class Grinder:
         self.feed_urls = feed_urls
         self.since = since
 
-    def grind(self) -> Tuple[List[Dict[str, Any]], datetime]:
+    def grind(self) -> Tuple[List[Article], datetime]:
         """
         Parse all RSS feeds and extract articles
 
@@ -89,14 +90,14 @@ class Grinder:
                         if published_dt_naive < since_naive:
                             continue  # Skip articles older than the since timestamp
 
-                    article = {
-                        "title": entry.get("title", "No Title"),
-                        "link": entry.get("link", ""),
-                        "summary": entry.get("summary", entry.get("description", "")),
-                        "published": published_str,
-                        "published_dt": published_dt,
-                        "source": feed.feed.get("title", feed_url),
-                    }
+                    article = Article(
+                        title=entry.get("title", "No Title"),
+                        link=entry.get("link", ""),
+                        summary=entry.get("summary", entry.get("description", "")),
+                        published=published_str,
+                        published_dt=published_dt,
+                        source=feed.feed.get("title", feed_url),
+                    )
                     articles.append(article)
             except (OSError, ValueError, AttributeError) as e:
                 logger.error(f"Error parsing feed {feed_url}: {e}", exc_info=True)

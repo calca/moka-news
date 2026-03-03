@@ -4,8 +4,9 @@ import os
 import re
 from typing import Any, Dict, Optional
 
+import requests
+
 from moka_news.logger import get_logger
-from moka_news.publisher._http import requests
 
 logger = get_logger(__name__)
 
@@ -112,10 +113,6 @@ class WriteAsPublisher:
                 timeout=self.timeout_seconds,
                 verify=self.verify_ssl,
             )
-        except ModuleNotFoundError as exc:
-            raise WriteAsPublisherError(
-                "requests library is required for Write.as publishing. Install with: pip install requests"
-            ) from exc
         except requests.RequestException as exc:
             raise WriteAsPublisherError(f"Could not reach Write.as API: {exc}") from exc
 
@@ -165,10 +162,6 @@ class WriteAsPublisher:
                 timeout=self.timeout_seconds,
                 verify=self.verify_ssl,
             )
-        except ModuleNotFoundError as exc:
-            raise WriteAsPublisherError(
-                "requests library is required for Write.as publishing. Install with: pip install requests"
-            ) from exc
         except requests.RequestException as exc:
             raise WriteAsPublisherError(
                 f"Could not login to Write.as API: {exc}"

@@ -33,7 +33,7 @@ def _build_prompt(
 ) -> str:
     """Build a textual prompt from *article*, optional *keywords* and *prompts*.
 
-    Utility kept for backward compatibility and testing.
+    Utility function mainly used by tests.
     """
     title = article.get("title", "")
     content = article.get("summary", "")[:max_content_length]

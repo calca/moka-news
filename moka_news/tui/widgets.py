@@ -1,27 +1,26 @@
 """Reusable widgets for the Cup TUI."""
 
 import webbrowser
-from typing import Dict, Any
 
 from textual.app import ComposeResult
 from textual.widgets import Static, Label, Markdown, Collapsible
+
+from moka_news.models import Article
 
 
 class ArticleCard(Static):
     """Widget to display a single article"""
 
-    def __init__(self, article: Dict[str, Any], *args, **kwargs):
+    def __init__(self, article: Article, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.article = article
-        self.border_title = article.get("source", "Unknown Source")
+        self.border_title = article.source or "Unknown Source"
 
     def compose(self) -> ComposeResult:
-        title = self.article.get("ai_title", self.article.get("title", "No Title"))
-        summary = self.article.get(
-            "ai_summary", self.article.get("summary", "No summary available.")
-        )
-        link = self.article.get("link", "")
-        published = self.article.get("published", "")
+        title = self.article.display_title
+        summary = self.article.display_summary
+        link = self.article.link
+        published = self.article.published
 
         yield Label(f"[bold cyan]{title}[/bold cyan]")
         yield Label(f"\n{summary}")
@@ -31,7 +30,7 @@ class ArticleCard(Static):
             yield Label("[dim]🔗 Click card to open link[/dim]")
 
     def on_click(self) -> None:
-        link = self.article.get("link")
+        link = self.article.link
         if link:
             try:
                 webbrowser.open(link)

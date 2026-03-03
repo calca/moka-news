@@ -13,6 +13,7 @@ MoKa News now follows a layered architecture so CLI, orchestration, storage, and
 - `moka_news/cli` - Argument parsing and first-run setup wizard
 - `moka_news/application` - Use-cases and services (fetch, editorial generation, TUI workflows)
 - `moka_news/infrastructure` - Config and storage adapters (OPML, trackers, editorial repository)
+- `moka_news/models.py` - Typed domain models (`Article`, `Editorial`, metadata)
 - `moka_news/tui` - Textual UI implementation
 - `moka_news/grinder`, `moka_news/barista`, `moka_news/poster`, `moka_news/publisher` - Core feature modules
 
@@ -609,9 +610,10 @@ moka-news/
 ├── moka_news/
 │   ├── __init__.py
 │   ├── main.py                # Entry point
+│   ├── models.py              # Typed domain models
 │   ├── cli/                   # Parser + first-run wizard
-│   ├── application/           # Use-cases and services
-│   ├── infrastructure/        # Config + storage adapters
+│   ├── application/           # Use-cases + orchestration services
+│   ├── infrastructure/        # Config + persistence adapters
 │   ├── tui/                   # Primary Textual UI implementation
 │   ├── grinder/               # RSS feed parser
 │   ├── barista/               # AI providers

@@ -4,6 +4,7 @@ from datetime import datetime, time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from moka_news.models import Article
 from moka_news.paths import THEME_DARK, THEME_LIGHT
 from moka_news.tui.app import Cup
 from moka_news.tui.dialogs import (
@@ -19,10 +20,10 @@ from moka_news.tui.widgets import (
 
 
 def serve(
-    articles: List[Dict[str, Any]],
+    articles: List[Article],
     last_update: Optional[datetime] = None,
     refresh_callback: Optional[
-        Callable[[], Tuple[List[Dict[str, Any]], datetime]]
+        Callable[[], Tuple[List[Article], datetime]]
     ] = None,
     auto_refresh_time: Optional[time] = time(8, 0),
     editorial_content: Optional[str] = None,

@@ -2,9 +2,10 @@
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from moka_news.logger import get_logger
+from moka_news.models import Editorial, EditorialMetadata, LoadedEditorial
 
 logger = get_logger(__name__)
 
@@ -16,9 +17,9 @@ class EditorialRepository:
         self.editorials_dir = editorials_dir
         self.editorials_dir.mkdir(parents=True, exist_ok=True)
 
-    def save(self, editorial: Dict[str, Any]) -> Path:
+    def save(self, editorial: Editorial) -> Path:
         """Save editorial to markdown file and return path."""
-        timestamp = editorial["timestamp"]
+        timestamp = editorial.timestamp
         filename = timestamp.strftime("%Y-%m-%d_%H-%M.md")
         filepath = self.editorials_dir / filename
 
@@ -28,33 +29,33 @@ class EditorialRepository:
 
         return filepath
 
-    def format_markdown(self, editorial: Dict[str, Any]) -> str:
+    def format_markdown(self, editorial: Editorial) -> str:
         """Render editorial dictionary as markdown."""
-        timestamp = editorial["timestamp"]
+        timestamp = editorial.timestamp
         date_str = timestamp.strftime("%A, %B %d, %Y at %H:%M")
 
-        md = f"# {editorial['title']}\n\n"
+        md = f"# {editorial.title}\n\n"
         md += f"*{date_str}*\n\n"
         md += "---\n\n"
-        md += editorial["content"]
+        md += editorial.content
         md += "\n\n---\n\n"
         md += "## Sources\n\n"
 
-        for source in editorial["sources"]:
-            title = source["title"]
-            url = source["url"]
-            source_name = source["source"]
+        for source in editorial.sources:
+            title = source.title
+            url = source.url
+            source_name = source.source
             if url:
                 md += f"- [**{title}**]({url}) - *{source_name}*\n\n"
             else:
                 md += f"- **{title}** - *{source_name}*\n\n"
 
-        md += f"\n*Editorial generated from {editorial['article_count']} articles*\n"
+        md += f"\n*Editorial generated from {editorial.article_count} articles*\n"
         return md
 
-    def list(self) -> List[Dict[str, Any]]:
+    def list(self) -> List[EditorialMetadata]:
         """List saved editorials as metadata dictionaries."""
-        editorials: List[Dict[str, Any]] = []
+        editorials: List[EditorialMetadata] = []
 
         if not self.editorials_dir.exists():
             return editorials
@@ -73,30 +74,30 @@ class EditorialRepository:
                     )
 
                 editorials.append(
-                    {
-                        "title": title,
-                        "timestamp": timestamp,
-                        "filepath": filepath,
-                        "filename": filepath.name,
-                    }
+                    EditorialMetadata(
+                        title=title,
+                        timestamp=timestamp,
+                        filepath=filepath,
+                        filename=filepath.name,
+                    )
                 )
             except Exception as exc:
                 logger.warning("Error reading editorial %s: %s", filepath, exc)
 
         return editorials
 
-    def load_most_recent(self) -> Optional[Dict[str, Any]]:
+    def load_most_recent(self) -> Optional[LoadedEditorial]:
         """Load the most recent saved editorial, when available."""
         editorials = self.list()
         if not editorials:
             return None
 
         most_recent = editorials[-1]
-        return {
-            "filepath": most_recent["filepath"],
-            "content": self.load(most_recent["filepath"]),
-            "title": most_recent.get("title", "Untitled"),
-        }
+        return LoadedEditorial(
+            filepath=most_recent.filepath,
+            content=self.load(most_recent.filepath),
+            title=most_recent.title,
+        )
 
     @staticmethod
     def load(filepath: Path) -> str:

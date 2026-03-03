@@ -1,12 +1,14 @@
 """Service responsible for editorial generation logic."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from pathlib import Path
+from typing import Dict, List, Optional, Sequence
 
 from moka_news.barista import AIProvider
 from moka_news.infrastructure.config.defaults import DEFAULT_EDITORIAL_PROMPTS
 from moka_news.constants import SUPPORTED_LANGUAGES
 from moka_news.logger import get_logger
+from moka_news.models import Article, Editorial, EditorialSource
 
 logger = get_logger(__name__)
 
@@ -26,7 +28,7 @@ class EditorialService:
         self.editorial_prompts = editorial_prompts
         self.language = language
 
-    def log_configuration(self, editorials_dir: Any, posters_dir: Any) -> None:
+    def log_configuration(self, editorials_dir: Path, posters_dir: Path) -> None:
         """Log service configuration details."""
         logger.info("EditorialGenerator configuration:")
         logger.info("  - Language: %s", self.language)
@@ -39,7 +41,7 @@ class EditorialService:
         logger.info("  - Editorials directory: %s", editorials_dir)
         logger.info("  - Posters directory: %s", posters_dir)
 
-    def generate_editorial(self, articles: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def generate_editorial(self, articles: Sequence[Article]) -> Editorial:
         """Generate an editorial from article dictionaries."""
         logger.info("\n%s", "=" * 60)
         logger.info("GENERATING EDITORIAL")
@@ -52,13 +54,13 @@ class EditorialService:
 
         if not articles:
             logger.warning("No articles provided for editorial generation")
-            return {
-                "title": "Good Morning!",
-                "content": "No news articles available today.",
-                "timestamp": datetime.now(),
-                "sources": [],
-                "article_count": 0,
-            }
+            return Editorial(
+                title="Good Morning!",
+                content="No news articles available today.",
+                timestamp=datetime.now(),
+                sources=[],
+                article_count=0,
+            )
 
         prompt = self.build_editorial_prompt(articles)
         editorial_article = {"title": "Morning Editorial", "summary": prompt}
@@ -79,32 +81,32 @@ class EditorialService:
             logger.error("Error generating editorial with AI: %s", exc)
             raise RuntimeError(f"Error generating editorial with AI: {exc}") from exc
 
-        sources: List[Dict[str, str]] = []
+        sources: List[EditorialSource] = []
         for article in articles:
             sources.append(
-                {
-                    "title": article.get("ai_title", article.get("title", "Untitled")),
-                    "url": article.get("link", ""),
-                    "source": article.get("source", "Unknown"),
-                }
+                EditorialSource(
+                    title=article.display_title or "Untitled",
+                    url=article.link,
+                    source=article.source or "Unknown",
+                )
             )
 
-        return {
-            "title": editorial_title,
-            "content": editorial_content,
-            "timestamp": datetime.now(),
-            "sources": sources,
-            "article_count": len(articles),
-        }
+        return Editorial(
+            title=editorial_title,
+            content=editorial_content,
+            timestamp=datetime.now(),
+            sources=sources,
+            article_count=len(articles),
+        )
 
-    def build_editorial_prompt(self, articles: List[Dict[str, Any]]) -> str:
+    def build_editorial_prompt(self, articles: Sequence[Article]) -> str:
         """Build AI prompt text from articles."""
         articles_text = ""
         for i, article in enumerate(articles, 1):
-            title = article.get("ai_title", article.get("title", ""))
-            summary = article.get("ai_summary", article.get("summary", ""))
-            source = article.get("source", "Unknown")
-            link = article.get("link", "")
+            title = article.display_title
+            summary = article.display_summary
+            source = article.source or "Unknown"
+            link = article.link
 
             articles_text += f"{i}. {title}\n"
             articles_text += f"   Source: {source}\n"
@@ -139,16 +141,16 @@ class EditorialService:
 
         return prompts
 
-    def create_simple_editorial(self, articles: List[Dict[str, Any]]) -> str:
+    def create_simple_editorial(self, articles: Sequence[Article]) -> str:
         """Create a non-AI fallback editorial with simple prose."""
         top = articles[:8]
         content = "Good morning — here's what's making headlines today.\n\n"
 
         for article in top:
-            title = article.get("ai_title", article.get("title", "Untitled"))
-            summary = article.get("ai_summary", article.get("summary", ""))[:200]
-            link = article.get("link", "")
-            source = article.get("source", "")
+            title = article.display_title or "Untitled"
+            summary = article.display_summary[:200]
+            link = article.link
+            source = article.source
 
             if link:
                 content += f"**{title}** — {summary} [Read more]({link})"

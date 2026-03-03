@@ -3,8 +3,9 @@
 import os
 from typing import Any, Dict
 
+import requests
+
 from moka_news.logger import get_logger
-from moka_news.publisher._http import requests
 from moka_news.publisher import PublishProvider, PublishProviderError
 
 logger = get_logger(__name__)
@@ -102,11 +103,6 @@ class ButtondownProvider(PublishProvider):
                 timeout=self.timeout_seconds,
                 verify=self.verify_ssl,
             )
-        except ModuleNotFoundError as exc:
-            raise PublishProviderError(
-                "requests library is required for Buttondown publishing. "
-                "Install with: pip install requests"
-            ) from exc
         except requests.RequestException as exc:
             raise PublishProviderError(
                 f"Could not reach Buttondown API: {exc}"

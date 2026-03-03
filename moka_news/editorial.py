@@ -6,11 +6,17 @@ Public API remains stable while implementation is split between:
 """
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from moka_news.application.services import EditorialService
 from moka_news.barista import AIProvider
 from moka_news.infrastructure.storage import EditorialRepository
+from moka_news.models import (
+    Article,
+    Editorial,
+    EditorialMetadata,
+    LoadedEditorial,
+)
 from moka_news.paths import APP_CONFIG_DIR, EDITORIALS_DIR, POSTERS_DIR
 
 
@@ -46,35 +52,35 @@ class EditorialGenerator:
         self._repository = EditorialRepository(self.editorials_dir)
         self._service.log_configuration(self.editorials_dir, self.posters_dir)
 
-    def generate_editorial(self, articles: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Generate an editorial dictionary from a list of article dictionaries."""
+    def generate_editorial(self, articles: List[Article]) -> Editorial:
+        """Generate an editorial from a list of articles."""
         return self._service.generate_editorial(articles)
 
-    def _build_editorial_prompt(self, articles: List[Dict[str, Any]]) -> str:
-        """Compatibility wrapper around editorial prompt construction."""
+    def _build_editorial_prompt(self, articles: List[Article]) -> str:
+        """Build editorial prompt from typed articles."""
         return self._service.build_editorial_prompt(articles)
 
     def _get_editorial_prompts(self) -> Dict[str, str]:
-        """Compatibility wrapper around prompt resolution and language injection."""
+        """Resolve editorial prompts with language-specific instructions."""
         return self._service.get_editorial_prompts()
 
-    def _create_simple_editorial(self, articles: List[Dict[str, Any]]) -> str:
-        """Compatibility wrapper for non-AI fallback editorial creation."""
+    def _create_simple_editorial(self, articles: List[Article]) -> str:
+        """Build a non-AI fallback editorial from typed articles."""
         return self._service.create_simple_editorial(articles)
 
-    def save_editorial(self, editorial: Dict[str, Any]) -> Path:
+    def save_editorial(self, editorial: Editorial) -> Path:
         """Save editorial markdown and return path."""
         return self._repository.save(editorial)
 
-    def _format_editorial_markdown(self, editorial: Dict[str, Any]) -> str:
-        """Compatibility wrapper around markdown rendering."""
+    def _format_editorial_markdown(self, editorial: Editorial) -> str:
+        """Render a typed editorial as markdown."""
         return self._repository.format_markdown(editorial)
 
-    def list_editorials(self) -> List[Dict[str, Any]]:
+    def list_editorials(self) -> List[EditorialMetadata]:
         """List saved editorials sorted by timestamp (oldest to newest)."""
         return self._repository.list()
 
-    def load_most_recent_editorial(self) -> Optional[Dict[str, Any]]:
+    def load_most_recent_editorial(self) -> Optional[LoadedEditorial]:
         """Load the most recent saved editorial, if available."""
         return self._repository.load_most_recent()
 

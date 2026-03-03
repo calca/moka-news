@@ -4,6 +4,7 @@ Tests for the Editorial Generator
 
 from moka_news.editorial import EditorialGenerator
 from moka_news.barista import SimpleBarista
+from moka_news.models import Article, Editorial, EditorialSource
 from datetime import datetime
 import tempfile
 from pathlib import Path
@@ -39,10 +40,10 @@ def test_generate_editorial_empty_articles():
         )
         editorial = generator.generate_editorial([])
 
-        assert editorial["title"] == "Good Morning!"
-        assert "No news articles" in editorial["content"]
-        assert editorial["article_count"] == 0
-        assert editorial["sources"] == []
+        assert editorial.title == "Good Morning!"
+        assert "No news articles" in editorial.content
+        assert editorial.article_count == 0
+        assert editorial.sources == []
 
 
 def test_generate_editorial_with_articles():
@@ -53,31 +54,31 @@ def test_generate_editorial_with_articles():
         )
 
         articles = [
-            {
-                "title": "Test Article 1",
-                "ai_title": "AI Title 1",
-                "summary": "Test summary 1",
-                "ai_summary": "AI summary 1",
-                "link": "https://example.com/1",
-                "source": "Test Source 1",
-            },
-            {
-                "title": "Test Article 2",
-                "ai_title": "AI Title 2",
-                "summary": "Test summary 2",
-                "ai_summary": "AI summary 2",
-                "link": "https://example.com/2",
-                "source": "Test Source 2",
-            },
+            Article(
+                title="Test Article 1",
+                ai_title="AI Title 1",
+                summary="Test summary 1",
+                ai_summary="AI summary 1",
+                link="https://example.com/1",
+                source="Test Source 1",
+            ),
+            Article(
+                title="Test Article 2",
+                ai_title="AI Title 2",
+                summary="Test summary 2",
+                ai_summary="AI summary 2",
+                link="https://example.com/2",
+                source="Test Source 2",
+            ),
         ]
 
         editorial = generator.generate_editorial(articles)
 
-        assert editorial["title"] is not None
-        assert editorial["content"] is not None
-        assert editorial["article_count"] == 2
-        assert len(editorial["sources"]) == 2
-        assert isinstance(editorial["timestamp"], datetime)
+        assert editorial.title is not None
+        assert editorial.content is not None
+        assert editorial.article_count == 2
+        assert len(editorial.sources) == 2
+        assert isinstance(editorial.timestamp, datetime)
 
 
 def test_save_and_load_editorial():
@@ -87,15 +88,17 @@ def test_save_and_load_editorial():
             ai_provider=SimpleBarista(), editorials_dir=tmpdir
         )
 
-        editorial = {
-            "title": "Test Editorial",
-            "content": "This is test content",
-            "timestamp": datetime.now(),
-            "sources": [
-                {"title": "Source 1", "url": "https://example.com/1", "source": "Test"}
+        editorial = Editorial(
+            title="Test Editorial",
+            content="This is test content",
+            timestamp=datetime.now(),
+            sources=[
+                EditorialSource(
+                    title="Source 1", url="https://example.com/1", source="Test"
+                )
             ],
-            "article_count": 1,
-        }
+            article_count=1,
+        )
 
         # Save editorial
         filepath = generator.save_editorial(editorial)
@@ -120,19 +123,19 @@ def test_list_editorials():
         assert editorials == []
 
         # Create one editorial
-        editorial = {
-            "title": "Test Editorial",
-            "content": "Test content",
-            "timestamp": datetime.now(),
-            "sources": [],
-            "article_count": 0,
-        }
+        editorial = Editorial(
+            title="Test Editorial",
+            content="Test content",
+            timestamp=datetime.now(),
+            sources=[],
+            article_count=0,
+        )
         generator.save_editorial(editorial)
 
         # Should have one editorial
         editorials = generator.list_editorials()
         assert len(editorials) == 1
-        assert editorials[0]["title"] == "Test Editorial"
+        assert editorials[0].title == "Test Editorial"
 
 
 def test_format_editorial_markdown():
@@ -142,20 +145,18 @@ def test_format_editorial_markdown():
             ai_provider=SimpleBarista(), editorials_dir=tmpdir
         )
 
-        editorial = {
-            "title": "Morning News",
-            "content": "Today's news content",
-            "timestamp": datetime(2024, 2, 14, 8, 0, 0),
-            "sources": [
-                {
-                    "title": "Article 1",
-                    "url": "https://example.com/1",
-                    "source": "Source A",
-                },
-                {"title": "Article 2", "url": "", "source": "Source B"},
+        editorial = Editorial(
+            title="Morning News",
+            content="Today's news content",
+            timestamp=datetime(2024, 2, 14, 8, 0, 0),
+            sources=[
+                EditorialSource(
+                    title="Article 1", url="https://example.com/1", source="Source A"
+                ),
+                EditorialSource(title="Article 2", url="", source="Source B"),
             ],
-            "article_count": 2,
-        }
+            article_count=2,
+        )
 
         markdown = generator._format_editorial_markdown(editorial)
 
@@ -180,13 +181,13 @@ def test_editorial_generator_custom_directory():
         assert generator.editorials_dir.exists()
 
         # Test saving to custom directory
-        editorial = {
-            "title": "Test Editorial",
-            "content": "Test content",
-            "timestamp": datetime.now(),
-            "sources": [],
-            "article_count": 0,
-        }
+        editorial = Editorial(
+            title="Test Editorial",
+            content="Test content",
+            timestamp=datetime.now(),
+            sources=[],
+            article_count=0,
+        )
 
         filepath = generator.save_editorial(editorial)
         assert filepath.parent == custom_dir
@@ -261,12 +262,12 @@ def test_generate_editorial_raises_on_ai_failure():
             ai_provider=FailingBarista(), editorials_dir=tmpdir
         )
         articles = [
-            {
-                "title": "Test Article",
-                "summary": "Test summary",
-                "link": "https://example.com/1",
-                "source": "Test Source",
-            }
+            Article(
+                title="Test Article",
+                summary="Test summary",
+                link="https://example.com/1",
+                source="Test Source",
+            )
         ]
 
         with pytest.raises(RuntimeError, match="Error generating editorial with AI"):

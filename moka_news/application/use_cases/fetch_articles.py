@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from moka_news.grinder import Grinder
 from moka_news.infrastructure.storage import DownloadTracker
 from moka_news.logger import get_logger
+from moka_news.models import Article
 
 logger = get_logger(__name__)
 
@@ -15,7 +16,7 @@ def fetch_and_brew(
     config: Dict[str, Any],
     ai_provider: str,
     download_tracker: Optional[DownloadTracker] = None,
-) -> Tuple[List[Dict[str, Any]], datetime]:
+) -> Tuple[List[Article], datetime]:
     """Fetch RSS feeds and optionally expand lookback window if too few articles."""
     editorial_config = config.get("editorial", {})
     min_articles = editorial_config.get("min_articles", 5)

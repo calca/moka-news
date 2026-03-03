@@ -3,6 +3,7 @@ Tests for The Cup component
 """
 
 from moka_news.tui import Cup, ArticleCard
+from moka_news.models import Article
 from datetime import datetime
 from unittest.mock import MagicMock
 
@@ -10,15 +11,15 @@ from unittest.mock import MagicMock
 def test_cup_initialization():
     """Test that Cup can be initialized"""
     articles = [
-        {
-            "title": "Test Article",
-            "summary": "Test summary",
-            "link": "https://example.com",
-            "published": "2026-01-01",
-            "source": "Test Source",
-            "ai_title": "AI Test Article",
-            "ai_summary": "AI test summary",
-        }
+        Article(
+            title="Test Article",
+            summary="Test summary",
+            link="https://example.com",
+            published="2026-01-01",
+            source="Test Source",
+            ai_title="AI Test Article",
+            ai_summary="AI test summary",
+        )
     ]
     last_update = datetime(2026, 1, 1, 12, 0, 0)
     app = Cup(articles, last_update)
@@ -42,12 +43,12 @@ def test_cup_initialization_without_articles():
 
 def test_article_card_initialization():
     """Test that ArticleCard can be initialized"""
-    article = {
-        "title": "Test",
-        "summary": "Test summary",
-        "link": "https://example.com",
-        "source": "Test Source",
-    }
+    article = Article(
+        title="Test",
+        summary="Test summary",
+        link="https://example.com",
+        source="Test Source",
+    )
     card = ArticleCard(article)
     assert card.article == article
 
