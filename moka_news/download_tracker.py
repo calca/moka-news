@@ -61,8 +61,15 @@ class DownloadTracker:
                 data = json.load(f)
                 timestamp_str = data.get("last_download")
                 if timestamp_str:
-                    return datetime.fromisoformat(timestamp_str)
-        except Exception as e:
+                    try:
+                        return datetime.fromisoformat(timestamp_str)
+                    except ValueError as e:
+                        logger.warning(
+                            "Invalid timestamp in download tracker '%s': %s",
+                            self.tracker_file,
+                            e,
+                        )
+        except (OSError, json.JSONDecodeError) as e:
             logger.warning(f"Could not read download tracker: {e}")
 
         if default_to_yesterday:
@@ -86,5 +93,5 @@ class DownloadTracker:
         try:
             with open(self.tracker_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
-        except Exception as e:
+        except OSError as e:
             logger.warning(f"Could not update download tracker: {e}")

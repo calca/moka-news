@@ -92,8 +92,8 @@ class OPMLManager:
         except PermissionError:
             logger.error(f"Permission denied reading OPML file: {self.opml_path}")
             return []
-        except Exception as e:
-            logger.error(f"Unexpected error loading OPML file '{self.opml_path}': {e}")
+        except OSError as e:
+            logger.error(f"I/O error loading OPML file '{self.opml_path}': {e}")
             return []
 
     def save_feeds(self, feeds: List[Dict[str, str]]):
@@ -223,8 +223,8 @@ class OPMLManager:
         except PermissionError:
             logger.error(f"Permission denied reading OPML file: {self.opml_path}")
             return []
-        except Exception as e:
-            logger.error(f"Unexpected error loading OPML file '{self.opml_path}': {e}")
+        except OSError as e:
+            logger.error(f"I/O error loading OPML file '{self.opml_path}': {e}")
             return []
 
     def list_feeds(self) -> List[Dict[str, str]]:

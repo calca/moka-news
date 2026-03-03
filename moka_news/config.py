@@ -170,7 +170,7 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
                 if isinstance(user_config, dict):
                     # Deep merge user config with defaults
                     config = merge_configs(config, user_config)
-        except Exception as e:
+        except (OSError, yaml.YAMLError) as e:
             logger.warning("Could not load config file: %s", e)
 
     # Override with environment variables

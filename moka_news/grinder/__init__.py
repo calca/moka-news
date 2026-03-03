@@ -7,6 +7,7 @@ import feedparser
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
+import time
 from moka_news.logger import get_logger
 from moka_news.constants import DEFAULT_TECH_FEEDS
 
@@ -52,19 +53,17 @@ class Grinder:
                         try:
                             # Try to parse the date using email.utils (handles RFC 2822 format)
                             published_dt = parsedate_to_datetime(published_str)
-                        except Exception:
+                        except (TypeError, ValueError, OverflowError):
                             try:
                                 # Fallback: try feedparser's parsed date
                                 if (
                                     hasattr(entry, "published_parsed")
                                     and entry.published_parsed
                                 ):
-                                    import time
-
                                     published_dt = datetime.fromtimestamp(
                                         time.mktime(entry.published_parsed)
                                     )
-                            except Exception:
+                            except (TypeError, ValueError, OverflowError, OSError):
                                 pass
 
                     # Filter by date if since parameter is provided
@@ -99,7 +98,7 @@ class Grinder:
                         "source": feed.feed.get("title", feed_url),
                     }
                     articles.append(article)
-            except Exception as e:
+            except (OSError, ValueError, AttributeError) as e:
                 logger.error(f"Error parsing feed {feed_url}: {e}", exc_info=True)
 
         return articles, last_update

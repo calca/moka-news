@@ -113,8 +113,8 @@ class RefreshManager:
 
         count = 0
         for entry in refresh_log:
-            refresh_date = datetime.fromisoformat(entry["timestamp"]).date()
-            if refresh_date == today:
+            refresh_ts = self._parse_log_entry_timestamp(entry)
+            if refresh_ts and refresh_ts.date() == today:
                 count += 1
 
         return count
@@ -137,7 +137,7 @@ class RefreshManager:
         refresh_log = [
             entry
             for entry in refresh_log
-            if datetime.fromisoformat(entry["timestamp"]) > cutoff
+            if (entry_ts := self._parse_log_entry_timestamp(entry)) and entry_ts > cutoff
         ]
 
         # Add new entry
@@ -152,8 +152,15 @@ class RefreshManager:
 
         try:
             with open(self.refresh_log_file, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception as e:
+                payload = json.load(f)
+                if not isinstance(payload, list):
+                    logger.warning(
+                        "Refresh log has invalid format in '%s' (expected list)",
+                        self.refresh_log_file,
+                    )
+                    return []
+                return payload
+        except (OSError, json.JSONDecodeError) as e:
             logger.warning(f"Could not load refresh log: {e}")
             return []
 
@@ -162,8 +169,19 @@ class RefreshManager:
         try:
             with open(self.refresh_log_file, "w", encoding="utf-8") as f:
                 json.dump(log, f, indent=2)
-        except Exception as e:
+        except OSError as e:
             logger.warning(f"Could not save refresh log: {e}")
+
+    def _parse_log_entry_timestamp(self, entry: dict) -> Optional[datetime]:
+        """Parse a refresh log entry timestamp safely."""
+        try:
+            timestamp = entry["timestamp"]
+            if not isinstance(timestamp, str):
+                raise TypeError("timestamp is not a string")
+            return datetime.fromisoformat(timestamp)
+        except (KeyError, TypeError, ValueError) as e:
+            logger.warning("Skipping invalid refresh log entry %r: %s", entry, e)
+            return None
 
     def _subtract_minutes(self, t: time, minutes: int) -> time:
         """Subtract minutes from a time object"""
