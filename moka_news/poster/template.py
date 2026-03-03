@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any
 
 from moka_news.constants import (
     DEFAULT_GRADIENT_PRESETS,
@@ -15,6 +15,7 @@ from moka_news.constants import (
 
 class PosterGenerationError(Exception):
     """Exception raised when poster generation fails"""
+
     pass
 
 
@@ -53,7 +54,9 @@ class PosterTemplate:
         self.gradient_preset = gradient.get("preset", None)
 
         if self.gradient_enabled and self.gradient_preset and not self.gradient_colors:
-            self.gradient_colors = DEFAULT_GRADIENT_PRESETS.get(self.gradient_preset, [])
+            self.gradient_colors = DEFAULT_GRADIENT_PRESETS.get(
+                self.gradient_preset, []
+            )
 
         # Content box settings
         content_box = template_data.get("content_box", {})
@@ -83,7 +86,9 @@ class PosterTemplate:
         self.summary_min_size = typography.get(
             "summary_min_size", max(16, int(self.summary_font_size * 0.75))
         )
-        self.summary_max_size = typography.get("summary_max_size", self.summary_font_size)
+        self.summary_max_size = typography.get(
+            "summary_max_size", self.summary_font_size
+        )
         self.font_family = typography.get("font_family", "arial")
         self.font_file = typography.get("font_file", None)
         self.bold_font_file = typography.get("bold_font_file", self.font_file)
@@ -102,8 +107,10 @@ class PosterTemplate:
     def from_file(cls, template_path: Path) -> "PosterTemplate":
         """Load template from JSON file"""
         try:
-            with open(template_path, 'r', encoding='utf-8') as f:
+            with open(template_path, "r", encoding="utf-8") as f:
                 template_data = json.load(f)
             return cls(template_data)
         except Exception as e:
-            raise PosterGenerationError(f"Failed to load template from {template_path}: {e}")
+            raise PosterGenerationError(
+                f"Failed to load template from {template_path}: {e}"
+            )

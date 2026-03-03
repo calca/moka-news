@@ -9,9 +9,16 @@ Sub-modules:
     app      -- Cup (main Textual App)
 """
 
-from moka_news.cup.dialogs import ConfirmationDialog, LoadingDialog, InfoDialog
-from moka_news.cup.widgets import ArticleCard, EditorialView
-from moka_news.cup.screens import EditorialListScreen
+from moka_news.cup.dialogs import (
+    ConfirmationDialog as ConfirmationDialog,
+    LoadingDialog as LoadingDialog,
+    InfoDialog as InfoDialog,
+)
+from moka_news.cup.widgets import (
+    ArticleCard as ArticleCard,
+    EditorialView as EditorialView,
+)
+from moka_news.cup.screens import EditorialListScreen as EditorialListScreen
 from moka_news.cup.app import Cup
 
 from typing import List, Dict, Any, Callable, Optional, Tuple

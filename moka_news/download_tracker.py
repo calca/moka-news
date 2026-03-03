@@ -47,7 +47,7 @@ class DownloadTracker:
         if days_back is not None:
             days_ago = datetime.now() - timedelta(days=days_back)
             return days_ago.replace(hour=0, minute=0, second=0, microsecond=0)
-        
+
         if not self.tracker_file.exists():
             if default_to_yesterday:
                 # First time - return yesterday's date to limit articles

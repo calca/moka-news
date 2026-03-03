@@ -64,7 +64,9 @@ def test_create_sample_config(tmp_path):
     assert "ai:" in content
     assert "provider:" in content
     parsed = yaml.safe_load(content)
-    assert "feeds" not in parsed  # Feeds are managed via OPML, not YAML top-level config
+    assert (
+        "feeds" not in parsed
+    )  # Feeds are managed via OPML, not YAML top-level config
     assert "OPML" in content or "opml" in content  # Should mention OPML feed management
 
 

@@ -558,17 +558,17 @@ For detailed information about building, testing, and distributing MoKa News, se
 ### Running Tests
 
 ```bash
-pytest
+pytest tests/ -v
 ```
 
 ### Code Formatting
 
 ```bash
-# Format code with black
-black moka_news/
-
 # Lint with ruff
-ruff check moka_news/
+ruff check moka_news tests examples
+
+# Check formatting with black (same as CI)
+black --check moka_news tests examples
 ```
 
 ## Default Configuration

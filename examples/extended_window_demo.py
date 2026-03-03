@@ -24,89 +24,101 @@ logger = get_logger(__name__)
 
 def demo_extended_window():
     """Demonstrate the extended time window feature"""
-    
+
     print("=" * 70)
     print("MoKa News - Extended Time Window Demo")
     print("=" * 70)
     print()
-    
+
     # Sample RSS feeds
     feeds = [
         "https://news.ycombinator.com/rss",
         "https://feeds.bbci.co.uk/news/technology/rss.xml",
     ]
-    
+
     # Configuration (simulating the config.yaml)
     config = {
         "editorial": {
             "min_articles": 5,  # We want at least 5 articles
-            "extended_window_days": 3  # Look back 3 days if needed
+            "extended_window_days": 3,  # Look back 3 days if needed
         }
     }
-    
+
     min_articles = config["editorial"]["min_articles"]
     extended_window_days = config["editorial"]["extended_window_days"]
-    
-    print(f"Configuration:")
+
+    print("Configuration:")
     print(f"  - Minimum articles needed: {min_articles}")
     print(f"  - Extended window: {extended_window_days} days")
     print()
-    
+
     # Create a temporary download tracker
     with tempfile.TemporaryDirectory() as tmpdir:
         tracker_file = Path(tmpdir) / "demo_tracker.json"
         tracker = DownloadTracker(tracker_file)
-        
+
         # Simulate a scenario where we last downloaded 12 hours ago
         last_download = datetime.now() - timedelta(hours=12)
         tracker.update_last_download(last_download)
-        
-        print(f"Scenario: Last download was {last_download.strftime('%Y-%m-%d %H:%M:%S')}")
-        print(f"          (approximately 12 hours ago)")
+
+        print(
+            f"Scenario: Last download was {last_download.strftime('%Y-%m-%d %H:%M:%S')}"
+        )
+        print("          (approximately 12 hours ago)")
         print()
-        
+
         # Step 1: Try fetching with normal time window
         print("Step 1: Fetching articles since last download...")
         print("-" * 70)
         since = tracker.get_last_download()
         grinder = Grinder(feeds, since=since)
         articles, _ = grinder.grind()
-        
+
         print(f"✓ Found {len(articles)} articles in the last 12 hours")
         print()
-        
+
         # Step 2: Check if we need extended window
         if len(articles) < min_articles:
-            print(f"⚠️  Only {len(articles)} articles found (need {min_articles} minimum)")
+            print(
+                f"⚠️  Only {len(articles)} articles found (need {min_articles} minimum)"
+            )
             print(f"→  Expanding time window to last {extended_window_days} days...")
             print("-" * 70)
-            
+
             # Fetch with extended window
             extended_since = tracker.get_last_download(days_back=extended_window_days)
             grinder_extended = Grinder(feeds, since=extended_since)
             articles_extended, _ = grinder_extended.grind()
-            
-            print(f"✓ Found {len(articles_extended)} articles in the last {extended_window_days} days")
+
+            print(
+                f"✓ Found {len(articles_extended)} articles in the last {extended_window_days} days"
+            )
             print()
-            
+
             # Show the difference
             print("Summary:")
             print(f"  - Articles in last 12 hours: {len(articles)}")
-            print(f"  - Articles in last {extended_window_days} days: {len(articles_extended)}")
+            print(
+                f"  - Articles in last {extended_window_days} days: {len(articles_extended)}"
+            )
             print(f"  - Additional articles: {len(articles_extended) - len(articles)}")
             print()
-            
+
             if len(articles_extended) >= min_articles:
-                print(f"✓ Success! Now we have enough articles ({len(articles_extended)}) for a quality editorial")
+                print(
+                    f"✓ Success! Now we have enough articles ({len(articles_extended)}) for a quality editorial"
+                )
             else:
                 print(f"⚠️  Still only {len(articles_extended)} articles. Consider:")
-                print(f"    - Adding more RSS feeds")
-                print(f"    - Increasing extended_window_days")
-                print(f"    - Lowering min_articles threshold")
+                print("    - Adding more RSS feeds")
+                print("    - Increasing extended_window_days")
+                print("    - Lowering min_articles threshold")
         else:
-            print(f"✓ Success! {len(articles)} articles is enough for editorial generation")
+            print(
+                f"✓ Success! {len(articles)} articles is enough for editorial generation"
+            )
             print("   (No need to extend the time window)")
-        
+
         print()
         print("=" * 70)
         print()

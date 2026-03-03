@@ -6,8 +6,9 @@ This example shows how to use keywords to focus AI-generated summaries
 on specific topics or aspects you're interested in.
 """
 
-from moka_news.config import load_config, create_sample_config
+from moka_news.config import create_sample_config
 from moka_news.barista import SimpleBarista
+from moka_news.barista import _build_prompt
 
 # Example 1: Create a config file with keywords
 print("=" * 80)
@@ -38,15 +39,11 @@ print("=" * 80)
 config = {
     "ai": {
         "provider": "simple",
-        "keywords": [
-            "artificial intelligence",
-            "machine learning",
-            "deep learning"
-        ],
-        "api_keys": {}
+        "keywords": ["artificial intelligence", "machine learning", "deep learning"],
+        "api_keys": {},
     },
     "feeds": {"urls": []},
-    "ui": {"use_tui": False}
+    "ui": {"use_tui": False},
 }
 
 print(f"\n✓ Keywords configured: {config['ai']['keywords']}")
@@ -63,15 +60,15 @@ articles = [
         "summary": "Researchers have developed a new machine learning model that surpasses previous benchmarks in natural language processing tasks.",
         "link": "https://example.com/article1",
         "source": "Tech News",
-        "published": "2026-02-13"
+        "published": "2026-02-13",
     },
     {
         "title": "Company Announces Cloud Infrastructure Expansion",
         "summary": "Major cloud provider announces plans to expand data center infrastructure across multiple regions.",
         "link": "https://example.com/article2",
         "source": "Cloud Weekly",
-        "published": "2026-02-13"
-    }
+        "published": "2026-02-13",
+    },
 ]
 
 # Create provider (keywords are used at the editorial level, not individual articles)
@@ -102,11 +99,9 @@ print("\n" + "=" * 80)
 print("Example 4: How keywords and prompts affect AI behavior")
 print("=" * 80)
 
-from moka_news.barista import _build_prompt
-
 test_article = {
     "title": "Technology Breakthrough in Quantum Computing",
-    "summary": "Scientists demonstrate a new approach to quantum error correction that could enable practical quantum computers."
+    "summary": "Scientists demonstrate a new approach to quantum error correction that could enable practical quantum computers.",
 }
 
 # Without keywords

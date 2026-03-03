@@ -8,7 +8,6 @@ from textual.binding import Binding
 from typing import List, Dict, Any, Callable, Optional, Tuple
 from pathlib import Path
 from datetime import datetime, time
-import webbrowser
 import asyncio
 import re
 
@@ -124,11 +123,15 @@ class Cup(App):
         self.editorials_dir = editorials_dir
         self.posters_dir = posters_dir
         self.logs_dir = logs_dir
-        self.poster_config = poster_config or {"method": "local", "default_template": "story"}
+        self.poster_config = poster_config or {
+            "method": "local",
+            "default_template": "story",
+        }
         if publish_manager is not None:
             self.publish_manager = publish_manager
         else:
             from moka_news.publisher import PublishManager
+
             self.publish_manager = PublishManager([])
         self._manual_refresh_in_progress = False
 
@@ -168,7 +171,9 @@ class Cup(App):
             self._load_current_editorial()
 
     def _load_current_editorial(self) -> None:
-        if not self.editorial_list or self.current_editorial_index >= len(self.editorial_list):
+        if not self.editorial_list or self.current_editorial_index >= len(
+            self.editorial_list
+        ):
             return
         try:
             current_editorial = self.editorial_list[self.current_editorial_index]
@@ -281,14 +286,18 @@ class Cup(App):
         self.sub_title = self._format_subtitle()
 
         if self.editorial_generator:
-            logger.info(f"Generating editorial with language: {self.editorial_generator.language}")
+            logger.info(
+                f"Generating editorial with language: {self.editorial_generator.language}"
+            )
             if notify_editorial:
                 self.notify("Generating editorial...", severity="information")
             try:
                 editorial = self.editorial_generator.generate_editorial(new_articles)
                 editorial_path = self.editorial_generator.save_editorial(editorial)
                 self.current_editorial_path = editorial_path
-                self.editorial_content = self.editorial_generator.load_editorial(editorial_path)
+                self.editorial_content = self.editorial_generator.load_editorial(
+                    editorial_path
+                )
                 if notify_editorial:
                     self.notify("✓ Editorial generated", severity="information")
             except Exception as e:
@@ -417,7 +426,9 @@ class Cup(App):
             new_theme = self.theme_light
             theme_name = "light"
         self.theme = new_theme
-        self.notify(f"Switched to {theme_name} theme: {new_theme}", severity="information")
+        self.notify(
+            f"Switched to {theme_name} theme: {new_theme}", severity="information"
+        )
 
     def action_navigate_prev(self) -> None:
         self._navigate_prev_editorial()
@@ -483,7 +494,9 @@ class Cup(App):
                 pass  # Widget doesn't exist, which is fine
 
         if self.editorial_content:
-            editorial_view = EditorialView(self.editorial_content, id="editorial-container")
+            editorial_view = EditorialView(
+                self.editorial_content, id="editorial-container"
+            )
             await container.mount(editorial_view)
         else:
             empty_state = Static(
@@ -507,7 +520,9 @@ class Cup(App):
 
     def action_generate_poster(self) -> None:
         if not self.editorial_content:
-            self.notify("No editorial available to generate poster from", severity="warning")
+            self.notify(
+                "No editorial available to generate poster from", severity="warning"
+            )
             return
         self.notify("Generating poster in background…", severity="information")
         self._generate_poster_background()
@@ -557,13 +572,21 @@ class Cup(App):
         try:
             from moka_news.poster import PosterGenerator
 
-            poster_config = getattr(self, "poster_config", {
-                "method": "local",
-                "default_template": "story",
-            })
+            poster_config = getattr(
+                self,
+                "poster_config",
+                {
+                    "method": "local",
+                    "default_template": "story",
+                },
+            )
             logger.debug(f"Poster config: {poster_config}")
-            logger.debug(f"Instantiating PosterGenerator (posters_dir={self.posters_dir})")
-            poster_gen = PosterGenerator(config=poster_config, posters_dir=self.posters_dir)
+            logger.debug(
+                f"Instantiating PosterGenerator (posters_dir={self.posters_dir})"
+            )
+            poster_gen = PosterGenerator(
+                config=poster_config, posters_dir=self.posters_dir
+            )
 
             content = str(self.editorial_content)
             title = self._extract_editorial_title(content)

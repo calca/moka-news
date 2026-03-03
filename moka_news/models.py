@@ -11,10 +11,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-
 # ---------------------------------------------------------------------------
 # Exceptions
 # ---------------------------------------------------------------------------
+
 
 class MokaNewsError(Exception):
     """Base exception for all MoKa News errors."""
@@ -43,6 +43,7 @@ class PosterError(MokaNewsError):
 # ---------------------------------------------------------------------------
 # Article
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class Article:
@@ -82,6 +83,7 @@ class Article:
 # Editorial
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class EditorialSource:
     """A single source referenced in an editorial."""
@@ -116,8 +118,7 @@ class Editorial:
         """Create an Editorial from a plain dict."""
         sources_raw = data.get("sources", [])
         sources = [
-            EditorialSource(**s) if isinstance(s, dict) else s
-            for s in sources_raw
+            EditorialSource(**s) if isinstance(s, dict) else s for s in sources_raw
         ]
         return cls(
             title=data.get("title", "Good Morning!"),
@@ -131,6 +132,7 @@ class Editorial:
 # ---------------------------------------------------------------------------
 # Editorial metadata (for listing saved editorials)
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class EditorialMetadata:

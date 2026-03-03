@@ -8,12 +8,14 @@ from typing import Dict, Any, List, Optional
 
 try:
     from PIL import Image, ImageDraw, ImageFont
+
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
 
 try:
     import qrcode
+
     QRCODE_AVAILABLE = True
 except ImportError:
     QRCODE_AVAILABLE = False
@@ -21,7 +23,10 @@ except ImportError:
 from moka_news.logger import get_logger
 from moka_news.paths import APP_CONFIG_DIR
 from moka_news.poster.template import PosterTemplate, PosterGenerationError
-from moka_news.poster.rendering import create_gradient_background, draw_rounded_box_with_shadow
+from moka_news.poster.rendering import (
+    create_gradient_background,
+    draw_rounded_box_with_shadow,
+)
 from moka_news.poster.fonts import load_font, fit_font_size
 from moka_news.poster import text as poster_text
 
@@ -62,9 +67,9 @@ class PosterGenerator:
 
         self.generation_method = "local"
         self.default_template = config.get("default_template", "story")
-        self.logo_path_override = (
-            config.get("logo_path") or config.get("local", {}).get("logo_path")
-        )
+        self.logo_path_override = config.get("logo_path") or config.get(
+            "local", {}
+        ).get("logo_path")
         requested_method = config.get("method", "local")
         if requested_method != "local":
             logger.warning(
@@ -77,7 +82,7 @@ class PosterGenerator:
             if not story_template.exists():
                 self._create_default_templates()
 
-        logger.info(f"PosterGenerator initialized:")
+        logger.info("PosterGenerator initialized:")
         logger.info(f"  - Method: {self.generation_method}")
         logger.info(f"  - Default template: {self.default_template}")
         logger.info(f"  - Posters directory: {self.posters_dir}")
@@ -93,34 +98,52 @@ class PosterGenerator:
             "name": "Story",
             "description": "Vertical 4:5 layout optimized for readability",
             "layout": {
-                "width": 1080, "height": 1350, "padding": 72, "line_spacing": 1.32,
+                "width": 1080,
+                "height": 1350,
+                "padding": 72,
+                "line_spacing": 1.32,
             },
             "gradient": {"enabled": True, "type": "vertical", "preset": "warm"},
             "content_box": {
-                "enabled": True, "background": "#ffffff", "padding": 56,
+                "enabled": True,
+                "background": "#ffffff",
+                "padding": 56,
                 "border_radius": 24,
                 "shadow": {
-                    "offset_x": 6, "offset_y": 6, "blur": 16,
+                    "offset_x": 6,
+                    "offset_y": 6,
+                    "blur": 16,
                     "color": "rgba(0,0,0,0.16)",
                 },
             },
             "colors": {
-                "background": "#111827", "text": "#1f2937",
-                "accent": "#be123c", "secondary": "#475569",
+                "background": "#111827",
+                "text": "#1f2937",
+                "accent": "#be123c",
+                "secondary": "#475569",
             },
             "typography": {
-                "title_size": 76, "summary_size": 34, "metadata_size": 22,
-                "title_single_line": False, "title_max_lines": 2,
-                "title_min_size": 46, "title_max_size": 76,
-                "summary_min_size": 12, "summary_max_size": 34,
+                "title_size": 76,
+                "summary_size": 34,
+                "metadata_size": 22,
+                "title_single_line": False,
+                "title_max_lines": 2,
+                "title_min_size": 46,
+                "title_max_size": 76,
+                "summary_min_size": 12,
+                "summary_max_size": 34,
                 "font_family": "arial",
                 "font_file": "OpenSans-Regular.ttf",
                 "bold_font_file": "OpenSans-Bold.ttf",
             },
             "elements": {
-                "qr_code": False, "timestamp": False, "source": True,
-                "editorial_date": True, "logo": True,
-                "logo_position": "bottom_right", "qr_position": "bottom_center",
+                "qr_code": False,
+                "timestamp": False,
+                "source": True,
+                "editorial_date": True,
+                "logo": True,
+                "logo_position": "bottom_right",
+                "qr_position": "bottom_center",
             },
         }
 
@@ -161,40 +184,111 @@ class PosterGenerator:
     # -- font helpers (delegates) --------------------------------------------
 
     def _load_font(
-        self, font_file: Optional[str], font_family: str, size: int,
+        self,
+        font_file: Optional[str],
+        font_family: str,
+        size: int,
     ) -> "ImageFont.ImageFont":
         return load_font(font_file, font_family, size)
 
-    def _fit_font_size(self, draw, text, font_file, font_family, max_width,
-                       max_height, line_spacing=1.3, min_size=12, max_size=220):
+    def _fit_font_size(
+        self,
+        draw,
+        text,
+        font_file,
+        font_family,
+        max_width,
+        max_height,
+        line_spacing=1.3,
+        min_size=12,
+        max_size=220,
+    ):
         return fit_font_size(
-            draw, text, font_file, font_family, max_width, max_height,
-            line_spacing, min_size, max_size,
+            draw,
+            text,
+            font_file,
+            font_family,
+            max_width,
+            max_height,
+            line_spacing,
+            min_size,
+            max_size,
         )
 
-    def _fit_single_line_font_size(self, draw, text, font_file, font_family,
-                                   max_width, max_height, min_size=12, max_size=220):
+    def _fit_single_line_font_size(
+        self,
+        draw,
+        text,
+        font_file,
+        font_family,
+        max_width,
+        max_height,
+        min_size=12,
+        max_size=220,
+    ):
         return fit_font_size(
-            draw, text, font_file, font_family, max_width, max_height,
-            min_size=min_size, max_size=max_size, single_line=True,
+            draw,
+            text,
+            font_file,
+            font_family,
+            max_width,
+            max_height,
+            min_size=min_size,
+            max_size=max_size,
+            single_line=True,
         )
 
-    def _fit_font_size_with_line_limit(self, draw, text, font_file, font_family,
-                                       max_width, max_height, max_lines,
-                                       line_spacing=1.3, min_size=12, max_size=220):
+    def _fit_font_size_with_line_limit(
+        self,
+        draw,
+        text,
+        font_file,
+        font_family,
+        max_width,
+        max_height,
+        max_lines,
+        line_spacing=1.3,
+        min_size=12,
+        max_size=220,
+    ):
         return fit_font_size(
-            draw, text, font_file, font_family, max_width, max_height,
-            line_spacing, min_size, max_size, max_lines=max_lines,
+            draw,
+            text,
+            font_file,
+            font_family,
+            max_width,
+            max_height,
+            line_spacing,
+            min_size,
+            max_size,
+            max_lines=max_lines,
         )
 
-    def _fit_font_size_for_paragraphs(self, draw, text, font_file, font_family,
-                                      max_width, max_height, line_spacing=1.3,
-                                      min_size=12, max_size=220,
-                                      paragraph_gap_factor=0.4):
+    def _fit_font_size_for_paragraphs(
+        self,
+        draw,
+        text,
+        font_file,
+        font_family,
+        max_width,
+        max_height,
+        line_spacing=1.3,
+        min_size=12,
+        max_size=220,
+        paragraph_gap_factor=0.4,
+    ):
         return fit_font_size(
-            draw, text, font_file, font_family, max_width, max_height,
-            line_spacing, min_size, max_size,
-            paragraph_mode=True, paragraph_gap_factor=paragraph_gap_factor,
+            draw,
+            text,
+            font_file,
+            font_family,
+            max_width,
+            max_height,
+            line_spacing,
+            min_size,
+            max_size,
+            paragraph_mode=True,
+            paragraph_gap_factor=paragraph_gap_factor,
         )
 
     # -- text helpers (delegates) --------------------------------------------
@@ -213,7 +307,9 @@ class PosterGenerator:
         return poster_text.parse_rich_text(text)
 
     def _wrap_rich_lines(self, draw, segments, regular_font, bold_font, max_width):
-        return poster_text.wrap_rich_lines(draw, segments, regular_font, bold_font, max_width)
+        return poster_text.wrap_rich_lines(
+            draw, segments, regular_font, bold_font, max_width
+        )
 
     def _extract_poster_paragraph(self, markdown_content):
         return poster_text.extract_poster_paragraph(markdown_content)
@@ -234,6 +330,7 @@ class PosterGenerator:
 
     def _get_fallback_font_candidates(self, font_family):
         from moka_news.poster.fonts import _get_fallback_font_candidates
+
         return _get_fallback_font_candidates(font_family)
 
     # -- editorial date helpers -----------------------------------------------
@@ -354,19 +451,28 @@ class PosterGenerator:
         qr.add_data(url)
         qr.make(fit=True)
         qr_img = qr.make_image(
-            fill_color=template.text_color, back_color=template.background_color,
+            fill_color=template.text_color,
+            back_color=template.background_color,
         )
         qr_size = 120
         qr_img = qr_img.resize((qr_size, qr_size))
         positions = {
-            "bottom_right": (template.width - qr_size - template.padding,
-                             template.height - qr_size - template.padding),
-            "bottom_left": (template.padding,
-                            template.height - qr_size - template.padding),
-            "top_right": (template.width - qr_size - template.padding,
-                          template.padding),
-            "bottom_center": ((template.width - qr_size) // 2,
-                              template.height - qr_size - template.padding),
+            "bottom_right": (
+                template.width - qr_size - template.padding,
+                template.height - qr_size - template.padding,
+            ),
+            "bottom_left": (
+                template.padding,
+                template.height - qr_size - template.padding,
+            ),
+            "top_right": (
+                template.width - qr_size - template.padding,
+                template.padding,
+            ),
+            "bottom_center": (
+                (template.width - qr_size) // 2,
+                template.height - qr_size - template.padding,
+            ),
         }
         qr_pos = positions.get(
             template.qr_position,
@@ -421,11 +527,15 @@ class PosterGenerator:
         # Create base image
         if template.gradient_enabled and template.gradient_colors:
             img = create_gradient_background(
-                template.width, template.height,
-                template.gradient_colors, template.gradient_type,
+                template.width,
+                template.height,
+                template.gradient_colors,
+                template.gradient_type,
             )
         else:
-            img = Image.new("RGB", (template.width, template.height), template.background_color)
+            img = Image.new(
+                "RGB", (template.width, template.height), template.background_color
+            )
 
         # Content box
         if template.content_box_enabled:
@@ -441,8 +551,11 @@ class PosterGenerator:
                 "color": template.shadow_color,
             }
             img = draw_rounded_box_with_shadow(
-                img, (box_x, box_y), (box_width, box_height),
-                template.content_box_radius, shadow_config,
+                img,
+                (box_x, box_y),
+                (box_width, box_height),
+                template.content_box_radius,
+                shadow_config,
                 template.content_box_background,
             )
 
@@ -488,7 +601,9 @@ class PosterGenerator:
 
         # Auto-fit fonts
         metadata_font = load_font(
-            template.font_file, template.font_family, template.metadata_font_size,
+            template.font_file,
+            template.font_family,
+            template.metadata_font_size,
         )
         width_scale = max(0.6, template.width / 1080.0)
         title_min = max(16, int(template.title_min_size * width_scale))
@@ -496,51 +611,91 @@ class PosterGenerator:
 
         if template.title_single_line:
             title_font_size = fit_font_size(
-                draw, title, template.font_file, template.font_family,
-                max_width, title_zone_h,
-                min_size=title_min, max_size=title_max, single_line=True,
+                draw,
+                title,
+                template.font_file,
+                template.font_family,
+                max_width,
+                title_zone_h,
+                min_size=title_min,
+                max_size=title_max,
+                single_line=True,
             )
         elif template.title_max_lines > 0:
             title_font_size = fit_font_size(
-                draw, title, template.font_file, template.font_family,
-                max_width, title_zone_h, template.line_spacing,
-                min_size=title_min, max_size=title_max,
+                draw,
+                title,
+                template.font_file,
+                template.font_family,
+                max_width,
+                title_zone_h,
+                template.line_spacing,
+                min_size=title_min,
+                max_size=title_max,
                 max_lines=template.title_max_lines,
             )
         else:
             title_font_size = fit_font_size(
-                draw, title, template.font_file, template.font_family,
-                max_width, title_zone_h, template.line_spacing,
-                min_size=title_min, max_size=title_max,
+                draw,
+                title,
+                template.font_file,
+                template.font_family,
+                max_width,
+                title_zone_h,
+                template.line_spacing,
+                min_size=title_min,
+                max_size=title_max,
             )
-        title_font = load_font(template.bold_font_file, template.font_family, title_font_size)
+        title_font = load_font(
+            template.bold_font_file, template.font_family, title_font_size
+        )
 
-        _plain = re.sub(r'\*\*([^*]+)\*\*', r'\1', body_content)
+        _plain = re.sub(r"\*\*([^*]+)\*\*", r"\1", body_content)
         body_min = max(8, int(template.summary_min_size * width_scale))
         body_max = max(body_min, int(template.summary_max_size * width_scale))
         body_intro_gap = 10
         body_fit_height = max(1, body_zone_h - body_intro_gap)
         body_font_size = fit_font_size(
-            draw, _plain, template.bold_font_file, template.font_family,
-            max_width, body_fit_height, template.line_spacing,
-            min_size=body_min, max_size=body_max,
+            draw,
+            _plain,
+            template.bold_font_file,
+            template.font_family,
+            max_width,
+            body_fit_height,
+            template.line_spacing,
+            min_size=body_min,
+            max_size=body_max,
             paragraph_mode=True,
         )
-        summary_font = load_font(template.font_file, template.font_family, body_font_size)
-        summary_bold_font = load_font(template.bold_font_file, template.font_family, body_font_size)
+        summary_font = load_font(
+            template.font_file, template.font_family, body_font_size
+        )
+        summary_bold_font = load_font(
+            template.bold_font_file, template.font_family, body_font_size
+        )
 
         # Draw title
         current_y = draw_y
         if template.title_single_line:
-            title_lines = [poster_text.truncate_single_line_text(draw, title, title_font, max_width)]
+            title_lines = [
+                poster_text.truncate_single_line_text(
+                    draw, title, title_font, max_width
+                )
+            ]
         elif template.title_max_lines > 0:
             title_lines = poster_text.limit_wrapped_lines(
-                draw, title, title_font, max_width, template.title_max_lines,
+                draw,
+                title,
+                title_font,
+                max_width,
+                template.title_max_lines,
             )
         else:
             title_lines = poster_text.wrap_text(draw, title, title_font, max_width)
         for line in title_lines:
-            draw.text((draw_x, current_y), line, fill=template.accent_color, font=title_font)
+            draw.text(
+                (draw_x, current_y), line, fill=template.accent_color, font=title_font
+            )
             bbox = draw.textbbox((draw_x, current_y), line, font=title_font)
             current_y += int((bbox[3] - bbox[1]) * template.line_spacing)
 
@@ -548,7 +703,8 @@ class PosterGenerator:
         current_y += 12
         draw.line(
             [(draw_x, current_y), (draw_x + max_width, current_y)],
-            fill=template.accent_color, width=3,
+            fill=template.accent_color,
+            width=3,
         )
         current_y += 17
         current_y += body_intro_gap
@@ -562,7 +718,11 @@ class PosterGenerator:
         for pidx, paragraph in enumerate(body_paragraphs):
             rich_segments = poster_text.parse_rich_text(paragraph)
             rich_lines = poster_text.wrap_rich_lines(
-                draw, rich_segments, summary_font, summary_bold_font, max_width,
+                draw,
+                rich_segments,
+                summary_font,
+                summary_bold_font,
+                max_width,
             )
             for line_tokens in rich_lines:
                 if current_y > body_max_y:
@@ -571,7 +731,12 @@ class PosterGenerator:
                 x = draw_x
                 line_h = 0
                 for token_text, _is_bold, token_font in line_tokens:
-                    draw.text((x, current_y), token_text, fill=template.text_color, font=token_font)
+                    draw.text(
+                        (x, current_y),
+                        token_text,
+                        fill=template.text_color,
+                        font=token_font,
+                    )
                     bbox = draw.textbbox((x, current_y), token_text, font=token_font)
                     x += bbox[2] - bbox[0]
                     token_h = bbox[3] - bbox[1]
@@ -590,27 +755,37 @@ class PosterGenerator:
         if template.show_timestamp:
             ts = datetime.now().strftime("%B %d, %Y")
             draw.text(
-                (draw_x, footer_y), f"Generated: {ts}",
-                fill=template.secondary_color, font=metadata_font,
+                (draw_x, footer_y),
+                f"Generated: {ts}",
+                fill=template.secondary_color,
+                font=metadata_font,
             )
             footer_y += footer_line_h
         if template.show_source:
             draw.text(
-                (draw_x, footer_y), "MoKa News Editorial",
-                fill=template.secondary_color, font=metadata_font,
+                (draw_x, footer_y),
+                "MoKa News Editorial",
+                fill=template.secondary_color,
+                font=metadata_font,
             )
             footer_y += footer_line_h
             if template.show_editorial_date:
                 editorial_date = self._get_editorial_date_label(editorial)
                 draw.text(
-                    (draw_x, footer_y), f"Editorial date: {editorial_date}",
-                    fill=template.secondary_color, font=metadata_font,
+                    (draw_x, footer_y),
+                    f"Editorial date: {editorial_date}",
+                    fill=template.secondary_color,
+                    font=metadata_font,
                 )
 
         # Logo
         img = self._add_logo(
-            img, template, draw_x=draw_x, draw_y=draw_y,
-            max_width=max_width, total_draw_h=total_draw_h,
+            img,
+            template,
+            draw_x=draw_x,
+            draw_y=draw_y,
+            max_width=max_width,
+            total_draw_h=total_draw_h,
         )
 
         # Save

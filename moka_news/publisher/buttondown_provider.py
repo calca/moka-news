@@ -1,7 +1,7 @@
 """Buttondown publish provider — create newsletter emails via Buttondown API."""
 
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from moka_news.logger import get_logger
 from moka_news.publisher._http import requests
@@ -19,14 +19,10 @@ class ButtondownProvider(PublishProvider):
         super().__init__(config)
 
         self.api_key = str(
-            config.get("api_key")
-            or os.getenv("BUTTONDOWN_API_KEY")
-            or ""
+            config.get("api_key") or os.getenv("BUTTONDOWN_API_KEY") or ""
         ).strip()
 
-        self.api_base = str(
-            config.get("api_base") or BUTTONDOWN_API_BASE
-        ).rstrip("/")
+        self.api_base = str(config.get("api_base") or BUTTONDOWN_API_BASE).rstrip("/")
 
         self.status = str(config.get("status", "draft")).strip().lower()
         if self.status not in ("draft", "about_to_send"):
@@ -147,7 +143,7 @@ class ButtondownProvider(PublishProvider):
     def _extract_error(response_data: Any) -> str:
         """Extract a human-readable error from the API response."""
         if isinstance(response_data, dict):
-            # Buttondown may return {"detail": "..."} or {"non_field_errors": [...]} 
+            # Buttondown may return {"detail": "..."} or {"non_field_errors": [...]}
             for key in ("detail", "error", "message"):
                 value = response_data.get(key)
                 if value:

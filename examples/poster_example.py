@@ -13,7 +13,6 @@ from pathlib import Path
 
 from moka_news.poster import PosterGenerator
 
-
 SAMPLE_EDITORIAL = {
     "title": "The Week in Tech: Breakthroughs and Bold Moves",
     "content": """# The Week in Tech: Breakthroughs and Bold Moves

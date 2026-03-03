@@ -20,7 +20,9 @@ def _get_article_text(
     article: Dict[str, Any], max_content_length: int = MAX_CONTENT_LENGTH
 ) -> str:
     """Get simple text representation of article (no AI prompts)."""
-    return f"Title: {article['title']}\nContent: {article['summary'][:max_content_length]}"
+    return (
+        f"Title: {article['title']}\nContent: {article['summary'][:max_content_length]}"
+    )
 
 
 def _build_prompt(
@@ -37,7 +39,11 @@ def _build_prompt(
     content = article.get("summary", "")[:max_content_length]
 
     if prompts and "user_prompt" in prompts:
-        prompt = prompts["user_prompt"].replace("{title}", title).replace("{content}", content)
+        prompt = (
+            prompts["user_prompt"]
+            .replace("{title}", title)
+            .replace("{content}", content)
+        )
     else:
         prompt = f"Title: {title}\nContent: {content}"
 
@@ -85,7 +91,9 @@ class AIProvider(ABC):
         return {
             "title": article.get("title", "No Title")[:TITLE_MAX_LENGTH],
             "summary": (
-                article.get("summary", "No summary available.")[:SUMMARY_TRUNCATE_LENGTH]
+                article.get("summary", "No summary available.")[
+                    :SUMMARY_TRUNCATE_LENGTH
+                ]
                 if article.get("summary")
                 else "No summary available."
             ),
@@ -105,7 +113,9 @@ class AIProvider(ABC):
         )
 
         if keywords:
-            kw_str = ", ".join(keywords) if isinstance(keywords, list) else str(keywords)
+            kw_str = (
+                ", ".join(keywords) if isinstance(keywords, list) else str(keywords)
+            )
             keywords_section = prompts.get("keywords_section", "").replace(
                 "{keywords}", kw_str
             )
@@ -129,7 +139,10 @@ class AIProvider(ABC):
             }
 
     def _invoke_ai(
-        self, system_message: str, user_prompt: str, max_tokens: int = EDITORIAL_MAX_TOKENS
+        self,
+        system_message: str,
+        user_prompt: str,
+        max_tokens: int = EDITORIAL_MAX_TOKENS,
     ) -> str:
         """Call the AI model. Subclasses override this for their back-end."""
         raise NotImplementedError
@@ -149,7 +162,7 @@ class AIProvider(ABC):
             return {"title": title, "summary": summary}
 
         title = title_match.group(1).strip() or title
-        remainder = text[title_match.end():].strip()
+        remainder = text[title_match.end() :].strip()
 
         remainder = re.sub(
             r"^\s*(?:\*\*)?SUMMARY(?:\*\*)?\s*:\s*",

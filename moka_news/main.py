@@ -43,7 +43,7 @@ def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
     editorial_config = config.get("editorial", {})
     min_articles = editorial_config.get("min_articles", 5)
     extended_window_days = editorial_config.get("extended_window_days", 3)
-    
+
     # Get last download timestamp for filtering
     since = None
     if download_tracker:
@@ -67,9 +67,11 @@ def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
             f"Only {len(articles)} articles found (minimum: {min_articles}). "
             f"Expanding time window to last {extended_window_days} days..."
         )
-        
+
         # Fetch with extended time window
-        extended_since = download_tracker.get_last_download(days_back=extended_window_days)
+        extended_since = download_tracker.get_last_download(
+            days_back=extended_window_days
+        )
         if extended_since:
             logger.info(
                 f"Fetching articles since {extended_since.strftime('%Y-%m-%d %H:%M:%S')}"
@@ -178,8 +180,9 @@ Feed Management:
     )
 
     parser.add_argument(
-        "--debug", action="store_true", 
-        help="Enable debug mode and write all logs to file (saves to ~/.config/moka-news/logs/)"
+        "--debug",
+        action="store_true",
+        help="Enable debug mode and write all logs to file (saves to ~/.config/moka-news/logs/)",
     )
 
     parser.add_argument(
@@ -196,6 +199,7 @@ Feed Management:
     global logger
     import logging as _logging
     from datetime import datetime as _dt
+
     _logs_dir = LOGS_DIR
     _logs_dir.mkdir(parents=True, exist_ok=True)
     _log_file = _logs_dir / f"moka-news-{_dt.now().strftime('%Y-%m-%d')}.log"
@@ -320,7 +324,7 @@ Feed Management:
     keywords = config["ai"].get("keywords", [])
     editorial_prompts = config["ai"].get("editorial_prompts", None)
     language = args.language if args.language else config["ai"].get("language", "en")
-    
+
     # Get editorial configuration
     editorial_config = config.get("editorial", {})
     editorials_dir = editorial_config.get("editorials_dir", None)
@@ -331,10 +335,11 @@ Feed Management:
         ai_instance = SimpleBarista()
 
     editorial_generator = EditorialGenerator(
-        ai_instance, keywords, 
+        ai_instance,
+        keywords,
         editorials_dir=editorials_dir,
         editorial_prompts=editorial_prompts,
-        language=language
+        language=language,
     )
 
     editorial_path = None
@@ -350,9 +355,13 @@ Feed Management:
             recent_editorials = editorial_generator.list_editorials()
             if recent_editorials:
                 # Load the most recent editorial
-                most_recent = recent_editorials[-1]  # list_editorials returns sorted by date (oldest first)
-                editorial_path = most_recent["filepath"]  # Use the filepath from the dictionary
-                editorial_content = editorial_generator.load_editorial(editorial_path)  
+                most_recent = recent_editorials[
+                    -1
+                ]  # list_editorials returns sorted by date (oldest first)
+                editorial_path = most_recent[
+                    "filepath"
+                ]  # Use the filepath from the dictionary
+                editorial_content = editorial_generator.load_editorial(editorial_path)
                 print(f"✓ Loading most recent editorial: {editorial_path}")
             else:
                 editorial_content = None
@@ -425,6 +434,7 @@ Feed Management:
 
     # Publishing configuration — build multi-provider manager
     from moka_news.publisher import create_publish_providers, PublishManager
+
     publish_providers = create_publish_providers(config)
     publish_manager = PublishManager(publish_providers)
 

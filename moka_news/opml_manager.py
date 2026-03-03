@@ -85,7 +85,9 @@ class OPMLManager:
             return feeds
         except ET.ParseError as e:
             logger.error(f"Error parsing OPML file '{self.opml_path}': {e}")
-            logger.error("The file may be corrupted. Try removing it and adding feeds again.")
+            logger.error(
+                "The file may be corrupted. Try removing it and adding feeds again."
+            )
             return []
         except PermissionError:
             logger.error(f"Permission denied reading OPML file: {self.opml_path}")
@@ -214,7 +216,9 @@ class OPMLManager:
             return feeds
         except ET.ParseError as e:
             logger.error(f"Error parsing OPML file '{self.opml_path}': {e}")
-            logger.error("The file may be corrupted. Try removing it and adding feeds again.")
+            logger.error(
+                "The file may be corrupted. Try removing it and adding feeds again."
+            )
             return []
         except PermissionError:
             logger.error(f"Permission denied reading OPML file: {self.opml_path}")

@@ -25,15 +25,9 @@ class WriteAsPublisher:
         self.enabled = bool(cfg.get("enabled", False))
         self.api_base = str(cfg.get("api_base") or WRITEAS_API_BASE).rstrip("/")
 
-        self.alias = str(
-            cfg.get("alias")
-            or os.getenv("WRITEAS_ALIAS")
-            or ""
-        ).strip()
+        self.alias = str(cfg.get("alias") or os.getenv("WRITEAS_ALIAS") or "").strip()
         self.passphrase = str(
-            cfg.get("pass")
-            or os.getenv("WRITEAS_PASS")
-            or ""
+            cfg.get("pass") or os.getenv("WRITEAS_PASS") or ""
         ).strip()
         self._access_token_cache = None
 
@@ -141,7 +135,9 @@ class WriteAsPublisher:
 
         post_data = response_data.get("data")
         if not isinstance(post_data, dict):
-            raise WriteAsPublisherError("Write.as API returned an unexpected post response.")
+            raise WriteAsPublisherError(
+                "Write.as API returned an unexpected post response."
+            )
 
         normalized = dict(post_data)
         normalized["url"] = self._extract_post_url(normalized, effective_collection)
@@ -152,9 +148,7 @@ class WriteAsPublisher:
             return self._access_token_cache
 
         if not self.alias or not self.passphrase:
-            raise WriteAsPublisherError(
-                "Missing Write.as alias/pass credentials."
-            )
+            raise WriteAsPublisherError("Missing Write.as alias/pass credentials.")
 
         login_endpoint = f"{self.api_base}/auth/login"
         login_payload = {
@@ -176,7 +170,9 @@ class WriteAsPublisher:
                 "requests library is required for Write.as publishing. Install with: pip install requests"
             ) from exc
         except requests.RequestException as exc:
-            raise WriteAsPublisherError(f"Could not login to Write.as API: {exc}") from exc
+            raise WriteAsPublisherError(
+                f"Could not login to Write.as API: {exc}"
+            ) from exc
 
         try:
             response_data = response.json()
@@ -201,7 +197,9 @@ class WriteAsPublisher:
         self._access_token_cache = token
         return token
 
-    def _extract_post_url(self, post_data: Dict[str, Any], collection_alias: str) -> Optional[str]:
+    def _extract_post_url(
+        self, post_data: Dict[str, Any], collection_alias: str
+    ) -> Optional[str]:
         post_id = self._clean_optional_text(post_data.get("id"))
         slug = self._clean_optional_text(post_data.get("slug"))
 

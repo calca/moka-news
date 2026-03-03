@@ -5,6 +5,7 @@ from typing import List, Optional, Tuple
 
 try:
     from PIL import ImageDraw, ImageFont
+
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
@@ -15,7 +16,9 @@ def extract_title_and_body(content: str) -> Tuple[Optional[str], str]:
     raw = content or ""
     lines = raw.splitlines()
     title_re = re.compile(r"^\s*(?:\*\*)?TITLE(?:\*\*)?\s*:\s*(.+?)\s*$", re.IGNORECASE)
-    summary_prefix_re = re.compile(r"^\s*(?:\*\*)?SUMMARY(?:\*\*)?\s*:\s*", re.IGNORECASE)
+    summary_prefix_re = re.compile(
+        r"^\s*(?:\*\*)?SUMMARY(?:\*\*)?\s*:\s*", re.IGNORECASE
+    )
 
     for idx, line in enumerate(lines):
         stripped = line.strip()
@@ -24,7 +27,7 @@ def extract_title_and_body(content: str) -> Tuple[Optional[str], str]:
             continue
 
         title = match.group(1).strip() or None
-        remainder = "\n".join(lines[idx + 1:]).lstrip()
+        remainder = "\n".join(lines[idx + 1 :]).lstrip()
         remainder = summary_prefix_re.sub("", remainder, count=1)
         return title, remainder
 
@@ -61,7 +64,9 @@ def clean_content_for_poster(content: str) -> str:
             continue
         if stripped.startswith("#"):
             continue
-        if re.match(r"^(?:\*\*)?(?:TITLE|SUMMARY)(?:\*\*)?\s*:", stripped, re.IGNORECASE):
+        if re.match(
+            r"^(?:\*\*)?(?:TITLE|SUMMARY)(?:\*\*)?\s*:", stripped, re.IGNORECASE
+        ):
             continue
         if re.fullmatch(r"\*[^*]+\*", stripped):
             continue
@@ -72,11 +77,11 @@ def clean_content_for_poster(content: str) -> str:
     if not text:
         return ""
 
-    text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', text)
-    text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)
-    text = re.sub(r'(?<!\*)\*(?!\*)([^*]+?)(?<!\*)\*(?!\*)', r'\1', text)
-    text = re.sub(r'`([^`]+)`', r'\1', text)
-    text = re.sub(r'\s+', ' ', text).strip()
+    text = re.sub(r"\[([^\]]+)\]\([^\)]+\)", r"\1", text)
+    text = re.sub(r"\*\*([^*]+)\*\*", r"\1", text)
+    text = re.sub(r"(?<!\*)\*(?!\*)([^*]+?)(?<!\*)\*(?!\*)", r"\1", text)
+    text = re.sub(r"`([^`]+)`", r"\1", text)
+    text = re.sub(r"\s+", " ", text).strip()
 
     return text
 
@@ -104,7 +109,7 @@ def split_paragraphs(text: str) -> List[str]:
 def parse_rich_text(text: str) -> List[tuple]:
     """Parse ``**bold**`` markup into ``(segment_text, is_bold)`` tuples."""
     segments: List[tuple] = []
-    pattern = re.compile(r'\*\*([^*]+)\*\*')
+    pattern = re.compile(r"\*\*([^*]+)\*\*")
     last_end = 0
     for match in pattern.finditer(text):
         start, end = match.span()

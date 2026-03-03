@@ -36,9 +36,7 @@ class WriteAsProvider(PublishProvider):
 
         publisher = WriteAsPublisher(self._config)
         if not publisher.is_configured():
-            raise PublishProviderError(
-                "Missing Write.as credentials (alias/pass)."
-            )
+            raise PublishProviderError("Missing Write.as credentials (alias/pass).")
 
         try:
             collection_alias = self._config.get("collection_alias")

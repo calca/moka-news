@@ -4,6 +4,7 @@ from typing import List, Optional
 
 try:
     from PIL import ImageDraw, ImageFont
+
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
@@ -30,6 +31,7 @@ def load_font(
         # Try bundled fonts directory
         try:
             import importlib.resources as pkg_resources
+
             try:
                 fonts_path = pkg_resources.files("moka_news") / "fonts" / font_file
                 if fonts_path.exists():
@@ -40,7 +42,9 @@ def load_font(
                 with pkg_resources.path("moka_news.fonts", font_file) as font_path:
                     if font_path.exists():
                         font = ImageFont.truetype(str(font_path), size)
-                        logger.debug(f"Loaded bundled font (3.8): {font_file!r} @ {size}px")
+                        logger.debug(
+                            f"Loaded bundled font (3.8): {font_file!r} @ {size}px"
+                        )
                         return font
         except Exception as e:
             logger.debug(f"Could not load bundled font {font_file!r}: {e}")
@@ -48,6 +52,7 @@ def load_font(
         # Try as absolute path or relative to cwd
         try:
             from pathlib import Path
+
             font_path = Path(font_file)
             if font_path.exists():
                 font = ImageFont.truetype(str(font_path), size)
@@ -86,29 +91,35 @@ def _get_fallback_font_candidates(font_family: str) -> List[str]:
     candidates: List[str] = []
 
     if "times" in family or "serif" in family:
-        candidates.extend([
-            "Times New Roman.ttf",
-            "Times.ttc",
-            "/System/Library/Fonts/Supplemental/Times New Roman.ttf",
-            "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
-            "DejaVuSerif.ttf",
-        ])
+        candidates.extend(
+            [
+                "Times New Roman.ttf",
+                "Times.ttc",
+                "/System/Library/Fonts/Supplemental/Times New Roman.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
+                "DejaVuSerif.ttf",
+            ]
+        )
     else:
-        candidates.extend([
+        candidates.extend(
+            [
+                "Arial.ttf",
+                "Helvetica.ttc",
+                "LiberationSans-Regular.ttf",
+                "/System/Library/Fonts/Supplemental/Arial.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                "DejaVuSans.ttf",
+            ]
+        )
+
+    candidates.extend(
+        [
             "Arial.ttf",
             "Helvetica.ttc",
-            "LiberationSans-Regular.ttf",
-            "/System/Library/Fonts/Supplemental/Arial.ttf",
             "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
             "DejaVuSans.ttf",
-        ])
-
-    candidates.extend([
-        "Arial.ttf",
-        "Helvetica.ttc",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "DejaVuSans.ttf",
-    ])
+        ]
+    )
 
     unique: List[str] = []
     seen = set()
@@ -123,6 +134,7 @@ def _get_fallback_font_candidates(font_family: str) -> List[str]:
 # ---------------------------------------------------------------------------
 # Unified font sizing
 # ---------------------------------------------------------------------------
+
 
 def fit_font_size(
     draw: "ImageDraw.ImageDraw",
@@ -156,9 +168,16 @@ def fit_font_size(
         mid = (lo + hi) // 2
         font = load_font(font_file, font_family, mid)
         fits = _check_fit(
-            draw, text, font, max_width, max_height, line_spacing,
-            single_line=single_line, max_lines=max_lines,
-            paragraph_mode=paragraph_mode, paragraph_gap_factor=paragraph_gap_factor,
+            draw,
+            text,
+            font,
+            max_width,
+            max_height,
+            line_spacing,
+            single_line=single_line,
+            max_lines=max_lines,
+            paragraph_mode=paragraph_mode,
+            paragraph_gap_factor=paragraph_gap_factor,
         )
         if fits:
             best = mid
@@ -173,9 +192,16 @@ def fit_font_size(
     for size in range(min_size - 1, _HARD_FLOOR - 1, -1):
         font = load_font(font_file, font_family, size)
         if _check_fit(
-            draw, text, font, max_width, max_height, line_spacing,
-            single_line=single_line, max_lines=max_lines,
-            paragraph_mode=paragraph_mode, paragraph_gap_factor=paragraph_gap_factor,
+            draw,
+            text,
+            font,
+            max_width,
+            max_height,
+            line_spacing,
+            single_line=single_line,
+            max_lines=max_lines,
+            paragraph_mode=paragraph_mode,
+            paragraph_gap_factor=paragraph_gap_factor,
         ):
             return size
 
@@ -205,7 +231,12 @@ def _check_fit(
         if not paragraphs:
             return True
         total_h = _measure_wrapped_paragraphs(
-            draw, paragraphs, font, max_width, line_spacing, paragraph_gap_factor,
+            draw,
+            paragraphs,
+            font,
+            max_width,
+            line_spacing,
+            paragraph_gap_factor,
         )
         return total_h <= max_height
 

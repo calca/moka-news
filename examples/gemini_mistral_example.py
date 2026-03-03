@@ -21,6 +21,7 @@ def _brew(provider, articles):
         processed.append(out)
     return processed
 
+
 # Sample article for demonstration
 sample_articles = [
     {

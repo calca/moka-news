@@ -7,12 +7,11 @@ import os
 import yaml
 from typing import Dict, Any, Optional
 from pathlib import Path
-from moka_news.constants import DEFAULT_TECH_FEEDS, MAX_CONTENT_LENGTH, MAX_TOKENS, SUPPORTED_LANGUAGES
+from moka_news.constants import DEFAULT_TECH_FEEDS, MAX_CONTENT_LENGTH, MAX_TOKENS
 from moka_news.paths import CONFIG_SEARCH_LOCATIONS, THEME_DARK, THEME_LIGHT
 from moka_news.logger import get_logger
 
 logger = get_logger(__name__)
-
 
 
 DEFAULT_EDITORIAL_PROMPTS = {
@@ -89,7 +88,7 @@ DEFAULT_CONFIG = {
         "urls": [
             feed["url"] for feed in DEFAULT_TECH_FEEDS[:3]
         ]  # Internal fallback only — used when no OPML file exists and no --feeds CLI arg is provided.
-           # Users should manage feeds via OPML: moka-news --add-feed / --remove-feed / --list-feeds
+        # Users should manage feeds via OPML: moka-news --add-feed / --remove-feed / --list-feeds
     },
     "ui": {
         "use_tui": True,
@@ -98,7 +97,9 @@ DEFAULT_CONFIG = {
         "theme_dark": THEME_DARK,  # Dark theme option
     },
     "refresh": {
-        "allowed_times": ["08:00"],  # Single morning refresh to accumulate more articles overnight
+        "allowed_times": [
+            "08:00"
+        ],  # Single morning refresh to accumulate more articles overnight
         "max_daily_refreshes": 1,  # One refresh per day for richer editorial content
         "require_confirmation_outside_hours": True,  # Ask for confirmation outside allowed times
         "auto_refresh_window": 60,  # Time window in minutes around allowed times for automatic refresh
@@ -117,8 +118,8 @@ DEFAULT_CONFIG = {
             "font_dirs": [],  # Additional directories to search for fonts
             "default_font": "arial",  # Default font family for text rendering
             "optimize_output": True,  # Optimize PNG output for smaller file sizes
-            "add_watermark": True  # Add MoKa News watermark to generated posters
-        }
+            "add_watermark": True,  # Add MoKa News watermark to generated posters
+        },
     },
     "publish": {
         "providers": [],  # List of publish provider configs. Each entry needs "type" + provider-specific keys.

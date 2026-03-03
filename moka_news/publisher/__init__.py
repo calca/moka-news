@@ -6,7 +6,6 @@ Providers are defined as subclasses of ``PublishProvider`` and registered
 via ``create_publish_providers()``.
 """
 
-import os
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
@@ -115,9 +114,7 @@ class PublishManager:
             except Exception as exc:
                 logger.exception("Failed to publish to %s: %s", provider.name, exc)
                 results.append(
-                    PublishResult(
-                        provider=provider.name, success=False, error=str(exc)
-                    )
+                    PublishResult(provider=provider.name, success=False, error=str(exc))
                 )
 
         return results

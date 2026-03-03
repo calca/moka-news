@@ -54,11 +54,7 @@ def test_article_card_initialization():
 
 def test_cup_theme_initialization():
     """Test that Cup can be initialized with custom themes"""
-    app = Cup(
-        theme="rose-pine",
-        theme_light="rose-pine-dawn",
-        theme_dark="rose-pine"
-    )
+    app = Cup(theme="rose-pine", theme_light="rose-pine-dawn", theme_dark="rose-pine")
     assert app.theme == "rose-pine"
     assert app.theme_light == "rose-pine-dawn"
     assert app.theme_dark == "rose-pine"
@@ -74,23 +70,19 @@ def test_cup_default_theme():
 
 def test_cup_theme_toggle():
     """Test that theme toggle action switches between light and dark themes"""
-    app = Cup(
-        theme="rose-pine",
-        theme_light="rose-pine-dawn",
-        theme_dark="rose-pine"
-    )
-    
+    app = Cup(theme="rose-pine", theme_light="rose-pine-dawn", theme_dark="rose-pine")
+
     # Mock the notify method since it requires the app to be running
     app.notify = MagicMock()
-    
+
     # Initially on dark theme
     assert app.theme == "rose-pine"
-    
+
     # Call the actual action method to toggle to light
     app.action_toggle_theme()
     assert app.theme == "rose-pine-dawn", "First toggle should switch to light theme"
     assert app.notify.called, "Should notify user of theme change"
-    
+
     # Call the action method again to toggle back to dark
     app.action_toggle_theme()
     assert app.theme == "rose-pine", "Second toggle should switch back to dark theme"
@@ -101,19 +93,21 @@ def test_cup_theme_toggle_from_custom():
     app = Cup(
         theme="nord",  # Custom theme not matching either light or dark
         theme_light="rose-pine-dawn",
-        theme_dark="rose-pine"
+        theme_dark="rose-pine",
     )
-    
+
     # Mock the notify method
     app.notify = MagicMock()
-    
+
     # Starting with custom theme
     assert app.theme == "nord"
-    
+
     # Toggle from custom theme should switch to light (since it's not the light theme)
     app.action_toggle_theme()
-    assert app.theme == "rose-pine-dawn", "Toggle from custom theme should switch to light"
-    
+    assert (
+        app.theme == "rose-pine-dawn"
+    ), "Toggle from custom theme should switch to light"
+
     # Toggle again should switch to dark
     app.action_toggle_theme()
     assert app.theme == "rose-pine", "Second toggle should switch to dark"

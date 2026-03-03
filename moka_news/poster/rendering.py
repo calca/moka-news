@@ -5,6 +5,7 @@ from typing import Dict, Any, List
 
 try:
     from PIL import Image, ImageDraw, ImageColor, ImageFilter
+
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
@@ -47,10 +48,10 @@ def create_gradient_background(
     img = Image.new("RGB", (width, height))
 
     if gradient_type == "diagonal":
-        max_distance = (width ** 2 + height ** 2) ** 0.5
+        max_distance = (width**2 + height**2) ** 0.5
         for y in range(height):
             for x in range(width):
-                distance = (x ** 2 + y ** 2) ** 0.5
+                distance = (x**2 + y**2) ** 0.5
                 ratio = distance / max_distance
                 color = _interpolate_colors(rgb_colors, ratio)
                 img.putpixel((x, y), color)
@@ -116,10 +117,15 @@ def draw_rounded_box_with_shadow(
 
     try:
         if "rgba" in shadow_color_str:
-            match = re.match(r'rgba\((\d+),(\d+),(\d+),([\d.]+)\)', shadow_color_str)
+            match = re.match(r"rgba\((\d+),(\d+),(\d+),([\d.]+)\)", shadow_color_str)
             if match:
                 r_val, g_val, b_val, a_val = match.groups()
-                shadow_color = (int(r_val), int(g_val), int(b_val), int(float(a_val) * 255))
+                shadow_color = (
+                    int(r_val),
+                    int(g_val),
+                    int(b_val),
+                    int(float(a_val) * 255),
+                )
             else:
                 shadow_color = (0, 0, 0, 38)
         else:

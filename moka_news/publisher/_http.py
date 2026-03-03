@@ -2,7 +2,9 @@
 
 try:
     import requests as _requests
-except ImportError:  # pragma: no cover - exercised only in minimal envs without requests
+except (
+    ImportError
+):  # pragma: no cover - exercised only in minimal envs without requests
 
     class _RequestsShim:
         """Shim used when requests is unavailable."""

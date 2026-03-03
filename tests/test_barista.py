@@ -140,7 +140,10 @@ def test_parse_editorial_response_new_title_paragraph_format():
     parsed = AIProvider._parse_editorial_response(text)
 
     assert parsed["title"] == "Morning Brief"
-    assert parsed["summary"] == "Markets opened mixed after overnight volatility.\n\nSecond paragraph."
+    assert (
+        parsed["summary"]
+        == "Markets opened mixed after overnight volatility.\n\nSecond paragraph."
+    )
 
 
 def test_parse_editorial_response_legacy_summary_format():
