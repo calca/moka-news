@@ -5,7 +5,7 @@ Test for extended time window functionality
 import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
-from moka_news.download_tracker import DownloadTracker
+from moka_news.infrastructure.storage import DownloadTracker
 
 
 def test_get_last_download_with_days_back():
@@ -74,7 +74,7 @@ def test_get_last_download_days_back_ignores_tracker_file():
 
 def test_extended_window_config():
     """Test that extended window configuration is properly structured"""
-    from moka_news.config import DEFAULT_CONFIG
+    from moka_news.infrastructure.config import DEFAULT_CONFIG
 
     # Check that the new config options exist
     assert "editorial" in DEFAULT_CONFIG

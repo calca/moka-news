@@ -3,7 +3,7 @@ Example script demonstrating MoKa News with mock data
 """
 
 from moka_news.barista import SimpleBarista
-from moka_news.cup import serve
+from moka_news.tui import serve
 
 
 def _process_articles(articles):

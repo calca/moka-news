@@ -6,7 +6,7 @@ import pytest
 import os
 import tempfile
 import xml.etree.ElementTree as ET
-from moka_news.opml_manager import OPMLManager
+from moka_news.infrastructure.storage import OPMLManager
 
 
 @pytest.fixture

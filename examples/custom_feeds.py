@@ -4,7 +4,7 @@ Example: Using custom RSS feeds with MoKa News
 
 from moka_news.grinder import Grinder
 from moka_news.barista import SimpleBarista
-from moka_news.cup import serve
+from moka_news.tui import serve
 
 
 def main():

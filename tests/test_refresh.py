@@ -2,7 +2,7 @@
 Additional tests for refresh and auto-refresh functionality
 """
 
-from moka_news.cup import Cup
+from moka_news.tui import Cup
 from datetime import datetime, time
 
 

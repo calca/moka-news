@@ -9,7 +9,7 @@ import shutil
 import yaml
 from pathlib import Path
 from typing import Dict, Any, Optional
-from moka_news.opml_manager import OPMLManager
+from moka_news.infrastructure.storage import OPMLManager
 from moka_news.constants import DEFAULT_TECH_FEEDS, SUPPORTED_LANGUAGES
 from moka_news.paths import CONFIG_SEARCH_LOCATIONS, DEFAULT_CONFIG_PATH
 

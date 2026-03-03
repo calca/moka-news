@@ -3,7 +3,7 @@ Integration tests for MoKa News
 """
 
 from moka_news.barista import SimpleBarista
-from moka_news.cup import Cup
+from moka_news.tui import Cup
 
 
 def _process_articles(articles):

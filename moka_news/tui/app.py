@@ -9,13 +9,23 @@ from typing import List, Dict, Any, Callable, Optional, Tuple
 from pathlib import Path
 from datetime import datetime, time
 import asyncio
-import re
 
+from moka_news.application.use_cases.editorial_text import extract_editorial_title
+from moka_news.application.use_cases.generate_poster import (
+    generate_poster_from_editorial,
+)
+from moka_news.application.use_cases.publish_editorial import (
+    publish_editorial_content,
+)
+from moka_news.application.use_cases.tui_refresh import (
+    collect_refresh_outcome,
+    generate_editorial_artifacts,
+)
 from moka_news.paths import THEME_DARK, THEME_LIGHT
 from moka_news.logger import get_logger
-from moka_news.cup.dialogs import InfoDialog
-from moka_news.cup.widgets import EditorialView
-from moka_news.cup.screens import EditorialListScreen
+from moka_news.tui.dialogs import InfoDialog
+from moka_news.tui.widgets import EditorialView
+from moka_news.tui.screens import EditorialListScreen
 
 logger = get_logger(__name__)
 
@@ -292,12 +302,12 @@ class Cup(App):
             if notify_editorial:
                 self.notify("Generating editorial...", severity="information")
             try:
-                editorial = self.editorial_generator.generate_editorial(new_articles)
-                editorial_path = self.editorial_generator.save_editorial(editorial)
-                self.current_editorial_path = editorial_path
-                self.editorial_content = self.editorial_generator.load_editorial(
-                    editorial_path
+                editorial_path, editorial_content = generate_editorial_artifacts(
+                    self.editorial_generator,
+                    new_articles,
                 )
+                self.current_editorial_path = editorial_path
+                self.editorial_content = editorial_content
                 if notify_editorial:
                     self.notify("✓ Editorial generated", severity="information")
             except Exception as e:
@@ -358,35 +368,25 @@ class Cup(App):
             loop = asyncio.get_running_loop()
 
             with concurrent.futures.ThreadPoolExecutor() as executor:
-                new_articles, new_update_time = await loop.run_in_executor(
-                    executor, self.refresh_callback
+                outcome = await loop.run_in_executor(
+                    executor,
+                    collect_refresh_outcome,
+                    self.refresh_callback,
+                    self.editorial_generator,
                 )
 
-                if not new_articles:
+                if not outcome.articles:
                     self.notify("No new articles found", severity="information")
                     return
 
-                self.articles = new_articles
-                self.last_update = new_update_time
+                self.articles = outcome.articles
+                self.last_update = outcome.last_update
                 self.sub_title = self._format_subtitle()
 
-                if self.editorial_generator:
-                    editorial = await loop.run_in_executor(
-                        executor,
-                        self.editorial_generator.generate_editorial,
-                        new_articles,
-                    )
-                    editorial_path = await loop.run_in_executor(
-                        executor,
-                        self.editorial_generator.save_editorial,
-                        editorial,
-                    )
-                    self.current_editorial_path = editorial_path
-                    self.editorial_content = await loop.run_in_executor(
-                        executor,
-                        self.editorial_generator.load_editorial,
-                        editorial_path,
-                    )
+                if outcome.editorial_path is not None:
+                    self.current_editorial_path = outcome.editorial_path
+                if outcome.editorial_content is not None:
+                    self.editorial_content = outcome.editorial_content
 
             self._load_editorial_list()
             await self._force_editorial_only_view()
@@ -398,7 +398,7 @@ class Cup(App):
                 pass
 
             self.notify(
-                f"✓ Refreshed {len(new_articles)} articles and generated new editorial",
+                f"✓ Refreshed {len(outcome.articles)} articles and generated new editorial",
                 severity="information",
             )
 
@@ -550,8 +550,8 @@ class Cup(App):
     def _publish_background(self) -> None:
         logger.info("Publish started (background thread)")
         content = str(self.editorial_content or "")
-        title = self._extract_editorial_title(content)
-        results = self.publish_manager.publish_all(title, content)
+        title = extract_editorial_title(content)
+        results = publish_editorial_content(self.publish_manager, title, content)
 
         for result in results:
             if result.success:
@@ -570,8 +570,6 @@ class Cup(App):
     def _generate_poster_background(self) -> None:
         logger.info("Poster generation started (background thread)")
         try:
-            from moka_news.poster import PosterGenerator
-
             poster_config = getattr(
                 self,
                 "poster_config",
@@ -581,27 +579,22 @@ class Cup(App):
                 },
             )
             logger.debug(f"Poster config: {poster_config}")
-            logger.debug(
-                f"Instantiating PosterGenerator (posters_dir={self.posters_dir})"
-            )
-            poster_gen = PosterGenerator(
-                config=poster_config, posters_dir=self.posters_dir
-            )
+            logger.debug("Poster target dir: %s", self.posters_dir)
 
-            content = str(self.editorial_content)
-            title = self._extract_editorial_title(content)
+            content = str(self.editorial_content or "")
+            title = extract_editorial_title(content)
             logger.debug(f"Extracted title: {title!r}")
             logger.debug(f"Editorial content length: {len(content)} chars")
-
-            editorial_data = {
-                "title": title,
-                "content": content,
-                "timestamp": datetime.now(),
-            }
-
-            template_name = poster_config.get("default_template", "story")
-            logger.debug(f"Generating poster with template: {template_name!r}")
-            poster_path = poster_gen.generate_poster(editorial_data, template_name)
+            logger.debug(
+                "Generating poster with template: %r",
+                poster_config.get("default_template", "story"),
+            )
+            poster_path = generate_poster_from_editorial(
+                content=content,
+                title=title,
+                poster_config=poster_config,
+                posters_dir=self.posters_dir,
+            )
             logger.info(f"Poster generated successfully: {poster_path}")
 
             self.call_from_thread(
@@ -619,25 +612,7 @@ class Cup(App):
 
     @staticmethod
     def _extract_editorial_title(content: str) -> str:
-        text = content or ""
-        title_marker_re = re.compile(
-            r"^\s*(?:\*\*)?TITLE(?:\*\*)?\s*:\s*(.+?)\s*$",
-            re.IGNORECASE | re.MULTILINE,
-        )
-        match = title_marker_re.search(text)
-        if match:
-            title = match.group(1).strip()
-            if title:
-                return title
-
-        for line in text.splitlines():
-            stripped = line.strip()
-            if stripped.startswith("# "):
-                return stripped[2:].strip() or "Morning Editorial"
-            if stripped.startswith("## "):
-                return stripped[3:].strip() or "Morning Editorial"
-
-        return "Morning Editorial"
+        return extract_editorial_title(content)
 
     def _rebuild_view(self) -> None:
         asyncio.create_task(self._force_editorial_only_view())

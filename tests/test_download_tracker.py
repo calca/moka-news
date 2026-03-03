@@ -2,7 +2,7 @@
 Tests for the Download Tracker
 """
 
-from moka_news.download_tracker import DownloadTracker
+from moka_news.infrastructure.storage import DownloadTracker
 from datetime import datetime, timedelta
 import tempfile
 from pathlib import Path

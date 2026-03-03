@@ -5,7 +5,7 @@ Tests for configuration module
 import copy
 import yaml
 
-from moka_news.config import (
+from moka_news.infrastructure.config import (
     load_config,
     merge_configs,
     create_sample_config,

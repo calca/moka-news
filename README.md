@@ -8,7 +8,13 @@
 
 ## Architecture
 
-MoKa News consists of three main components working together:
+MoKa News now follows a layered architecture so CLI, orchestration, storage, and UI are clearly separated:
+
+- `moka_news/cli` - Argument parsing and first-run setup wizard
+- `moka_news/application` - Use-cases and services (fetch, editorial generation, TUI workflows)
+- `moka_news/infrastructure` - Config and storage adapters (OPML, trackers, editorial repository)
+- `moka_news/tui` - Textual UI implementation
+- `moka_news/grinder`, `moka_news/barista`, `moka_news/poster`, `moka_news/publisher` - Core feature modules
 
 ### 🔄 The Grinder (Il Macinino)
 A Python module using `feedparser` to extract data from RSS feeds. It gathers articles from multiple sources, filters them by date (only new articles since last download), and prepares them for processing.
@@ -28,8 +34,8 @@ Supports multiple AI providers:
   - Mistral CLI
 - Simple mode (no AI, for testing)
 
-### ☕ The Cup (La Tazzina)
-A beautiful Textual-based TUI that displays your personalized morning editorial in the terminal. Features editorial-focused reading, past editorial browsing, and keyboard navigation.
+### ☕ The TUI (La Tazzina)
+A beautiful Textual-based TUI that displays your personalized morning editorial in the terminal. Features editorial-focused reading, past editorial browsing, poster generation, and publishing.
 
 ## Features
 
@@ -48,7 +54,7 @@ A beautiful Textual-based TUI that displays your personalized morning editorial 
 - 🔄 **Scheduled refreshes** - Automatic updates at morning (8 AM) and evening (8 PM)
 - ⚠️  **Smart refresh control** - Asks for confirmation when refreshing outside scheduled times
 - 📅 **Last update display** - Always know when your feed was refreshed
-- ✍️ **Publish to Write.as** - Send current editorial to Write.as via API directly from TUI
+- ✍️ **Publish from TUI** - Publish current editorial to all enabled providers (Write.as, Buttondown)
 - 🔗 Source links in editorial markdown for easy access
 - 🚀 Fast and lightweight
 - 💾 RSS feed management with OPML storage
@@ -64,7 +70,7 @@ A beautiful Textual-based TUI that displays your personalized morning editorial 
 ### Prerequisites
 - Python 3.8 or higher
 - pip
-- (Optional) AI provider CLI tools: `gh` for GitHub Copilot, `gcloud` for Gemini, `mistral` for Mistral
+- (Optional) AI provider CLI tools: `copilot`, `gemini`, `mistral`
 
 ### Install from PyPI (Coming Soon)
 
@@ -187,7 +193,7 @@ ai:
 
 # UI Configuration
 ui:
-  use_tui: true  # Set to false to use console output
+  use_tui: true  # TUI is the primary interface
   theme: rose-pine  # Default theme (dark, relaxing)
   theme_light: rose-pine-dawn  # Light theme option
   theme_dark: rose-pine  # Dark theme option
@@ -250,6 +256,9 @@ export WRITEAS_ALIAS=your-writeas-alias
 export WRITEAS_PASS=your-writeas-pass
 export WRITEAS_COLLECTION_ALIAS=your-collection-alias
 export WRITEAS_API_BASE=https://write.as/api
+
+# For Buttondown publishing
+export BUTTONDOWN_API_KEY=your-buttondown-api-key
 ```
 
 Or create a `.env` file in the project root with the same variables.
@@ -344,13 +353,13 @@ moka-news --ai mistral
 
 **CLI-based providers:**
 
-Use GitHub Copilot CLI (requires `gh` CLI):
+Use GitHub Copilot CLI (requires `copilot` command available):
 
 ```bash
 moka-news --ai copilot-cli
 ```
 
-Use Gemini CLI via gcloud (requires `gcloud` CLI):
+Use Gemini CLI (requires `gemini` command available):
 
 ```bash
 moka-news --ai gemini-cli
@@ -418,14 +427,6 @@ moka-news --opml /path/to/custom/feeds.opml
 
 The OPML file is stored in standard OPML 2.0 format at `~/.config/moka-news/feeds.opml`, making it compatible with other RSS readers and aggregators.
 
-### Console Output
-
-Display articles in console instead of TUI:
-
-```bash
-moka-news --no-tui
-```
-
 ### Combined Options
 
 ```bash
@@ -434,9 +435,6 @@ moka-news --config myconfig.yaml
 
 # Use OpenAI with custom feeds
 moka-news --ai openai --feeds https://news.ycombinator.com/rss
-
-# Console output instead of TUI
-moka-news --no-tui
 ```
 
 ## Keyboard Shortcuts
@@ -446,7 +444,7 @@ While in the TUI:
 - `q` or `Ctrl+C` - Quit the application
 - `r` - Refresh feed (asks for confirmation if outside scheduled hours)
 - `g` - Generate poster from current editorial
-- `u` - Publish current editorial to Write.as
+- `u` - Publish current editorial to enabled providers
 - `h` - Browse past editorials (history)
 - `t` - Toggle between light and dark theme
 
@@ -510,25 +508,32 @@ This allows you to fine-tune:
 - The level of detail
 - Focus areas and priorities
 
-### Publishing To Write.as
+### Publishing From The TUI
 
 From the TUI you can publish the current editorial with:
-- `u` (keyboard shortcut), or
-- `Publish to Write.as` button.
+- `u` (keyboard shortcut).
 
 Add this section to `config.yaml`:
 
 ```yaml
-writeas:
-  enabled: true
-  api_base: https://write.as/api
-  alias: null            # use WRITEAS_ALIAS env var
-  pass: null             # use WRITEAS_PASS env var
-  collection_alias: my-blog
-  font: serif
+publish:
+  providers:
+    - type: writeas
+      enabled: true
+      api_base: https://write.as/api
+      alias: null            # or WRITEAS_ALIAS env var
+      pass: null             # or WRITEAS_PASS env var
+      collection_alias: my-blog
+      font: serif
+
+    - type: buttondown
+      enabled: false
+      api_key: null          # or BUTTONDOWN_API_KEY env var
+      api_base: https://api.buttondown.com/v1
+      status: draft
 ```
 
-The app always obtains the token via `POST /auth/login` using `alias` and `pass`.
+All enabled providers are executed on publish.
 
 Example editorial structure:
 ```markdown
@@ -603,14 +608,15 @@ The first-run wizard makes it easy to get started with AI-powered morning editor
 moka-news/
 ├── moka_news/
 │   ├── __init__.py
-│   ├── main.py           # Main entry point
-│   ├── opml_manager.py   # OPML feed management
-│   ├── grinder/          # RSS feed parser
-│   │   └── __init__.py
-│   ├── barista/          # AI processing
-│   │   └── __init__.py
-│   └── cup/              # TUI interface
-│       └── __init__.py
+│   ├── main.py                # Entry point
+│   ├── cli/                   # Parser + first-run wizard
+│   ├── application/           # Use-cases and services
+│   ├── infrastructure/        # Config + storage adapters
+│   ├── tui/                   # Primary Textual UI implementation
+│   ├── grinder/               # RSS feed parser
+│   ├── barista/               # AI providers
+│   ├── poster/                # Poster generation
+│   └── publisher/             # Publish providers
 ├── pyproject.toml        # Project configuration
 ├── CHANGELOG.md          # Version history
 ├── .github/workflows/ci.yml  # CI quality gates

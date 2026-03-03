@@ -95,7 +95,7 @@ warn_unused_configs = true
 disallow_untyped_defs = false
 ignore_missing_imports = true
 files = [
-    "moka_news/config.py",
+    "moka_news/infrastructure/config",
     "moka_news/poster",
     "moka_news/publisher",
 ]

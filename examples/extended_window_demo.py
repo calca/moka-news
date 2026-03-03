@@ -14,7 +14,7 @@ import tempfile
 from pathlib import Path
 from datetime import datetime, timedelta
 from moka_news.grinder import Grinder
-from moka_news.download_tracker import DownloadTracker
+from moka_news.infrastructure.storage import DownloadTracker
 from moka_news.logger import setup_logger, get_logger
 
 # Setup logging

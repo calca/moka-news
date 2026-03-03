@@ -5,7 +5,7 @@ Tests for first-run setup module
 import yaml
 from pathlib import Path
 from unittest.mock import patch
-from moka_news.first_run_setup import (
+from moka_news.cli.first_run_setup import (
     is_first_run,
     check_cli_available,
     save_config,

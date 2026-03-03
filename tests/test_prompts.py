@@ -2,7 +2,7 @@
 Tests for external prompts functionality
 """
 
-from moka_news.config import load_config
+from moka_news.infrastructure.config import load_config
 from moka_news.barista import _build_prompt, SimpleBarista
 
 # Note: DEFAULT_PROMPTS removed as individual articles are no longer AI-processed

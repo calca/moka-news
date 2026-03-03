@@ -1,197 +1,29 @@
-"""
-MoKa News - Main Entry Point
-Orchestrates The Grinder (RSS extraction), The Editorial Generator (AI focus), and The Cup (Display)
-"""
+"""MoKa News command-line entrypoint."""
 
-import argparse
 import sys
-from datetime import time
-from pathlib import Path
+
 from dotenv import load_dotenv
-from moka_news.grinder import Grinder
-from moka_news.barista import create_ai_provider, SimpleBarista
-from moka_news.cup import serve
-from moka_news.config import load_config, create_sample_config, get_config_path
-from moka_news.constants import SUPPORTED_LANGUAGES
-from moka_news.paths import LOGS_DIR, POSTERS_DIR, THEME_DARK, THEME_LIGHT
-from moka_news.opml_manager import OPMLManager
-from moka_news.first_run_setup import is_first_run, run_first_run_setup
-from moka_news.download_tracker import DownloadTracker
-from moka_news.refresh_manager import RefreshManager
-from moka_news.editorial import EditorialGenerator
+
+from moka_news.application.use_cases.fetch_articles import fetch_and_brew
+from moka_news.application.use_cases.generate_editorial import build_editorial_context
+from moka_news.application.use_cases.launch_tui import launch_cup
+from moka_news.cli import (
+    build_parser,
+    handle_feed_management_commands,
+    resolve_feed_urls,
+    should_skip_first_run_setup,
+)
+from moka_news.cli.first_run_setup import is_first_run, run_first_run_setup
+from moka_news.infrastructure.config import create_sample_config, load_config
+from moka_news.infrastructure.storage import DownloadTracker, OPMLManager
 from moka_news.logger import get_logger, setup_logger
+from moka_news.paths import LOGS_DIR
 
-# Logger will be setup after parsing args to handle --debug flag
-logger = None
-
-
-def fetch_and_brew(feed_urls, config, ai_provider, download_tracker=None):
-    """
-    Fetch RSS feeds (AI processing focused on editorial only).
-    If too few articles are found, automatically expands the time window.
-
-    Args:
-        feed_urls: List of RSS feed URLs
-        config: Configuration dictionary
-        ai_provider: AI provider name (used only for editorial generation)
-        download_tracker: Optional DownloadTracker instance for date filtering
-
-    Returns:
-        Tuple of (articles, last_update_time)
-    """
-    # Get editorial configuration for minimum articles threshold
-    editorial_config = config.get("editorial", {})
-    min_articles = editorial_config.get("min_articles", 5)
-    extended_window_days = editorial_config.get("extended_window_days", 3)
-
-    # Get last download timestamp for filtering
-    since = None
-    if download_tracker:
-        since = download_tracker.get_last_download()
-        if since:
-            logger.info(
-                f"Filtering articles since {since.strftime('%Y-%m-%d %H:%M:%S')}"
-            )
-
-    logger.info(f"Grinding {len(feed_urls)} feeds...")
-
-    # Step 1: The Grinder - Extract articles from RSS feeds
-    grinder = Grinder(feed_urls, since=since)
-    articles, last_update = grinder.grind()
-
-    logger.info(f"Ground {len(articles)} articles")
-
-    # Check if we have enough articles for a quality editorial
-    if articles and len(articles) < min_articles and download_tracker:
-        logger.info(
-            f"Only {len(articles)} articles found (minimum: {min_articles}). "
-            f"Expanding time window to last {extended_window_days} days..."
-        )
-
-        # Fetch with extended time window
-        extended_since = download_tracker.get_last_download(
-            days_back=extended_window_days
-        )
-        if extended_since:
-            logger.info(
-                f"Fetching articles since {extended_since.strftime('%Y-%m-%d %H:%M:%S')}"
-            )
-            grinder_extended = Grinder(feed_urls, since=extended_since)
-            articles, last_update = grinder_extended.grind()
-            logger.info(f"Extended fetch: found {len(articles)} articles")
-
-    if not articles:
-        logger.warning("No articles found. Please check your RSS feeds.")
-        return [], last_update
-
-    # Update download tracker (only update with current time, not extended window)
-    if download_tracker:
-        download_tracker.update_last_download(last_update)
-
-    # Articles are returned without AI processing - AI will be applied during editorial generation
-    logger.info(
-        f"Extracted {len(articles)} articles - AI processing will be applied during editorial generation"
-    )
-
-    return articles, last_update
-
-
-def _build_parser() -> argparse.ArgumentParser:
-    """Build CLI argument parser."""
-    parser = argparse.ArgumentParser(
-        description="☕ MoKa News - Your Morning News",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  moka-news                          # Use default feeds with AI processing (Gemini CLI)
-  moka-news --ai openai              # Use OpenAI API for summaries
-  moka-news --ai anthropic           # Use Anthropic API for summaries
-  moka-news --ai gemini              # Use Google Gemini API for summaries
-  moka-news --ai mistral             # Use Mistral AI API for summaries
-  moka-news --ai copilot-cli         # Use GitHub Copilot CLI for summaries
-  moka-news --ai gemini-cli          # Use Gemini CLI (gcloud) for summaries
-  moka-news --ai mistral-cli         # Use Mistral CLI for summaries
-  moka-news --ai simple              # Use simple mode (demo/testing, no AI)
-  moka-news --feeds feed1.xml feed2.xml  # Use custom feeds
-  moka-news --config myconfig.yaml   # Use custom config file
-  moka-news --create-config          # Create a sample config file
-
-Feed Management:
-  moka-news --add-feed URL           # Add RSS feed to OPML storage
-  moka-news --remove-feed URL        # Remove RSS feed from OPML storage
-  moka-news --list-feeds             # List all configured feeds
-        """,
-    )
-
-    parser.add_argument(
-        "--config", help="Path to configuration file (YAML)", default=None
-    )
-
-    parser.add_argument(
-        "--create-config",
-        action="store_true",
-        help="Create a sample configuration file and exit",
-    )
-
-    parser.add_argument(
-        "--feeds",
-        nargs="+",
-        help="RSS feed URLs to parse (default: built-in feeds)",
-        default=None,
-    )
-
-    parser.add_argument(
-        "--ai",
-        choices=[
-            "openai",
-            "anthropic",
-            "gemini",
-            "mistral",
-            "simple",
-            "copilot-cli",
-            "gemini-cli",
-            "mistral-cli",
-        ],
-        default=None,
-        help="AI provider for generating summaries (default: from config or gemini-cli; 'simple' is demo/testing only)",
-    )
-
-    parser.add_argument(
-        "--language",
-        choices=list(SUPPORTED_LANGUAGES.keys()),
-        default=None,
-        help="Language for editorial generation (default: from config or 'en')",
-    )
-
-    parser.add_argument(
-        "--add-feed", metavar="URL", help="Add a new RSS feed URL to OPML storage"
-    )
-
-    parser.add_argument(
-        "--remove-feed", metavar="URL", help="Remove an RSS feed URL from OPML storage"
-    )
-
-    parser.add_argument(
-        "--list-feeds", action="store_true", help="List all configured RSS feeds"
-    )
-
-    parser.add_argument(
-        "--debug",
-        action="store_true",
-        help="Enable debug mode and write all logs to file (saves to ~/.config/moka-news/logs/)",
-    )
-
-    parser.add_argument(
-        "--opml",
-        metavar="PATH",
-        help="Path to OPML file (default: ~/.config/moka-news/feeds.opml)",
-    )
-    return parser
+logger = get_logger(__name__)
 
 
 def _setup_main_logger(debug: bool) -> None:
     """Configure application logger."""
-    global logger
     import logging as _logging
     from datetime import datetime as _dt
 
@@ -206,235 +38,38 @@ def _setup_main_logger(debug: bool) -> None:
             log_file=str(log_file),
             file_level=_logging.DEBUG,
         )
-        logger = get_logger(__name__)
-        logger.info(f"\n{'='*60}")
+        logger.info("\n%s", "=" * 60)
         logger.info("🔍 DEBUG MODE ENABLED")
-        logger.info(f"📝 Logging to: {log_file}")
-        logger.info(f"🕐 Session started at: {_dt.now().strftime('%H:%M:%S')}")
-        logger.info(f"{'='*60}")
+        logger.info("📝 Logging to: %s", log_file)
+        logger.info("🕐 Session started at: %s", _dt.now().strftime("%H:%M:%S"))
+        logger.info("%s", "=" * 60)
         print(f"🔍 DEBUG MODE ENABLED - Logs appended to: {log_file}", file=sys.stderr)
         return
 
-    # Setup logger — always write WARNING+ to a daily log file so errors are
-    # captured even when the TUI is running (which hides stderr).
-    # --debug bumps both console and file to DEBUG level.
     setup_logger(
         "moka_news",
         level=_logging.INFO,
         log_file=str(log_file),
         file_level=_logging.INFO,
     )
-    logger = get_logger(__name__)
-    logger.debug(f"Log file: {log_file}")
+    logger.debug("Log file: %s", log_file)
 
 
-def _should_skip_first_run_setup(args: argparse.Namespace) -> bool:
-    """Return True when command does not need setup wizard."""
-    return bool(args.create_config or args.add_feed or args.remove_feed or args.list_feeds)
-
-
-def _handle_feed_management_commands(
-    args: argparse.Namespace, opml_manager: OPMLManager
-) -> bool:
-    """Handle feed-management CLI commands. Returns True if command handled."""
-    if args.add_feed:
-        if opml_manager.add_feed(args.add_feed):
-            print(f"✓ Added feed: {args.add_feed}")
-            print(f"  Saved to: {opml_manager.opml_path}")
-        else:
-            print(f"⚠️  Feed already exists: {args.add_feed}")
-        return True
-
-    if args.remove_feed:
-        if opml_manager.remove_feed(args.remove_feed):
-            print(f"✓ Removed feed: {args.remove_feed}")
-            print(f"  Updated: {opml_manager.opml_path}")
-        else:
-            print(f"⚠️  Feed not found: {args.remove_feed}")
-        return True
-
-    if args.list_feeds:
-        feeds = opml_manager.list_feeds()
-        if feeds:
-            print(f"📋 Configured RSS Feeds ({len(feeds)}):")
-            print(f"   OPML file: {opml_manager.opml_path}\n")
-            for i, feed in enumerate(feeds, 1):
-                print(f"   [{i}] {feed['title']}")
-                print(f"       {feed['url']}")
-                if i < len(feeds):
-                    print()
-        else:
-            print("No feeds configured.")
-            print("Add feeds with: moka-news --add-feed URL")
-        return True
-
-    return False
-
-
-def _resolve_feed_urls(
-    args: argparse.Namespace, opml_manager: OPMLManager, config
-):
-    """Resolve feed urls from CLI args, OPML, or config fallback."""
-    if args.feeds:
-        return args.feeds
-
-    opml_feeds = opml_manager.list_feeds()
-    if opml_feeds:
-        return [feed["url"] for feed in opml_feeds]
-
-    return config["feeds"]["urls"]
-
-
-def _build_editorial_context(config, args, ai_provider, articles):
-    """Generate editorial content or fallback to most recent one."""
-    editorial_content = None
-
-    keywords = config["ai"].get("keywords", [])
-    editorial_prompts = config["ai"].get("editorial_prompts", None)
-    language = args.language if args.language else config["ai"].get("language", "en")
-
-    editorial_config = config.get("editorial", {})
-    editorials_dir = editorial_config.get("editorials_dir", None)
-
-    ai_instance = create_ai_provider(ai_provider, config)
-    if ai_instance is None:
-        ai_instance = SimpleBarista()
-
-    editorial_generator = EditorialGenerator(
-        ai_instance,
-        keywords,
-        editorials_dir=editorials_dir,
-        editorial_prompts=editorial_prompts,
-        language=language,
-    )
-
-    editorial_path = None
-    try:
-        if articles:
-            editorial = editorial_generator.generate_editorial(articles)
-            editorial_path = editorial_generator.save_editorial(editorial)
-            editorial_content = editorial_generator.load_editorial(editorial_path)
-            print(f"✓ Editorial generated and saved to: {editorial_path}")
-        else:
-            recent_editorials = editorial_generator.list_editorials()
-            if recent_editorials:
-                most_recent = recent_editorials[-1]
-                editorial_path = most_recent["filepath"]
-                editorial_content = editorial_generator.load_editorial(editorial_path)
-                print(f"✓ Loading most recent editorial: {editorial_path}")
-            else:
-                print("ℹ️  No articles and no previous editorials found")
-    except Exception as e:
-        print(f"⚠️  Error with editorial: {e}")
-        previous_editorial = editorial_generator.load_most_recent_editorial()
-        if previous_editorial:
-            editorial_path = previous_editorial["filepath"]
-            editorial_content = previous_editorial["content"]
-            print(f"↩️  Loaded previous editorial: {editorial_path}")
-        else:
-            editorial_path = None
-            print("ℹ️  No previous editorial available")
-
-    return editorial_generator, editorial_content, editorial_path
-
-
-def _build_refresh_manager(config):
-    """Create and configure refresh manager from config."""
-    if not config.get("refresh", {}).get("require_confirmation_outside_hours", True):
-        return None
-
-    refresh_manager = RefreshManager()
-    refresh_config = config.get("refresh", {})
-    allowed_times = refresh_config.get("allowed_times", ["08:00", "20:00"])
-
-    parsed_times = []
-    for time_str in allowed_times:
-        try:
-            hour, minute = time_str.split(":")
-            parsed_times.append(time(int(hour), int(minute)))
-        except ValueError:
-            logger.warning(f"Invalid time format in config: {time_str}")
-
-    if parsed_times:
-        refresh_manager.allowed_refresh_times = parsed_times
-
-    refresh_manager.auto_refresh_window = refresh_config.get("auto_refresh_window", 60)
-    return refresh_manager
-
-
-def _resolve_posters_dir(config) -> str:
-    """Resolve posters directory path for UI info."""
-    poster_config = config.get("poster", {})
-    posters_dir_path = poster_config.get("posters_dir")
-    if posters_dir_path:
-        return str(Path(posters_dir_path).expanduser().resolve())
-    return str(POSTERS_DIR)
-
-
-def _launch_cup(
-    args,
-    articles,
-    last_update,
-    feed_urls,
-    config,
-    ai_provider,
-    download_tracker,
-    editorial_generator,
-    editorial_content,
-    editorial_path,
-):
-    """Launch TUI with assembled runtime context."""
-    def refresh_callback():
-        return fetch_and_brew(feed_urls, config, ai_provider, download_tracker)
-
-    theme = config["ui"].get("theme", THEME_DARK)
-    theme_light = config["ui"].get("theme_light", THEME_LIGHT)
-    theme_dark = config["ui"].get("theme_dark", THEME_DARK)
-    refresh_manager = _build_refresh_manager(config)
-    config_path = str(args.config) if args.config else str(get_config_path())
-    actual_editorials_dir = str(editorial_generator.editorials_dir)
-    actual_posters_dir = _resolve_posters_dir(config)
-    actual_logs_dir = str(LOGS_DIR)
-    poster_config = config.get("poster", {})
-
-    from moka_news.publisher import create_publish_providers, PublishManager
-
-    publish_providers = create_publish_providers(config)
-    publish_manager = PublishManager(publish_providers)
-
-    serve(
-        articles,
-        last_update,
-        refresh_callback,
-        editorial_content=editorial_content,
-        editorial_generator=editorial_generator,
-        theme=theme,
-        theme_light=theme_light,
-        theme_dark=theme_dark,
-        refresh_manager=refresh_manager,
-        current_editorial_path=editorial_path,
-        config_path=config_path,
-        editorials_dir=actual_editorials_dir,
-        posters_dir=actual_posters_dir,
-        logs_dir=actual_logs_dir,
-        poster_config=poster_config,
-        publish_manager=publish_manager,
-    )
-
-
-def main():
-    """Main entry point for MoKa News"""
+def main() -> None:
+    """Main entry point for MoKa News."""
     load_dotenv()
-    parser = _build_parser()
+
+    parser = build_parser()
     args = parser.parse_args()
     _setup_main_logger(args.debug)
+
     opml_manager = OPMLManager(args.opml)
 
-    if is_first_run() and not _should_skip_first_run_setup(args):
+    if is_first_run() and not should_skip_first_run_setup(args):
         run_first_run_setup(opml_manager)
         return
 
-    if _handle_feed_management_commands(args, opml_manager):
+    if handle_feed_management_commands(args, opml_manager):
         return
 
     if args.create_config:
@@ -443,33 +78,37 @@ def main():
 
     config = load_config(args.config)
     ai_provider = args.ai if args.ai else config["ai"]["provider"]
-    feed_urls = _resolve_feed_urls(args, opml_manager, config)
+    feed_urls = resolve_feed_urls(args, opml_manager, config)
 
     print("☕ Brewing your morning news...")
 
     download_tracker = DownloadTracker()
     articles, last_update = fetch_and_brew(
-        feed_urls, config, ai_provider, download_tracker
+        feed_urls,
+        config,
+        ai_provider,
+        download_tracker,
     )
 
-    # Always continue to TUI even if no new articles are found
-    # This allows access to past editorials and manual refresh
     if not articles:
         print("No new articles found - launching TUI to access past editorials...")
     else:
         print(f"✓ Found {len(articles)} articles")
 
-    # Generate editorial
     if articles:
         print("📝 Generating morning editorial...")
     else:
         print("📝 No new articles for editorial - checking for previous editorial...")
-    editorial_generator, editorial_content, editorial_path = _build_editorial_context(
-        config, args, ai_provider, articles
+
+    editorial_generator, editorial_content, editorial_path = build_editorial_context(
+        config,
+        args,
+        ai_provider,
+        articles,
     )
 
     print("☕ Serving your news...\n")
-    _launch_cup(
+    launch_cup(
         args,
         articles,
         last_update,

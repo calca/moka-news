@@ -13,7 +13,7 @@ import os
 from dotenv import load_dotenv
 from examples.demo import create_mock_articles
 from moka_news.barista import OpenAIBarista, SimpleBarista
-from moka_news.cup import serve
+from moka_news.tui import serve
 
 
 def _brew(provider, articles):

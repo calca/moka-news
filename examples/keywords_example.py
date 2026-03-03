@@ -6,7 +6,7 @@ This example shows how to use keywords to focus AI-generated summaries
 on specific topics or aspects you're interested in.
 """
 
-from moka_news.config import create_sample_config
+from moka_news.infrastructure.config import create_sample_config
 from moka_news.barista import SimpleBarista
 from moka_news.barista import _build_prompt
 

@@ -2,7 +2,7 @@
 Tests for The Cup component
 """
 
-from moka_news.cup import Cup, ArticleCard
+from moka_news.tui import Cup, ArticleCard
 from datetime import datetime
 from unittest.mock import MagicMock
 

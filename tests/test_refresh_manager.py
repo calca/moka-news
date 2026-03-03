@@ -8,7 +8,7 @@ from pathlib import Path
 import tempfile
 import json
 
-from moka_news.refresh_manager import RefreshManager
+from moka_news.infrastructure.storage import RefreshManager
 
 
 @pytest.fixture
