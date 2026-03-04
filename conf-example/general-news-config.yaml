@@ -4,6 +4,7 @@
 ai:
   provider: gemini-cli
   language: en  # Editorial language: en, it, es, fr
+  cli_timeout_seconds: 240  # Timeout for CLI-based AI providers
   
   keywords:
     - politics

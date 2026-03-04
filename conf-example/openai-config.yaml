@@ -18,6 +18,7 @@ ai:
   # GPT-optimized settings
   max_content_length: 2000  # GPT handles longer context well
   max_tokens: 250           # Good balance for summaries
+  cli_timeout_seconds: 240  # Timeout for CLI-based AI providers
 
 ui:
   use_tui: true

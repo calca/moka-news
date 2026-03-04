@@ -87,6 +87,7 @@ ai:
   # Token optimization settings
   max_content_length: 1500  # Maximum characters of article content to send to AI (default: 1500)
   max_tokens: 250           # Maximum tokens for AI to generate in response (default: 250)
+  cli_timeout_seconds: 240  # Timeout for CLI-based providers (copilot-cli, gemini-cli, mistral-cli)
 
 # RSS Feed Configuration
 # Feeds are managed via OPML, not this YAML file.

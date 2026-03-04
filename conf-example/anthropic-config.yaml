@@ -18,6 +18,7 @@ ai:
   # Claude handles longer context very well
   max_content_length: 2500
   max_tokens: 300
+  cli_timeout_seconds: 240  # Timeout for CLI-based AI providers
 
 ui:
   use_tui: true

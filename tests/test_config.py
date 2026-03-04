@@ -20,6 +20,7 @@ def test_default_config_structure():
     assert "ui" in DEFAULT_CONFIG
     assert "provider" in DEFAULT_CONFIG["ai"]
     assert "api_keys" in DEFAULT_CONFIG["ai"]
+    assert "cli_timeout_seconds" in DEFAULT_CONFIG["ai"]
 
 
 def test_load_config_without_file():

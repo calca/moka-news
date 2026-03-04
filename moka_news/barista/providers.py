@@ -157,6 +157,10 @@ class _CLIBarista(AIProvider):
 
     cli_command: str = ""
 
+    def __init__(self, timeout_seconds: Optional[int] = None):
+        configured_timeout = timeout_seconds or CLI_GENERATION_TIMEOUT
+        self.timeout_seconds = max(configured_timeout, 120)
+
     def _invoke_ai(
         self,
         system_message: str,
@@ -164,33 +168,47 @@ class _CLIBarista(AIProvider):
         max_tokens: int = EDITORIAL_MAX_TOKENS,
     ) -> str:
         full_prompt = f"{system_message}\n\n{user_prompt}"
-        try:
-            result = subprocess.run(
-                [self.cli_command],
-                input=full_prompt,
-                capture_output=True,
-                text=True,
-                timeout=max(CLI_GENERATION_TIMEOUT, 120),
-            )
-            if result.returncode != 0:
-                error_msg = (
-                    result.stderr.strip()
-                    or f"{self.cli_command} exited with code {result.returncode}"
+        attempts = 2  # one initial attempt + one retry
+        for attempt in range(1, attempts + 1):
+            try:
+                result = subprocess.run(
+                    [self.cli_command],
+                    input=full_prompt,
+                    capture_output=True,
+                    text=True,
+                    timeout=self.timeout_seconds,
                 )
-                raise RuntimeError(f"{self.cli_command} CLI error: {error_msg}")
-            output = result.stdout.strip()
-            if not output:
-                raise RuntimeError(f"{self.cli_command} returned empty output")
-            return output
-        except FileNotFoundError:
-            raise RuntimeError(
-                f"'{self.cli_command}' CLI not found on PATH. "
-                f"Make sure it is installed and accessible."
-            )
-        except subprocess.TimeoutExpired:
-            raise RuntimeError(
-                f"'{self.cli_command}' CLI timed out after {max(CLI_GENERATION_TIMEOUT, 120)}s"
-            )
+                if result.returncode != 0:
+                    error_msg = (
+                        result.stderr.strip()
+                        or f"{self.cli_command} exited with code {result.returncode}"
+                    )
+                    raise RuntimeError(f"{self.cli_command} CLI error: {error_msg}")
+                output = result.stdout.strip()
+                if not output:
+                    raise RuntimeError(f"{self.cli_command} returned empty output")
+                return output
+            except FileNotFoundError:
+                raise RuntimeError(
+                    f"'{self.cli_command}' CLI not found on PATH. "
+                    f"Make sure it is installed and accessible."
+                )
+            except subprocess.TimeoutExpired:
+                if attempt < attempts:
+                    logger.warning(
+                        "%s CLI timed out after %ss (attempt %s/%s), retrying once",
+                        self.cli_command,
+                        self.timeout_seconds,
+                        attempt,
+                        attempts,
+                    )
+                    continue
+                raise RuntimeError(
+                    f"'{self.cli_command}' CLI timed out after {self.timeout_seconds}s "
+                    "(after 1 retry). Increase ai.cli_timeout_seconds in your config if needed."
+                )
+
+        raise RuntimeError(f"{self.cli_command} CLI failed unexpectedly")
 
 
 class GitHubCopilotCLIBarista(_CLIBarista):

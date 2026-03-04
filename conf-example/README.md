@@ -162,6 +162,7 @@ Control AI usage and costs:
 ai:
   max_content_length: 1500  # Characters sent to AI
   max_tokens: 250          # Maximum response tokens
+  cli_timeout_seconds: 240  # Timeout for CLI-based providers (copilot-cli/gemini-cli/mistral-cli)
 ```
 
 ### Multiple Configuration Locations

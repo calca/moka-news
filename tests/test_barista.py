@@ -8,6 +8,7 @@ from moka_news.barista import (
     AIProvider,
     GeminiBarista,
     MistralBarista,
+    create_ai_provider,
     GitHubCopilotCLIBarista,
     GeminiCLIBarista,
     MistralCLIBarista,
@@ -133,6 +134,68 @@ def test_mistral_cli_barista_checks_mistral():
     """Test that MistralCLIBarista can be instantiated"""
     barista = MistralCLIBarista()
     assert isinstance(barista, AIProvider)
+
+
+def test_cli_barista_uses_configured_timeout(monkeypatch):
+    """CLI providers should honor ai.cli_timeout_seconds from config."""
+
+    captured = {}
+
+    def fake_run(command, input, capture_output, text, timeout):
+        captured["timeout"] = timeout
+
+        class Result:
+            returncode = 0
+            stdout = "TITLE: T\nSUMMARY: S"
+            stderr = ""
+
+        return Result()
+
+    monkeypatch.setattr("moka_news.barista.providers.subprocess.run", fake_run)
+
+    provider = create_ai_provider(
+        "gemini-cli",
+        {
+            "ai": {
+                "provider": "gemini-cli",
+                "cli_timeout_seconds": 240,
+                "api_keys": {},
+            }
+        },
+    )
+
+    provider._invoke_ai("system", "user")
+
+    assert captured["timeout"] == 240
+
+
+def test_cli_barista_retries_once_on_timeout(monkeypatch):
+    """CLI providers should retry exactly once after a timeout."""
+
+    calls = {"count": 0}
+
+    def fake_run(command, input, capture_output, text, timeout):
+        calls["count"] += 1
+        if calls["count"] == 1:
+            raise TimeoutError()
+
+        class Result:
+            returncode = 0
+            stdout = "TITLE: T\nSUMMARY: S"
+            stderr = ""
+
+        return Result()
+
+    monkeypatch.setattr("moka_news.barista.providers.subprocess.run", fake_run)
+    monkeypatch.setattr(
+        "moka_news.barista.providers.subprocess.TimeoutExpired", TimeoutError
+    )
+
+    provider = GeminiCLIBarista(timeout_seconds=180)
+    result = provider._invoke_ai("system", "user")
+
+    assert calls["count"] == 2
+    assert "TITLE:" in result
 
 
 def test_parse_editorial_response_new_title_paragraph_format():

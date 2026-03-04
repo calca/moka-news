@@ -165,6 +165,7 @@ Edit the `moka-news.yaml` file:
 ai:
   provider: gemini-cli  # Options: openai, anthropic, gemini, mistral, copilot-cli, gemini-cli, mistral-cli
                         # Note: 'simple' mode is for demo/testing only
+  cli_timeout_seconds: 240  # Timeout for CLI-based providers (copilot-cli/gemini-cli/mistral-cli)
   
   api_keys:
     openai: your-key-here
@@ -519,6 +520,18 @@ This allows you to fine-tune:
 - How topics are connected
 - The level of detail
 - Focus areas and priorities
+
+### Gemini CLI Timeout (Troubleshooting)
+
+If you see an error like `gemini CLI timed out`, increase the CLI timeout in your config:
+
+```yaml
+ai:
+  provider: gemini-cli
+  cli_timeout_seconds: 300
+```
+
+CLI providers perform one automatic retry on timeout. If both attempts timeout, raise `cli_timeout_seconds` further (for example: `360` or `480`).
 
 ### Publishing From The TUI
 

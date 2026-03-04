@@ -85,5 +85,14 @@ def create_ai_provider(provider_name: str, config: Dict[str, Any]) -> AIProvider
                 f"Cannot create {provider_name} provider: {e}. Falling back to simple."
             )
             return SimpleBarista()
+    if provider_name in ["copilot-cli", "gemini-cli", "mistral-cli"]:
+        timeout_seconds = ai_config.get("cli_timeout_seconds")
+        if not isinstance(timeout_seconds, int) or timeout_seconds <= 0:
+            timeout_seconds = None
+        return provider_class(timeout_seconds=timeout_seconds)
+
+    if provider_name == "simple":
+        return SimpleBarista()
+
     else:
         return provider_class()

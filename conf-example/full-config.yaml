@@ -48,6 +48,7 @@ ai:
   # Performance and cost optimization
   max_content_length: 1500  # Max characters sent to AI (balance detail vs cost)
   max_tokens: 300           # Max AI response tokens (balance quality vs cost)
+  cli_timeout_seconds: 240  # Timeout for CLI-based AI providers
 
 # User Interface Configuration  
 ui:

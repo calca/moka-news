@@ -76,6 +76,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "editorial_prompts": DEFAULT_EDITORIAL_PROMPTS,  # Prompts for editorial generation
         "max_content_length": MAX_CONTENT_LENGTH,  # Maximum characters to send to AI for context
         "max_tokens": MAX_TOKENS,  # Maximum tokens for AI response
+        "cli_timeout_seconds": 240,  # Timeout for CLI-based AI providers (copilot-cli/gemini-cli/mistral-cli)
     },
     "feeds": {
         "urls": [

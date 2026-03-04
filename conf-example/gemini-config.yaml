@@ -20,6 +20,7 @@ ai:
   # Gemini settings
   max_content_length: 1800
   max_tokens: 275
+  cli_timeout_seconds: 240  # Timeout for gemini-cli calls
 
 ui:
   use_tui: true
