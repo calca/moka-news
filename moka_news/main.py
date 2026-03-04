@@ -4,6 +4,10 @@ import sys
 
 from dotenv import load_dotenv
 
+from moka_news.application.use_cases.daemon_service import (
+    run_daemon_service,
+    spawn_daemon_worker,
+)
 from moka_news.application.use_cases.fetch_articles import fetch_and_brew
 from moka_news.application.use_cases.generate_editorial import build_editorial_context
 from moka_news.application.use_cases.launch_tui import launch_cup
@@ -61,11 +65,34 @@ def main() -> None:
 
     parser = build_parser()
     args = parser.parse_args()
+
+    if args.daemon and not args.daemon_worker:
+        if should_skip_first_run_setup(args):
+            print(
+                "⚠️  `--daemon` cannot be combined with setup/feed-management commands."
+            )
+            return
+
+        if is_first_run() and not should_skip_first_run_setup(args):
+            print(
+                "⚠️  Daemon mode requires an existing configuration.\n"
+                "   Run `moka-news` once to complete the setup wizard first."
+            )
+            return
+
+        daemon_pid = spawn_daemon_worker(sys.argv[1:])
+        print(f"✓ MoKa News daemon started (PID: {daemon_pid})")
+        print(f"  Logs directory: {LOGS_DIR}")
+        return
+
     _setup_main_logger(args.debug)
 
     opml_manager = OPMLManager(args.opml)
 
     if is_first_run() and not should_skip_first_run_setup(args):
+        if args.daemon_worker:
+            logger.error("Cannot run daemon worker on first run without configuration")
+            return
         run_first_run_setup(opml_manager)
         return
 
@@ -78,6 +105,11 @@ def main() -> None:
 
     config = load_config(args.config)
     ai_provider = args.ai if args.ai else config["ai"]["provider"]
+
+    if args.daemon_worker:
+        run_daemon_service(args, config, ai_provider, opml_manager)
+        return
+
     feed_urls = resolve_feed_urls(args, opml_manager, config)
 
     print("☕ Brewing your morning news...")

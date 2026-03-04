@@ -322,6 +322,17 @@ Run with default settings (uses your configured AI provider):
 moka-news
 ```
 
+### Daemon Mode (No TUI)
+
+Start MoKa News as a detached background service that fetches and generates editorials on the configured refresh schedule (from `refresh.allowed_times`):
+
+```bash
+moka-news --daemon
+```
+
+The command returns immediately with the daemon PID. Logs are written under `~/.config/moka-news/logs/`.
+When daemon mode generates a new editorial, it also auto-publishes to all enabled providers in `publish.providers`.
+
 ### With Specific AI Provider
 
 Override your configured provider:

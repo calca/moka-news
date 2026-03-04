@@ -35,6 +35,7 @@ Examples:
   moka-news --ai simple              # Use simple mode (demo/testing, no AI)
   moka-news --feeds feed1.xml feed2.xml  # Use custom feeds
   moka-news --config myconfig.yaml   # Use custom config file
+  moka-news --daemon                 # Run as background service without TUI
   moka-news --create-config          # Create a sample config file
 
 Feed Management:
@@ -97,6 +98,18 @@ Feed Management:
         "--opml",
         metavar="PATH",
         help="Path to OPML file (default: ~/.config/moka-news/feeds.opml)",
+    )
+
+    parser.add_argument(
+        "--daemon",
+        action="store_true",
+        help="Run as background service without launching the TUI",
+    )
+
+    parser.add_argument(
+        "--daemon-worker",
+        action="store_true",
+        help=argparse.SUPPRESS,
     )
 
     return parser
