@@ -4,7 +4,9 @@
 
 # ☕ MoKa News
 
-**Morning News** - A beautiful TUI (Text User Interface) RSS news aggregator with AI-powered editorial generation.
+**Morning News** - A beautiful, **GenAI-driven** TUI (Text User Interface) RSS news aggregator that transforms your daily feeds into a single, cohesive morning editorial.
+
+> **Note**: MoKa News is a **GenAI-driven project**. AI was used as a true co-pilot for the initial architecture, coding, and debugging, demonstrating how GenAI can accelerate the development of modern developer tools.
 
 ## Architecture
 
@@ -40,14 +42,16 @@ A beautiful Textual-based TUI that displays your personalized morning editorial 
 
 ## Features
 
-- 📰 Parse multiple RSS feeds simultaneously
+- 🤖 **GenAI-Driven Development** - Built with AI as a true co-pilot for architecture and code
+- 📰 **Parse multiple RSS feeds** simultaneously
 - 🤖 **AI-powered editorial generation** with multiple providers (OpenAI, Anthropic, Gemini, Mistral)
-- 📝 **AI-Generated Morning Editorials** - Get a single, cohesive editorial combining the most important news
-- 🎯 **Smart first-run setup** - Interactive wizard to configure AI provider and feeds
-- 🔑 **Keyword-focused editorials** - Configure keywords to focus AI editorials on topics you care about
+- 📝 **AI-Generated Morning Editorials** - Get a single, cohesive editorial narrative combining the day's news
+- 🎯 **Smart first-run setup** - Interactive wizard to configure AI provider and feeds without manual YAML editing
+- 🔑 **Keyword-focused editorials** - Focus AI summaries on topics you care about (e.g., Rust, Kubernetes, LLMs)
 - 📅 **Smart date filtering** - Only fetch articles since your last download
-- 💾 **Editorial archive** - All editorials saved as markdown files for future reference
-- 🗂️  **Browse past editorials** - Access and read previous morning editions through the TUI
+- 💾 **Local Markdown Archive** - Editorials are saved locally as standard Markdown files for offline reading and portability
+- 🖼️  **Poster Generation** - Generate beautiful visual summaries of your editorial for social sharing directly from the TUI (`g`)
+- 🗂️  **Browse past editorials** - Access and read previous morning editions through the TUI (`h`)
 - 📚 **Collapsible source section** - Sources list appears in a collapsible widget in the TUI for cleaner reading
 - ⚙️  Configuration file support (YAML)
 - 🎨 Beautiful terminal user interface
@@ -55,7 +59,7 @@ A beautiful Textual-based TUI that displays your personalized morning editorial 
 - 🔄 **Scheduled refreshes** - Automatic updates at morning (8 AM) and evening (8 PM)
 - ⚠️  **Smart refresh control** - Asks for confirmation when refreshing outside scheduled times
 - 📅 **Last update display** - Always know when your feed was refreshed
-- ✍️ **Publish from TUI** - Publish current editorial to all enabled providers (Write.as, Buttondown)
+- ✍️ **Publish from TUI** - One-click publishing (`u`) to all enabled providers (Write.as, Buttondown)
 - 🔗 Source links in editorial markdown for easy access
 - 🚀 Fast and lightweight
 - 💾 RSS feed management with OPML storage
