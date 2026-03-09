@@ -8,6 +8,10 @@
 
 > **Note**: MoKa News is a **GenAI-driven project**. AI was used as a true co-pilot for the initial architecture, coding, and debugging, demonstrating how GenAI can accelerate the development of modern developer tools.
 
+### 🗞️ See it in action
+Want to see what MoKa News generates every morning? 
+**[Read the archives or subscribe here!](https://buttondown.com/calca)**
+
 ## Architecture
 
 MoKa News now follows a layered architecture so CLI, orchestration, storage, and UI are clearly separated:
