@@ -35,6 +35,7 @@ Supports multiple AI providers:
   - Anthropic (Claude models)
   - Google Gemini (Gemini Pro)
   - Mistral AI (Mistral models)
+  - Azure AI Foundry (any deployed model via Azure AI Inference SDK)
 - **CLI-based providers:**
   - GitHub Copilot CLI
   - Gemini CLI
@@ -48,7 +49,7 @@ A beautiful Textual-based TUI that displays your personalized morning editorial 
 
 - 🤖 **GenAI-Driven Development** - Built with AI as a true co-pilot for architecture and code
 - 📰 **Parse multiple RSS feeds** simultaneously
-- 🤖 **AI-powered editorial generation** with multiple providers (OpenAI, Anthropic, Gemini, Mistral)
+- 🤖 **AI-powered editorial generation** with multiple providers (OpenAI, Anthropic, Gemini, Mistral, Azure AI Foundry)
 - 📝 **AI-Generated Morning Editorials** - Get a single, cohesive editorial narrative combining the day's news
 - 🎯 **Smart first-run setup** - Interactive wizard to configure AI provider and feeds without manual YAML editing
 - 🔑 **Keyword-focused editorials** - Focus AI summaries on topics you care about (e.g., Rust, Kubernetes, LLMs)
@@ -92,6 +93,7 @@ pip install moka-news
 # With additional AI providers
 pip install moka-news[gemini]    # For Google Gemini support
 pip install moka-news[mistral]   # For Mistral AI support
+pip install moka-news[azure]     # For Azure AI Foundry support
 pip install moka-news[all]       # Install all AI providers
 
 # With development dependencies
@@ -114,6 +116,7 @@ pip install -e ".[dev]"
 # Optional: Install additional AI providers
 pip install -e ".[gemini]"    # For Google Gemini support
 pip install -e ".[mistral]"   # For Mistral AI support
+pip install -e ".[azure]"     # For Azure AI Foundry support
 pip install -e ".[all]"       # Install all AI providers
 ```
 
@@ -121,7 +124,7 @@ pip install -e ".[all]"       # Install all AI providers
 
 On your first run, MoKa News will launch an interactive setup wizard that will:
 
-1. **Select your AI provider** - Choose from OpenAI, Anthropic, Gemini, Mistral, or CLI-based providers
+1. **Select your AI provider** - Choose from OpenAI, Anthropic, Gemini, Mistral, Azure AI Foundry, or CLI-based providers
 2. **Configure keywords** (optional) - Set keywords to focus AI editorials on topics you care about
 3. **Configure RSS feeds** - Accept our curated list of 5 tech feeds (stored as OPML) or add your own later with `moka-news --add-feed`
 
@@ -171,7 +174,7 @@ Edit the `moka-news.yaml` file:
 
 # AI Provider Configuration
 ai:
-  provider: gemini-cli  # Options: openai, anthropic, gemini, mistral, copilot-cli, gemini-cli, mistral-cli
+  provider: gemini-cli  # Options: openai, anthropic, gemini, mistral, azure, copilot-cli, gemini-cli, mistral-cli
                         # Note: 'simple' mode is for demo/testing only
   cli_timeout_seconds: 240  # Timeout for CLI-based providers (copilot-cli/gemini-cli/mistral-cli)
   
@@ -180,6 +183,11 @@ ai:
     anthropic: your-key-here
     gemini: your-key-here
     mistral: your-key-here
+    azure: your-key-here  # Azure AI API key (or AZURE_AI_API_KEY env var)
+  
+  # Azure AI Foundry settings (only needed when provider: azure)
+  azure_endpoint: null   # e.g. https://my-foundry.services.ai.azure.com/models
+  azure_model: null      # e.g. Mistral-Large-3, gpt-4o, Llama-3-8B-Instruct
   
   # Keywords for summary generation (optional)
   # These keywords help focus the AI on specific topics or aspects
@@ -261,6 +269,11 @@ export GEMINI_API_KEY=your-gemini-api-key-here
 # For Mistral AI
 export MISTRAL_API_KEY=your-mistral-api-key-here
 
+# For Azure AI Foundry
+export AZURE_AI_API_KEY=your-azure-api-key-here
+export AZURE_AI_ENDPOINT=https://my-foundry.services.ai.azure.com/models
+export AZURE_AI_MODEL=gpt-4o  # The deployed model name
+
 # For Write.as publishing
 export WRITEAS_ALIAS=your-writeas-alias
 export WRITEAS_PASS=your-writeas-pass
@@ -295,7 +308,7 @@ When keywords are configured, the AI will receive these as context when generati
 - The AI will prioritize these topics when creating the morning editorial
 - Helps customize editorials to your specific interests
 - Optional - the system works perfectly without keywords
-- All AI providers support keywords (OpenAI, Anthropic, Gemini, Mistral, CLI variants)
+- All AI providers support keywords (OpenAI, Anthropic, Gemini, Mistral, Azure AI Foundry, CLI variants)
 
 **Example use cases:**
 - Focus on specific technologies: `python`, `rust`, `kubernetes`
@@ -370,6 +383,12 @@ Use Mistral AI for editorial generation:
 
 ```bash
 moka-news --ai mistral
+```
+
+Use Azure AI Foundry for editorial generation:
+
+```bash
+moka-news --ai azure
 ```
 
 **CLI-based providers:**
