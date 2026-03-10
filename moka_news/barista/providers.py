@@ -3,6 +3,7 @@
 import os
 import subprocess
 from typing import Optional
+from urllib.parse import urlparse
 
 from moka_news.logger import get_logger
 from moka_news.constants import (
@@ -163,6 +164,7 @@ class AzureAIBarista(AIProvider):
                 "Azure AI Foundry requires an endpoint URL. "
                 "Set 'ai.azure_endpoint' in config or the AZURE_AI_ENDPOINT env var."
             )
+        resolved_endpoint = self._normalize_endpoint(resolved_endpoint)
 
         resolved_key = api_key or os.getenv("AZURE_AI_API_KEY")
         resolved_api_version = (
@@ -193,15 +195,44 @@ class AzureAIBarista(AIProvider):
     ) -> str:
         from azure.ai.inference.models import SystemMessage, UserMessage
 
-        response = self.client.complete(
-            messages=[
-                SystemMessage(content=system_message),
-                UserMessage(content=user_prompt),
-            ],
-            max_tokens=max_tokens,
-            model=self.model,
-        )
-        return response.choices[0].message.content
+        try:
+            response = self.client.complete(
+                messages=[
+                    SystemMessage(content=system_message),
+                    UserMessage(content=user_prompt),
+                ],
+                max_tokens=max_tokens,
+                model=self.model,
+            )
+            return response.choices[0].message.content
+        except Exception as exc:
+            error_text = str(exc)
+            if "404" in error_text or "Resource not found" in error_text:
+                raise RuntimeError(
+                    "Azure AI request returned 404 (Resource not found). "
+                    "Verify 'ai.azure_endpoint' points to your Azure AI Foundry endpoint "
+                    "(usually ending with '/models') and 'ai.azure_model' matches the "
+                    "deployed model name exactly. Some models are available only on specific "
+                    "API versions, so try setting 'ai.azure_api_version' (or AZURE_AI_API_VERSION) "
+                    "to a version supported by your deployment."
+                ) from exc
+            raise
+
+    @staticmethod
+    def _normalize_endpoint(endpoint: str) -> str:
+        endpoint = endpoint.strip().rstrip("/")
+        host = urlparse(endpoint).netloc.lower()
+
+        if "openai.azure.com" in host:
+            raise ValueError(
+                "Detected an Azure OpenAI endpoint. The 'azure' provider expects an "
+                "Azure AI Foundry endpoint like 'https://<name>.services.ai.azure.com/models'."
+            )
+
+        if "services.ai.azure.com" in host and not endpoint.endswith("/models"):
+            endpoint = f"{endpoint}/models"
+
+        return endpoint
 
 
 # -- Simple (no-AI) provider ------------------------------------------------

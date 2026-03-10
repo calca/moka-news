@@ -188,6 +188,7 @@ ai:
   # Azure AI Foundry settings (only needed when provider: azure)
   azure_endpoint: null   # e.g. https://my-foundry.services.ai.azure.com/models
   azure_model: null      # e.g. Mistral-Large-3, gpt-4o, Llama-3-8B-Instruct
+  azure_api_version: 2024-05-01-preview  # default; some models require a different API version
   
   # Keywords for summary generation (optional)
   # These keywords help focus the AI on specific topics or aspects
@@ -273,6 +274,7 @@ export MISTRAL_API_KEY=your-mistral-api-key-here
 export AZURE_AI_API_KEY=your-azure-api-key-here
 export AZURE_AI_ENDPOINT=https://my-foundry.services.ai.azure.com/models
 export AZURE_AI_MODEL=gpt-4o  # The deployed model name
+export AZURE_AI_API_VERSION=2024-05-01-preview  # Optional override for model compatibility
 
 # For Write.as publishing
 export WRITEAS_ALIAS=your-writeas-alias
@@ -285,6 +287,10 @@ export BUTTONDOWN_API_KEY=your-buttondown-api-key
 ```
 
 Or create a `.env` file in the project root with the same variables.
+
+For Azure AI Foundry, model support can vary by API version. If requests return HTTP 404,
+verify endpoint and model name first, then try changing `AZURE_AI_API_VERSION`
+(or `ai.azure_api_version` in config) to a version supported by that model/deployment.
 
 ### 4. Keywords Configuration
 

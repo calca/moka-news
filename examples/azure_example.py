@@ -11,16 +11,23 @@ Before running this example:
    export AZURE_AI_API_KEY='your-api-key-here'
    export AZURE_AI_ENDPOINT='https://my-foundry.services.ai.azure.com/models'
    export AZURE_AI_MODEL='gpt-4o'   # or the deployed model name
+    export AZURE_AI_API_VERSION='2024-05-01-preview'  # optional override for model compatibility
 
 3. Or create a .env file with:
    AZURE_AI_API_KEY=your-api-key-here
    AZURE_AI_ENDPOINT=https://my-foundry.services.ai.azure.com/models
    AZURE_AI_MODEL=gpt-4o
+    AZURE_AI_API_VERSION=2024-05-01-preview
 
 Required Azure resources:
   - An Azure AI Foundry project with a deployed model endpoint
   - A Serverless API or Managed Compute endpoint
   - The endpoint URL and API key from the Deployments + Endpoints page
+
+Note:
+    - Different models can support different API versions.
+    - If you receive HTTP 404 from Azure, check endpoint/model first, then try another API version
+        via AZURE_AI_API_VERSION (or ai.azure_api_version in config).
 """
 
 import os
@@ -135,6 +142,7 @@ To use Azure AI Foundry via a configuration file:
        azure: your-api-key-here
      azure_endpoint: https://my-foundry.services.ai.azure.com/models
      azure_model: gpt-4o   # or Mistral-Large-3, Llama-3-8B-Instruct, etc.
+    azure_api_version: 2024-05-01-preview  # optional; change if your model needs another version
 
 2. Run with the config:
    $ moka-news --config path/to/azure-config.yaml

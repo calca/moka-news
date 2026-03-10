@@ -9,7 +9,7 @@ Reference SDK: `azure_ai_inference_sdk.md`
 | Question | Decision |
 |---|---|
 | Default model name | `None` — user must explicitly set `ai.azure_model` or `AZURE_AI_MODEL` env var |
-| `api_version` | Hardcoded to `"2025-01-01-preview"`; overridable via `ai.azure_api_version` in config or `AZURE_AI_API_VERSION` env var |
+| `api_version` | Hardcoded to `"2024-05-01-preview"`; overridable via `ai.azure_api_version` in config or `AZURE_AI_API_VERSION` env var |
 | Config example file | New `conf-example/azure-config.yaml` (consistent with `openai-config.yaml`, `anthropic-config.yaml`, etc.) |
 
 ---
@@ -29,7 +29,7 @@ DEFAULT_AI_MODELS = {
     "azure": None,  # Must be set via ai.azure_model config or AZURE_AI_MODEL env var
 }
 
-AZURE_AI_API_VERSION = "2025-01-01-preview"  # Hardcoded default; override via ai.azure_api_version
+AZURE_AI_API_VERSION = "2024-05-01-preview"  # Hardcoded default; override via ai.azure_api_version
 ```
 
 ---
@@ -256,7 +256,7 @@ ai:
 
   azure_endpoint: null   # e.g. https://my-foundry.services.ai.azure.com/models
   azure_model: null      # e.g. Mistral-Large-3, gpt-4o, Llama-3-8B-Instruct
-  azure_api_version: null  # Defaults to 2025-01-01-preview; override only if needed
+    azure_api_version: null  # Defaults to 2024-05-01-preview; override only if needed
 
   keywords: []
   max_content_length: 1500
@@ -377,4 +377,4 @@ class TestAzureAIBarista:
 | `AZURE_AI_API_KEY` | `ai.api_keys.azure` | Yes |
 | `AZURE_AI_ENDPOINT` | `ai.azure_endpoint` | Yes |
 | `AZURE_AI_MODEL` | `ai.azure_model` | Yes |
-| `AZURE_AI_API_VERSION` | `ai.azure_api_version` | No (default: `2025-01-01-preview`) |
+| `AZURE_AI_API_VERSION` | `ai.azure_api_version` | No (default: `2024-05-01-preview`) |

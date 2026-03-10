@@ -238,6 +238,54 @@ def test_parse_editorial_response_case_insensitive_markers():
 
 class TestAzureAIBarista:
 
+    def test_appends_models_suffix_for_foundry_endpoint(self):
+        """Constructor normalizes Foundry endpoint to include /models."""
+        mock_inference = MagicMock()
+        mock_inference.ChatCompletionsClient = MagicMock(return_value=MagicMock())
+        mock_credentials = MagicMock()
+        mock_credentials.AzureKeyCredential = MagicMock(return_value=MagicMock())
+
+        with patch.dict(
+            "sys.modules",
+            {
+                "azure": MagicMock(),
+                "azure.ai": MagicMock(),
+                "azure.ai.inference": mock_inference,
+                "azure.core": MagicMock(),
+                "azure.core.credentials": mock_credentials,
+            },
+        ):
+            AzureAIBarista(
+                api_key="key",
+                endpoint="https://my-foundry.services.ai.azure.com",
+                model="gpt-4o",
+            )
+
+        call_kwargs = mock_inference.ChatCompletionsClient.call_args.kwargs
+        assert (
+            call_kwargs["endpoint"]
+            == "https://my-foundry.services.ai.azure.com/models"
+        )
+
+    def test_raises_value_error_for_azure_openai_endpoint(self):
+        """Constructor raises ValueError for Azure OpenAI endpoints."""
+        with patch.dict(
+            "sys.modules",
+            {
+                "azure": MagicMock(),
+                "azure.ai": MagicMock(),
+                "azure.ai.inference": MagicMock(),
+                "azure.core": MagicMock(),
+                "azure.core.credentials": MagicMock(),
+            },
+        ):
+            with pytest.raises(ValueError, match="Azure OpenAI endpoint"):
+                AzureAIBarista(
+                    api_key="key",
+                    endpoint="https://my-resource.openai.azure.com",
+                    model="gpt-4o",
+                )
+
     def test_invoke_ai_calls_client_correctly(self):
         """_invoke_ai sends system + user messages and returns content."""
         mock_response = MagicMock()

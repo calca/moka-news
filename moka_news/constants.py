@@ -40,7 +40,7 @@ DEFAULT_AI_MODELS = {
     "azure": None,  # Must be set via ai.azure_model config or AZURE_AI_MODEL env var
 }
 
-AZURE_AI_API_VERSION = "2025-01-01-preview"  # Hardcoded default; override via ai.azure_api_version
+AZURE_AI_API_VERSION = "2024-05-01-preview"  # Hardcoded default; override via ai.azure_api_version
 
 # Content processing limits
 MAX_CONTENT_LENGTH = 1500  # Maximum characters of article content to process
