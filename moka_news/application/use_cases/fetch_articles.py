@@ -26,7 +26,9 @@ def fetch_and_brew(
     if download_tracker:
         since = download_tracker.get_last_download()
         if since:
-            logger.info("Filtering articles since %s", since.strftime("%Y-%m-%d %H:%M:%S"))
+            logger.info(
+                "Filtering articles since %s", since.strftime("%Y-%m-%d %H:%M:%S")
+            )
 
     logger.info("Grinding %d feeds...", len(feed_urls))
 
@@ -43,7 +45,9 @@ def fetch_and_brew(
             extended_window_days,
         )
 
-        extended_since = download_tracker.get_last_download(days_back=extended_window_days)
+        extended_since = download_tracker.get_last_download(
+            days_back=extended_window_days
+        )
         if extended_since:
             logger.info(
                 "Fetching articles since %s",

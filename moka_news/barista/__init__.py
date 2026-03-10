@@ -89,7 +89,9 @@ def create_ai_provider(provider_name: str, config: Dict[str, Any]) -> AIProvider
                 api_key=api_key, endpoint=endpoint, model=model, api_version=api_version
             )
         except (ImportError, ValueError) as e:
-            logger.warning("Cannot create azure provider: %s. Falling back to simple.", e)
+            logger.warning(
+                "Cannot create azure provider: %s. Falling back to simple.", e
+            )
             return SimpleBarista()
 
     if provider_name in ["openai", "anthropic", "gemini", "mistral"]:

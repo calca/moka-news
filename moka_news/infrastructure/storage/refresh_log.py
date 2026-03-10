@@ -137,7 +137,8 @@ class RefreshManager:
         refresh_log = [
             entry
             for entry in refresh_log
-            if (entry_ts := self._parse_log_entry_timestamp(entry)) and entry_ts > cutoff
+            if (entry_ts := self._parse_log_entry_timestamp(entry))
+            and entry_ts > cutoff
         ]
 
         # Add new entry

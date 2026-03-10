@@ -22,9 +22,7 @@ from moka_news.tui.widgets import (
 def serve(
     articles: List[Article],
     last_update: Optional[datetime] = None,
-    refresh_callback: Optional[
-        Callable[[], Tuple[List[Article], datetime]]
-    ] = None,
+    refresh_callback: Optional[Callable[[], Tuple[List[Article], datetime]]] = None,
     auto_refresh_time: Optional[time] = time(8, 0),
     editorial_content: Optional[str] = None,
     editorial_generator: Optional[Any] = None,
