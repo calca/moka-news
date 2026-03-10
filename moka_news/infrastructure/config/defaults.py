@@ -116,6 +116,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         },
     },
     "publish": {
+        "autosend": False,  # Auto-publish editorials after refresh in the TUI
         "providers": [],  # List of publish provider configs. Each entry needs "type" + provider-specific keys.
         # Supported types: "writeas", "buttondown"
     },

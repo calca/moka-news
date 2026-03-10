@@ -80,6 +80,7 @@ def launch_cup(
 
     publish_providers = create_publish_providers(config)
     publish_manager = PublishManager(publish_providers)
+    publish_autosend = bool(config.get("publish", {}).get("autosend", False))
 
     serve(
         articles,
@@ -98,4 +99,5 @@ def launch_cup(
         logs_dir=actual_logs_dir,
         poster_config=poster_config,
         publish_manager=publish_manager,
+        publish_autosend=publish_autosend,
     )

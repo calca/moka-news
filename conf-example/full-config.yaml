@@ -99,6 +99,7 @@ poster:
 # Each provider entry needs "type" plus provider-specific settings.
 
 publish:
+  autosend: false  # Auto-publish editorials after refresh in the TUI
   providers:
     # Write.as
     - type: writeas

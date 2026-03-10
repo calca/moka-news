@@ -340,7 +340,7 @@ moka-news --daemon
 ```
 
 The command returns immediately with the daemon PID. Logs are written under `~/.config/moka-news/logs/`.
-When daemon mode generates a new editorial, it also auto-publishes to all enabled providers in `publish.providers`.
+When daemon mode generates a new editorial, it auto-publishes to all enabled providers in `publish.providers` only if `publish.autosend: true`.
 
 ### With Specific AI Provider
 
@@ -546,10 +546,13 @@ CLI providers perform one automatic retry on timeout. If both attempts timeout, 
 From the TUI you can publish the current editorial with:
 - `u` (keyboard shortcut).
 
+To auto-publish after each refresh in the TUI, set `publish.autosend: true`.
+
 Add this section to `config.yaml`:
 
 ```yaml
 publish:
+  autosend: false  # Auto-publish editorials after refresh in the TUI
   providers:
     - type: writeas
       enabled: true

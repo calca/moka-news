@@ -39,6 +39,7 @@ def serve(
     logs_dir: Optional[str] = None,
     poster_config: Optional[Dict[str, Any]] = None,
     publish_manager: Optional[Any] = None,
+    publish_autosend: bool = False,
 ) -> None:
     """Display articles in the Textual TUI."""
     app = Cup(
@@ -59,6 +60,7 @@ def serve(
         logs_dir,
         poster_config,
         publish_manager,
+        publish_autosend,
     )
     app.run()
 

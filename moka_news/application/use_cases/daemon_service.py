@@ -96,8 +96,13 @@ def publish_editorial_automatically(
     publish_manager: PublishManager,
     editorial_content: Optional[str],
     had_new_articles: bool,
+    autosend: bool,
 ) -> List[PublishResult]:
     """Publish editorial content in daemon mode when providers are enabled."""
+    if not autosend:
+        logger.info("Skipping auto-publish: publish.autosend disabled")
+        return []
+
     if not had_new_articles:
         logger.info("Skipping auto-publish: no new articles in this cycle")
         return []
@@ -140,6 +145,7 @@ def run_daemon_service(
     """Run daemon loop that periodically fetches and generates editorials."""
     refresh_times = parse_refresh_times(config)
     publish_manager = PublishManager(create_publish_providers(config))
+    publish_autosend = bool(config.get("publish", {}).get("autosend", False))
     schedule = ", ".join(slot.strftime("%H:%M") for slot in refresh_times)
     logger.info("Daemon service started. Refresh schedule: %s", schedule)
 
@@ -176,6 +182,7 @@ def run_daemon_service(
                 publish_manager=publish_manager,
                 editorial_content=_content,
                 had_new_articles=bool(articles),
+                autosend=publish_autosend,
             )
 
             if articles:

@@ -113,6 +113,7 @@ class Cup(App):
         logs_dir: Optional[str] = None,
         poster_config: Optional[Dict[str, Any]] = None,
         publish_manager: Optional[Any] = None,
+        publish_autosend: bool = False,
     ):
         super().__init__()
         self.articles: List[Article] = articles or []
@@ -144,6 +145,7 @@ class Cup(App):
             from moka_news.publisher import PublishManager
 
             self.publish_manager = PublishManager([])
+        self.publish_autosend = bool(publish_autosend)
         self._manual_refresh_in_progress = False
 
         # Navigation properties for editorials
@@ -295,11 +297,12 @@ class Cup(App):
         new_articles: List[Article],
         new_update_time: datetime,
         notify_editorial: bool = False,
-    ) -> None:
+    ) -> bool:
         logger.info(f"Updating with {len(new_articles)} new articles")
         self.articles = new_articles
         self.last_update = new_update_time
         self.sub_title = self._format_subtitle()
+        generated_editorial = False
 
         if self.editorial_generator:
             logger.info(
@@ -314,6 +317,7 @@ class Cup(App):
                 )
                 self.current_editorial_path = editorial_path
                 self.editorial_content = editorial_content
+                generated_editorial = True
                 if notify_editorial:
                     self.notify("✓ Editorial generated", severity="information")
             except Exception as e:
@@ -326,6 +330,7 @@ class Cup(App):
                     self.notify(f"Error generating editorial: {e}", severity="error")
 
         await self._force_editorial_only_view()
+        return generated_editorial
 
     async def _perform_auto_refresh(self) -> None:
         if not self.refresh_callback:
@@ -339,7 +344,7 @@ class Cup(App):
             logger.info(f"Automatic refresh fetched {len(new_articles)} new articles")
 
             if new_articles:
-                await self._update_with_new_articles(
+                generated_editorial = await self._update_with_new_articles(
                     new_articles, new_update_time, notify_editorial=False
                 )
                 if self.refresh_manager:
@@ -348,12 +353,34 @@ class Cup(App):
                     f"✓ Auto-refreshed {len(new_articles)} articles",
                     severity="information",
                 )
+                if generated_editorial:
+                    self._maybe_autosend("auto-refresh")
             else:
                 logger.info("No new articles found during automatic refresh")
                 self.notify("No new articles found", severity="information")
         except Exception as e:
             logger.error(f"Error during auto-refresh: {e}")
             self.notify(f"Error during auto-refresh: {e}", severity="error")
+
+    def _maybe_autosend(self, source: str) -> None:
+        if not self.publish_autosend:
+            return
+
+        content = str(self.editorial_content or "").strip()
+        if not content:
+            logger.info("Auto-publish skipped (%s): editorial content empty", source)
+            return
+
+        if not self.publish_manager.has_enabled_providers():
+            logger.info("Auto-publish skipped (%s): no enabled providers", source)
+            return
+
+        provider_names = ", ".join(self.publish_manager.get_enabled_provider_names())
+        self.notify(
+            f"Auto-publishing to {provider_names}...",
+            severity="information",
+        )
+        self._publish_background()
 
     # -- actions -------------------------------------------------------------
 
@@ -407,6 +434,8 @@ class Cup(App):
                 f"✓ Refreshed {len(outcome.articles)} articles and generated new editorial",
                 severity="information",
             )
+            if outcome.editorial_content:
+                self._maybe_autosend("manual-refresh")
 
         except Exception as e:
             if self._load_previous_editorial_fallback():

@@ -101,6 +101,7 @@ def test_publish_editorial_automatically_publishes_when_enabled():
         publish_manager=manager,
         editorial_content="TITLE: Daily Briefing\n\nEditorial body",
         had_new_articles=True,
+        autosend=True,
     )
 
     assert len(results) == 1
@@ -118,6 +119,7 @@ def test_publish_editorial_automatically_skips_without_new_articles():
         publish_manager=manager,
         editorial_content="TITLE: Existing Editorial\n\nBody",
         had_new_articles=False,
+        autosend=True,
     )
 
     assert results == []
@@ -133,6 +135,23 @@ def test_publish_editorial_automatically_skips_without_enabled_providers():
         publish_manager=manager,
         editorial_content="TITLE: Editorial\n\nBody",
         had_new_articles=True,
+        autosend=True,
+    )
+
+    assert results == []
+    assert provider.publish_calls == 0
+
+
+def test_publish_editorial_automatically_skips_when_autosend_disabled():
+    """Daemon should skip auto-publish when autosend is disabled."""
+    provider = DummyPublishProvider({"enabled": True})
+    manager = PublishManager([provider])
+
+    results = publish_editorial_automatically(
+        publish_manager=manager,
+        editorial_content="TITLE: Editorial\n\nBody",
+        had_new_articles=True,
+        autosend=False,
     )
 
     assert results == []
