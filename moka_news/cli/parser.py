@@ -10,6 +10,7 @@ AI_CHOICES = [
     "anthropic",
     "gemini",
     "mistral",
+    "azure",
     "simple",
     "copilot-cli",
     "gemini-cli",
@@ -29,6 +30,7 @@ Examples:
   moka-news --ai anthropic           # Use Anthropic API for summaries
   moka-news --ai gemini              # Use Google Gemini API for summaries
   moka-news --ai mistral             # Use Mistral AI API for summaries
+  moka-news --ai azure               # Use Azure AI Foundry model
   moka-news --ai copilot-cli         # Use GitHub Copilot CLI for summaries
   moka-news --ai gemini-cli          # Use Gemini CLI (gcloud) for summaries
   moka-news --ai mistral-cli         # Use Mistral CLI for summaries

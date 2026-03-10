@@ -2,10 +2,13 @@
 Tests for The Barista component
 """
 
+import os
 import pytest
+from unittest.mock import MagicMock, patch
 from moka_news.barista import (
     SimpleBarista,
     AIProvider,
+    AzureAIBarista,
     GeminiBarista,
     MistralBarista,
     create_ai_provider,
@@ -231,3 +234,133 @@ def test_parse_editorial_response_case_insensitive_markers():
 
     assert parsed["title"] == "Lowercase Title"
     assert parsed["summary"] == "Lowercase summary body."
+
+
+class TestAzureAIBarista:
+
+    def test_invoke_ai_calls_client_correctly(self):
+        """_invoke_ai sends system + user messages and returns content."""
+        mock_response = MagicMock()
+        mock_response.choices[0].message.content = "TITLE: Test\nSUMMARY: Body"
+        mock_client = MagicMock()
+        mock_client.complete.return_value = mock_response
+
+        mock_system_msg = MagicMock()
+        mock_user_msg = MagicMock()
+        mock_models = MagicMock()
+        mock_models.SystemMessage = MagicMock(return_value=mock_system_msg)
+        mock_models.UserMessage = MagicMock(return_value=mock_user_msg)
+
+        with patch.dict(
+            "sys.modules",
+            {
+                "azure": MagicMock(),
+                "azure.ai": MagicMock(),
+                "azure.ai.inference": MagicMock(),
+                "azure.ai.inference.models": mock_models,
+                "azure.core": MagicMock(),
+                "azure.core.credentials": MagicMock(),
+            },
+        ):
+            barista = AzureAIBarista.__new__(AzureAIBarista)
+            barista.client = mock_client
+            barista.model = "gpt-4o"
+
+            result = barista._invoke_ai("sys msg", "user prompt", max_tokens=1024)
+
+        assert result == "TITLE: Test\nSUMMARY: Body"
+        mock_client.complete.assert_called_once()
+        call_kwargs = mock_client.complete.call_args.kwargs
+        assert call_kwargs["max_tokens"] == 1024
+        assert call_kwargs["model"] == "gpt-4o"
+
+    def test_raises_value_error_if_no_endpoint(self):
+        """Constructor raises ValueError when endpoint is missing."""
+        with patch.dict(os.environ, {}, clear=True):
+            with patch("moka_news.barista.providers.AzureAIBarista.__init__.__module__"):
+                pass
+            # Patch the azure imports to avoid ImportError masking the ValueError
+            with patch.dict(
+                "sys.modules",
+                {
+                    "azure": MagicMock(),
+                    "azure.ai": MagicMock(),
+                    "azure.ai.inference": MagicMock(),
+                    "azure.core": MagicMock(),
+                    "azure.core.credentials": MagicMock(),
+                },
+            ):
+                with pytest.raises(ValueError, match="endpoint URL"):
+                    AzureAIBarista(api_key="key", endpoint=None, model="gpt-4o")
+
+    def test_raises_value_error_if_no_model(self):
+        """Constructor raises ValueError when model name is not provided."""
+        with patch.dict(
+            "sys.modules",
+            {
+                "azure": MagicMock(),
+                "azure.ai": MagicMock(),
+                "azure.ai.inference": MagicMock(),
+                "azure.core": MagicMock(),
+                "azure.core.credentials": MagicMock(),
+            },
+        ):
+            with pytest.raises(ValueError, match="model name"):
+                AzureAIBarista(
+                    api_key="key",
+                    endpoint="https://example.com",
+                    model=None,
+                )
+
+    def test_factory_returns_azure_barista(self, monkeypatch):
+        """create_ai_provider returns AzureAIBarista for 'azure'."""
+        monkeypatch.setattr(
+            "moka_news.barista.providers.AzureAIBarista.__init__",
+            lambda self, **kwargs: None,
+        )
+        config = {
+            "ai": {
+                "api_keys": {"azure": "key"},
+                "azure_endpoint": "https://example.com",
+                "azure_model": "gpt-4o",
+                "azure_api_version": None,
+            }
+        }
+        provider = create_ai_provider("azure", config)
+        assert isinstance(provider, AzureAIBarista)
+
+    def test_factory_falls_back_to_simple_on_import_error(self, monkeypatch):
+        """create_ai_provider falls back to SimpleBarista when package missing."""
+
+        def _raise_import(self, **kwargs):
+            raise ImportError("no pkg")
+
+        monkeypatch.setattr(
+            "moka_news.barista.providers.AzureAIBarista.__init__",
+            _raise_import,
+        )
+        config = {
+            "ai": {
+                "api_keys": {"azure": "key"},
+                "azure_endpoint": "https://example.com",
+                "azure_model": "gpt-4o",
+                "azure_api_version": None,
+            }
+        }
+        provider = create_ai_provider("azure", config)
+        assert isinstance(provider, SimpleBarista)
+
+    def test_editorial_mode_parses_response(self):
+        """generate_summary with prompts goes through editorial path and parses TITLE/SUMMARY."""
+        barista = AzureAIBarista.__new__(AzureAIBarista)
+        barista.client = MagicMock()
+        barista.model = "gpt-4o"
+        barista._invoke_ai = MagicMock(return_value="TITLE: Hello\nSUMMARY: World")
+
+        article = {"title": "T", "summary": "S", "link": "http://example.com"}
+        result = barista.generate_summary(
+            article,
+            prompts={"user_prompt": "{content}", "format_section": ""},
+        )
+        assert result["title"] == "Hello"
+        assert result["summary"] == "World"

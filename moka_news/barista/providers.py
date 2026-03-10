@@ -9,6 +9,7 @@ from moka_news.constants import (
     DEFAULT_AI_MODELS,
     EDITORIAL_MAX_TOKENS,
     CLI_GENERATION_TIMEOUT,
+    AZURE_AI_API_VERSION,
 )
 from moka_news.barista.base import AIProvider
 
@@ -133,6 +134,72 @@ class MistralBarista(AIProvider):
                 ChatMessage(role="user", content=user_prompt),
             ],
             max_tokens=max_tokens,
+        )
+        return response.choices[0].message.content
+
+
+class AzureAIBarista(AIProvider):
+    """Azure AI Foundry-based content processor (Azure AI Inference SDK)."""
+
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        endpoint: Optional[str] = None,
+        model: Optional[str] = None,
+        api_version: Optional[str] = None,
+    ):
+        try:
+            from azure.ai.inference import ChatCompletionsClient
+            from azure.core.credentials import AzureKeyCredential
+        except ImportError:
+            raise ImportError(
+                "azure-ai-inference package is required. "
+                "Install with: pip install azure-ai-inference"
+            )
+
+        resolved_endpoint = endpoint or os.getenv("AZURE_AI_ENDPOINT")
+        if not resolved_endpoint:
+            raise ValueError(
+                "Azure AI Foundry requires an endpoint URL. "
+                "Set 'ai.azure_endpoint' in config or the AZURE_AI_ENDPOINT env var."
+            )
+
+        resolved_key = api_key or os.getenv("AZURE_AI_API_KEY")
+        resolved_api_version = (
+            api_version or os.getenv("AZURE_AI_API_VERSION") or AZURE_AI_API_VERSION
+        )
+
+        self.client = ChatCompletionsClient(
+            endpoint=resolved_endpoint,
+            credential=AzureKeyCredential(resolved_key or ""),
+            api_version=resolved_api_version,
+        )
+
+        resolved_model = (
+            model or os.getenv("AZURE_AI_MODEL") or DEFAULT_AI_MODELS.get("azure")
+        )
+        if not resolved_model:
+            raise ValueError(
+                "Azure AI Foundry requires a model name. "
+                "Set 'ai.azure_model' in config or the AZURE_AI_MODEL env var."
+            )
+        self.model = resolved_model
+
+    def _invoke_ai(
+        self,
+        system_message: str,
+        user_prompt: str,
+        max_tokens: int = EDITORIAL_MAX_TOKENS,
+    ) -> str:
+        from azure.ai.inference.models import SystemMessage, UserMessage
+
+        response = self.client.complete(
+            messages=[
+                SystemMessage(content=system_message),
+                UserMessage(content=user_prompt),
+            ],
+            max_tokens=max_tokens,
+            model=self.model,
         )
         return response.choices[0].message.content
 

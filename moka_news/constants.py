@@ -37,7 +37,10 @@ DEFAULT_AI_MODELS = {
     "anthropic": "claude-3-haiku-20240307",
     "gemini": "gemini-pro",
     "mistral": "mistral-tiny",
+    "azure": None,  # Must be set via ai.azure_model config or AZURE_AI_MODEL env var
 }
+
+AZURE_AI_API_VERSION = "2025-01-01-preview"  # Hardcoded default; override via ai.azure_api_version
 
 # Content processing limits
 MAX_CONTENT_LENGTH = 1500  # Maximum characters of article content to process

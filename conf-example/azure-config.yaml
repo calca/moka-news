@@ -1,0 +1,35 @@
+# MoKa News - Azure AI Foundry Configuration Example
+#
+# Before using:
+#   pip install "moka-news[azure]"
+#
+# Required:
+#   - An Azure AI Foundry deployment (Serverless API or Managed Compute endpoint)
+#   - The endpoint URL from Deployments + Endpoints page
+#   - An API key from the same page
+#   - The deployed model name (e.g. Mistral-Large-3, gpt-4o, Llama-3-8B)
+#
+# Environment variables (alternative to config):
+#   AZURE_AI_API_KEY, AZURE_AI_ENDPOINT, AZURE_AI_MODEL, AZURE_AI_API_VERSION
+
+ai:
+  provider: azure
+  language: en
+
+  api_keys:
+    azure: null       # Set AZURE_AI_API_KEY env var, or paste key here
+
+  azure_endpoint: null   # e.g. https://my-foundry.services.ai.azure.com/models
+  azure_model: null      # e.g. Mistral-Large-3, gpt-4o, Llama-3-8B-Instruct
+  azure_api_version: null  # Defaults to 2025-01-01-preview; override only if needed
+
+  keywords: []
+  max_content_length: 1500
+  max_tokens: 300
+  cli_timeout_seconds: 240
+
+feeds:
+  urls:
+    - https://news.ycombinator.com/rss
+    - https://github.blog/feed/
+    - https://www.theverge.com/rss/index.xml

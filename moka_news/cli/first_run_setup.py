@@ -63,6 +63,12 @@ AI_PROVIDERS = {
         "cli_command": "mistral",
         "install_info": "Install: 'pip install mistralai-cli' then authenticate",
     },
+    "azure": {
+        "name": "Azure AI Foundry",
+        "requires_api_key": True,
+        "env_var": "AZURE_AI_API_KEY",
+        "cli_required": False,
+    },
 }
 
 
@@ -196,6 +202,16 @@ def _build_provider_result(selected_provider: str) -> Dict[str, Any]:
             result["api_key"] = None
     else:
         print(f"\n✓ {provider_info['name']} configured successfully")
+
+    if selected_provider == "azure":
+        endpoint = os.getenv("AZURE_AI_ENDPOINT") or input(
+            "Azure AI Foundry endpoint URL: "
+        ).strip()
+        model = os.getenv("AZURE_AI_MODEL") or input(
+            "Deployed model name (e.g. Mistral-Large-3, gpt-4o): "
+        ).strip()
+        result["azure_endpoint"] = endpoint or None
+        result["azure_model"] = model or None
 
     return result
 
@@ -442,11 +458,16 @@ def save_config(
                 "anthropic": None,
                 "gemini": None,
                 "mistral": None,
+                "azure": None,
             },
             "keywords": config_data.get("keywords", []),
         },
         "ui": {"use_tui": True},
     }
+
+    if config_data["provider"] == "azure":
+        config_content["ai"]["azure_endpoint"] = config_data.get("azure_endpoint")
+        config_content["ai"]["azure_model"] = config_data.get("azure_model")
 
     # Save to file
     with open(config_path, "w") as f:
