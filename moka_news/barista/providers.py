@@ -213,8 +213,8 @@ class AzureAIBarista(AIProvider):
                     "Verify 'ai.azure_endpoint' points to your Azure AI Foundry endpoint "
                     "(usually ending with '/models') and 'ai.azure_model' matches the "
                     "deployed model name exactly. Some models are available only on specific "
-                    "API versions, so try setting 'ai.azure_api_version' (or AZURE_AI_API_VERSION) "
-                    "to a version supported by your deployment."
+                    "API versions, so try setting the 'ai.azure_api_version' config key or the "
+                    "AZURE_AI_API_VERSION env var to a version supported by your deployment."
                 ) from exc
             raise
 
