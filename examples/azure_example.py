@@ -17,7 +17,7 @@ Before running this example:
    AZURE_AI_API_KEY=your-api-key-here
    AZURE_AI_ENDPOINT=https://my-foundry.services.ai.azure.com/models
    AZURE_AI_MODEL=gpt-4o
-    AZURE_AI_API_VERSION=2024-05-01-preview
+   AZURE_AI_API_VERSION=2024-05-01-preview
 
 Required Azure resources:
   - An Azure AI Foundry project with a deployed model endpoint
