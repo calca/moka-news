@@ -325,8 +325,6 @@ class TestAzureAIBarista:
     def test_raises_value_error_if_no_endpoint(self):
         """Constructor raises ValueError when endpoint is missing."""
         with patch.dict(os.environ, {}, clear=True):
-            with patch("moka_news.barista.providers.AzureAIBarista.__init__.__module__"):
-                pass
             # Patch the azure imports to avoid ImportError masking the ValueError
             with patch.dict(
                 "sys.modules",
