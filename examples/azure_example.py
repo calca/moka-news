@@ -142,7 +142,7 @@ To use Azure AI Foundry via a configuration file:
        azure: your-api-key-here
      azure_endpoint: https://my-foundry.services.ai.azure.com/models
      azure_model: gpt-4o   # or Mistral-Large-3, Llama-3-8B-Instruct, etc.
-    azure_api_version: 2024-05-01-preview  # optional; change if your model needs another version
+     azure_api_version: 2024-05-01-preview  # optional; change if your model needs another version
 
 2. Run with the config:
    $ moka-news --config path/to/azure-config.yaml
