@@ -248,6 +248,10 @@ class Cup(App):
     async def on_mount(self) -> None:
         if self.refresh_callback:
             self._auto_refresh_task = asyncio.create_task(self._auto_refresh_loop())
+        if self.publish_autosend and self.articles and self.editorial_content:
+            # Initial run already generated an editorial before launching the TUI.
+            # Auto-publish it once at startup when autosend is enabled.
+            self._maybe_autosend("startup")
 
     # -- auto-refresh --------------------------------------------------------
 
@@ -369,18 +373,34 @@ class Cup(App):
         content = str(self.editorial_content or "").strip()
         if not content:
             logger.info("Auto-publish skipped (%s): editorial content empty", source)
+            self.notify(
+                "Auto-publish skipped: editorial content is empty",
+                severity="warning",
+            )
             return
 
-        if not self.publish_manager.has_enabled_providers():
+        provider_names = self._get_enabled_provider_names()
+        if not provider_names:
             logger.info("Auto-publish skipped (%s): no enabled providers", source)
+            self.notify(
+                "Auto-publish skipped: no enabled providers configured",
+                severity="warning",
+            )
             return
 
-        provider_names = ", ".join(self.publish_manager.get_enabled_provider_names())
         self.notify(
-            f"Auto-publishing to {provider_names}...",
+            f"Auto-publishing to {', '.join(provider_names)}...",
             severity="information",
         )
         self._publish_background()
+
+    def _get_enabled_provider_names(self) -> List[str]:
+        """Return provider names that are enabled (even if misconfigured)."""
+        try:
+            providers = self.publish_manager.providers
+        except Exception:
+            return []
+        return [p.name for p in providers if getattr(p, "enabled", False)]
 
     # -- actions -------------------------------------------------------------
 
@@ -571,16 +591,16 @@ class Cup(App):
             self.notify("No editorial available to publish", severity="warning")
             return
 
-        if not self.publish_manager.has_enabled_providers():
+        provider_names = self._get_enabled_provider_names()
+        if not provider_names:
             self.notify(
                 "No publish providers enabled. Configure writeas or buttondown in config.",
                 severity="warning",
             )
             return
 
-        provider_names = ", ".join(self.publish_manager.get_enabled_provider_names())
         self.notify(
-            f"Publishing to {provider_names} in background…",
+            f"Publishing to {', '.join(provider_names)} in background…",
             severity="information",
         )
         self._publish_background()
