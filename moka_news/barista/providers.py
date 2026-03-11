@@ -220,9 +220,28 @@ class AzureAIBarista(AIProvider):
 
     @staticmethod
     def _normalize_endpoint(endpoint: str) -> str:
+        # Normalize whitespace and trailing slash first
         endpoint = endpoint.strip().rstrip("/")
-        host = urlparse(endpoint).netloc.lower()
 
+        parsed = urlparse(endpoint)
+
+        # If the user omitted the scheme (e.g. "my-foundry.services.ai.azure.com"),
+        # urlparse will put the host into .path and leave .netloc empty. In that
+        # case, try to normalize by prepending "https://".
+        if not parsed.scheme and not parsed.netloc:
+            candidate = "https://" + endpoint.lstrip("/")
+            parsed = urlparse(candidate)
+            if not parsed.scheme or not parsed.netloc:
+                raise ValueError(
+                    "Invalid Azure AI Foundry endpoint URL. Please provide a full URL "
+                    "including scheme and host, for example "
+                    "'https://<name>.services.ai.azure.com/models'."
+                )
+            endpoint = candidate.rstrip("/")
+
+        # Re-parse after any normalization to ensure we have the correct host.
+        parsed = urlparse(endpoint)
+        host = (parsed.netloc or "").lower()
         if "openai.azure.com" in host:
             raise ValueError(
                 "Detected an Azure OpenAI endpoint. The 'azure' provider expects an "
