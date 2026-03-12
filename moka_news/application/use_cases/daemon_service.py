@@ -123,7 +123,9 @@ def publish_editorial_automatically(
     for result in results:
         if result.success:
             if result.url:
-                logger.info("Auto-publish success: %s -> %s", result.provider, result.url)
+                logger.info(
+                    "Auto-publish success: %s -> %s", result.provider, result.url
+                )
             else:
                 logger.info("Auto-publish success: %s", result.provider)
         else:

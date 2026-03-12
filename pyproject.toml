@@ -12,7 +12,7 @@ license = "MIT"
 authors = [
     {name = "Gianluigi Calcaterra"}
 ]
-keywords = ["rss", "news", "aggregator", "ai", "tui", "terminal", "openai", "anthropic", "gemini"]
+keywords = ["rss", "news", "aggregator", "ai", "tui", "terminal", "openai", "anthropic", "gemini", "azure"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: End Users/Desktop",
@@ -60,9 +60,13 @@ gemini = [
 mistral = [
     "mistralai>=0.0.7",
 ]
+azure = [
+    "azure-ai-inference>=1.0.0b9",
+]
 all = [
     "google-generativeai>=0.3.0",
     "mistralai>=0.0.7",
+    "azure-ai-inference>=1.0.0b9",
 ]
 
 [project.scripts]

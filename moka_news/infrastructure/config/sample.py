@@ -1,5 +1,6 @@
 """Sample configuration writer for MoKa News."""
 
+
 def create_sample_config(path: str = "moka-news.yaml") -> None:
     """
     Create a sample configuration file
@@ -160,5 +161,6 @@ publish:
         f.write(sample_config)
 
     print(f"✓ Sample configuration created at: {path}")
+
 
 __all__ = ["create_sample_config"]

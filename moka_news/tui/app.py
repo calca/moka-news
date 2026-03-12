@@ -96,9 +96,7 @@ class Cup(App):
         self,
         articles: Optional[List[Article]] = None,
         last_update: Optional[datetime] = None,
-        refresh_callback: Optional[
-            Callable[[], Tuple[List[Article], datetime]]
-        ] = None,
+        refresh_callback: Optional[Callable[[], Tuple[List[Article], datetime]]] = None,
         auto_refresh_time: Optional[time] = time(8, 0),
         editorial_content: Optional[str] = None,
         editorial_generator: Optional[Any] = None,
@@ -207,9 +205,9 @@ class Cup(App):
         if not self.editorial_generator:
             return False
         try:
-            previous_editorial: Optional[
-                LoadedEditorial
-            ] = self.editorial_generator.load_most_recent_editorial()
+            previous_editorial: Optional[LoadedEditorial] = (
+                self.editorial_generator.load_most_recent_editorial()
+            )
             if not previous_editorial:
                 return False
             self.current_editorial_path = previous_editorial.filepath
@@ -530,9 +528,7 @@ class Cup(App):
                 container = self.query_one("#content-container")
                 container.scroll_home(animate=True)
 
-                self.notify(
-                    f"Loaded editorial: {result.title}", severity="information"
-                )
+                self.notify(f"Loaded editorial: {result.title}", severity="information")
             except Exception as e:
                 self.notify(f"Error loading editorial: {e}", severity="error")
 

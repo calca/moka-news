@@ -843,8 +843,8 @@ class PosterGenerator:
         img, draw_x, draw_y, max_width, total_draw_h = self._create_canvas(template)
         draw = ImageDraw.Draw(img)
         title, body_content = self._extract_poster_content(editorial)
-        footer_line_h, footer_zone_h, title_zone_h, body_zone_h = self._compute_layout_zones(
-            template, total_draw_h
+        footer_line_h, footer_zone_h, title_zone_h, body_zone_h = (
+            self._compute_layout_zones(template, total_draw_h)
         )
         (
             metadata_font,

@@ -76,7 +76,9 @@ class Article:
             published=str(data.get("published", "")),
             published_dt=published_dt,
             source=str(data.get("source", "")),
-            ai_title=(str(data["ai_title"]) if data.get("ai_title") is not None else None),
+            ai_title=(
+                str(data["ai_title"]) if data.get("ai_title") is not None else None
+            ),
             ai_summary=(
                 str(data["ai_summary"]) if data.get("ai_summary") is not None else None
             ),
@@ -106,6 +108,7 @@ class Editorial:
     timestamp: datetime = field(default_factory=datetime.now)
     sources: List[EditorialSource] = field(default_factory=list)
     article_count: int = 0
+
 
 @dataclass
 class EditorialMetadata:

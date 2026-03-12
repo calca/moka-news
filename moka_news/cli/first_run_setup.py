@@ -63,6 +63,12 @@ AI_PROVIDERS = {
         "cli_command": "mistral",
         "install_info": "Install: 'pip install mistralai-cli' then authenticate",
     },
+    "azure": {
+        "name": "Azure AI Foundry",
+        "requires_api_key": True,
+        "env_var": "AZURE_AI_API_KEY",
+        "cli_required": False,
+    },
 }
 
 
@@ -113,7 +119,11 @@ def _collect_provider_options():
 def _print_provider_menu(selectable_providers, unavailable_cli) -> int:
     """Render provider menu and return simple-mode menu index."""
     print("🤖 Available AI Providers:")
-    available_set = set(selectable_providers[:-len(unavailable_cli)] if unavailable_cli else selectable_providers)
+    available_set = set(
+        selectable_providers[: -len(unavailable_cli)]
+        if unavailable_cli
+        else selectable_providers
+    )
     provider_index = 1
 
     for key in selectable_providers:
@@ -165,7 +175,9 @@ def _handle_missing_cli(provider_info: Dict[str, Any]) -> bool:
     print(f"\n❌ '{cli_cmd}' CLI is not installed.")
     print(f"   {provider_info.get('install_info', f'Please install {cli_cmd}')}")
 
-    install_choice = input(f"\nInstall '{cli_cmd}' now and try again? [y/N]: ").strip().lower()
+    install_choice = (
+        input(f"\nInstall '{cli_cmd}' now and try again? [y/N]: ").strip().lower()
+    )
     if install_choice == "y":
         print(f"\n📋 Installation instructions for {provider_info['name']}:")
         print(f"   {provider_info.get('install_info', f'Install {cli_cmd}')}")
@@ -196,6 +208,18 @@ def _build_provider_result(selected_provider: str) -> Dict[str, Any]:
             result["api_key"] = None
     else:
         print(f"\n✓ {provider_info['name']} configured successfully")
+
+    if selected_provider == "azure":
+        endpoint = (
+            os.getenv("AZURE_AI_ENDPOINT")
+            or input("Azure AI Foundry endpoint URL: ").strip()
+        )
+        model = (
+            os.getenv("AZURE_AI_MODEL")
+            or input("Deployed model name (e.g. Mistral-Large-3, gpt-4o): ").strip()
+        )
+        result["azure_endpoint"] = endpoint or None
+        result["azure_model"] = model or None
 
     return result
 
@@ -442,11 +466,16 @@ def save_config(
                 "anthropic": None,
                 "gemini": None,
                 "mistral": None,
+                "azure": None,
             },
             "keywords": config_data.get("keywords", []),
         },
         "ui": {"use_tui": True},
     }
+
+    if config_data["provider"] == "azure":
+        config_content["ai"]["azure_endpoint"] = config_data.get("azure_endpoint")
+        config_content["ai"]["azure_model"] = config_data.get("azure_model")
 
     # Save to file
     with open(config_path, "w") as f:
@@ -478,9 +507,7 @@ def prompt_launch_now(provider_config: Dict[str, Any], feeds_configured: bool) -
     if provider == "simple":
         print("ℹ️  Using simple mode (no AI editorials).")
     elif provider in ["copilot-cli", "gemini-cli", "mistral-cli"]:
-        print(
-            f"ℹ️  Using {provider}. Make sure the CLI is installed and authenticated."
-        )
+        print(f"ℹ️  Using {provider}. Make sure the CLI is installed and authenticated.")
     elif provider_config.get("api_key") is None:
         print(f"⚠️  {provider} API key not configured. Set environment variable first.")
 

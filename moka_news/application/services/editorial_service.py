@@ -48,7 +48,9 @@ class EditorialService:
         logger.info("%s", "=" * 60)
         logger.info("Number of articles: %d", len(articles))
         logger.info("Language: %s", self.language)
-        logger.info("Keywords: %s", ", ".join(self.keywords) if self.keywords else "None")
+        logger.info(
+            "Keywords: %s", ", ".join(self.keywords) if self.keywords else "None"
+        )
         logger.info("AI Provider: %s", self.ai_provider.__class__.__name__)
         logger.info("%s\n", "=" * 60)
 

@@ -18,6 +18,7 @@ from moka_news.barista.providers import (
     AnthropicBarista,
     GeminiBarista,
     MistralBarista,
+    AzureAIBarista,
     SimpleBarista,
     GitHubCopilotCLIBarista,
     GeminiCLIBarista,
@@ -32,6 +33,7 @@ __all__ = [
     "AnthropicBarista",
     "GeminiBarista",
     "MistralBarista",
+    "AzureAIBarista",
     "SimpleBarista",
     "GitHubCopilotCLIBarista",
     "GeminiCLIBarista",
@@ -64,6 +66,7 @@ def create_ai_provider(provider_name: str, config: Dict[str, Any]) -> AIProvider
         "anthropic": AnthropicBarista,
         "gemini": GeminiBarista,
         "mistral": MistralBarista,
+        "azure": AzureAIBarista,
         "copilot-cli": GitHubCopilotCLIBarista,
         "gemini-cli": GeminiCLIBarista,
         "mistral-cli": MistralCLIBarista,
@@ -75,6 +78,21 @@ def create_ai_provider(provider_name: str, config: Dict[str, Any]) -> AIProvider
         return SimpleBarista()
 
     provider_class = provider_map[provider_name]
+
+    if provider_name == "azure":
+        api_key = api_keys.get("azure")
+        endpoint = ai_config.get("azure_endpoint")
+        model = ai_config.get("azure_model")
+        api_version = ai_config.get("azure_api_version")
+        try:
+            return AzureAIBarista(
+                api_key=api_key, endpoint=endpoint, model=model, api_version=api_version
+            )
+        except (ImportError, ValueError) as e:
+            logger.warning(
+                "Cannot create azure provider: %s. Falling back to simple.", e
+            )
+            return SimpleBarista()
 
     if provider_name in ["openai", "anthropic", "gemini", "mistral"]:
         api_key = api_keys.get(provider_name)

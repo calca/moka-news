@@ -3,12 +3,14 @@
 import os
 import subprocess
 from typing import Optional
+from urllib.parse import urlparse
 
 from moka_news.logger import get_logger
 from moka_news.constants import (
     DEFAULT_AI_MODELS,
     EDITORIAL_MAX_TOKENS,
     CLI_GENERATION_TIMEOUT,
+    AZURE_AI_API_VERSION,
 )
 from moka_news.barista.base import AIProvider
 
@@ -135,6 +137,121 @@ class MistralBarista(AIProvider):
             max_tokens=max_tokens,
         )
         return response.choices[0].message.content
+
+
+class AzureAIBarista(AIProvider):
+    """Azure AI Foundry-based content processor (Azure AI Inference SDK)."""
+
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        endpoint: Optional[str] = None,
+        model: Optional[str] = None,
+        api_version: Optional[str] = None,
+    ):
+        try:
+            from azure.ai.inference import ChatCompletionsClient
+            from azure.core.credentials import AzureKeyCredential
+        except ImportError:
+            raise ImportError(
+                "azure-ai-inference package is required. "
+                "Install with: pip install azure-ai-inference"
+            )
+
+        resolved_endpoint = endpoint or os.getenv("AZURE_AI_ENDPOINT")
+        if not resolved_endpoint:
+            raise ValueError(
+                "Azure AI Foundry requires an endpoint URL. "
+                "Set 'ai.azure_endpoint' in config or the AZURE_AI_ENDPOINT env var."
+            )
+        resolved_endpoint = self._normalize_endpoint(resolved_endpoint)
+
+        resolved_key = api_key or os.getenv("AZURE_AI_API_KEY")
+        resolved_api_version = (
+            api_version or os.getenv("AZURE_AI_API_VERSION") or AZURE_AI_API_VERSION
+        )
+
+        self.client = ChatCompletionsClient(
+            endpoint=resolved_endpoint,
+            credential=AzureKeyCredential(resolved_key or ""),
+            api_version=resolved_api_version,
+        )
+
+        resolved_model = (
+            model or os.getenv("AZURE_AI_MODEL") or DEFAULT_AI_MODELS.get("azure")
+        )
+        if not resolved_model:
+            raise ValueError(
+                "Azure AI Foundry requires a model name. "
+                "Set 'ai.azure_model' in config or the AZURE_AI_MODEL env var."
+            )
+        self.model = resolved_model
+
+    def _invoke_ai(
+        self,
+        system_message: str,
+        user_prompt: str,
+        max_tokens: int = EDITORIAL_MAX_TOKENS,
+    ) -> str:
+        from azure.ai.inference.models import SystemMessage, UserMessage
+
+        try:
+            response = self.client.complete(
+                messages=[
+                    SystemMessage(content=system_message),
+                    UserMessage(content=user_prompt),
+                ],
+                max_tokens=max_tokens,
+                model=self.model,
+            )
+            return response.choices[0].message.content
+        except Exception as exc:
+            error_text = str(exc)
+            if "404" in error_text or "Resource not found" in error_text:
+                raise RuntimeError(
+                    "Azure AI request returned 404 (Resource not found). "
+                    "Verify 'ai.azure_endpoint' points to your Azure AI Foundry endpoint "
+                    "(usually ending with '/models') and 'ai.azure_model' matches the "
+                    "deployed model name exactly. Some models are available only on specific "
+                    "API versions, so try setting the 'ai.azure_api_version' config key or the "
+                    "AZURE_AI_API_VERSION env var to a version supported by your deployment."
+                ) from exc
+            raise
+
+    @staticmethod
+    def _normalize_endpoint(endpoint: str) -> str:
+        # Normalize whitespace and trailing slash first
+        endpoint = endpoint.strip().rstrip("/")
+
+        parsed = urlparse(endpoint)
+
+        # If the user omitted the scheme (e.g. "my-foundry.services.ai.azure.com"),
+        # urlparse will put the host into .path and leave .netloc empty. In that
+        # case, try to normalize by prepending "https://".
+        if not parsed.scheme and not parsed.netloc:
+            candidate = "https://" + endpoint.lstrip("/")
+            parsed = urlparse(candidate)
+            if not parsed.scheme or not parsed.netloc:
+                raise ValueError(
+                    "Invalid Azure AI Foundry endpoint URL. Please provide a full URL "
+                    "including scheme and host, for example "
+                    "'https://<name>.services.ai.azure.com/models'."
+                )
+            endpoint = candidate.rstrip("/")
+
+        # Re-parse after any normalization to ensure we have the correct host.
+        parsed = urlparse(endpoint)
+        host = (parsed.netloc or "").lower()
+        if "openai.azure.com" in host:
+            raise ValueError(
+                "Detected an Azure OpenAI endpoint. The 'azure' provider expects an "
+                "Azure AI Foundry endpoint like 'https://<name>.services.ai.azure.com/models'."
+            )
+
+        if "services.ai.azure.com" in host and not endpoint.endswith("/models"):
+            endpoint = f"{endpoint}/models"
+
+        return endpoint
 
 
 # -- Simple (no-AI) provider ------------------------------------------------

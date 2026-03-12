@@ -51,6 +51,14 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
         api_keys["gemini"] = os.getenv("GEMINI_API_KEY")
     if os.getenv("MISTRAL_API_KEY"):
         api_keys["mistral"] = os.getenv("MISTRAL_API_KEY")
+    if os.getenv("AZURE_AI_API_KEY"):
+        api_keys["azure"] = os.getenv("AZURE_AI_API_KEY")
+    if os.getenv("AZURE_AI_ENDPOINT"):
+        ai_config["azure_endpoint"] = os.getenv("AZURE_AI_ENDPOINT")
+    if os.getenv("AZURE_AI_MODEL"):
+        ai_config["azure_model"] = os.getenv("AZURE_AI_MODEL")
+    if os.getenv("AZURE_AI_API_VERSION"):
+        ai_config["azure_api_version"] = os.getenv("AZURE_AI_API_VERSION")
 
     return config
 

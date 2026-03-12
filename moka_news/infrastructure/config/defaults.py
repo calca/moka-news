@@ -71,7 +71,11 @@ DEFAULT_CONFIG: Dict[str, Any] = {
             "anthropic": None,
             "gemini": None,
             "mistral": None,
+            "azure": None,  # Azure AI API key (or AZURE_AI_API_KEY env var)
         },
+        "azure_endpoint": None,  # Azure AI Foundry endpoint URL (or AZURE_AI_ENDPOINT env var)
+        "azure_model": None,  # Deployed model name (or AZURE_AI_MODEL env var) — required for azure provider
+        "azure_api_version": None,  # API version override; defaults to AZURE_AI_API_VERSION constant
         "keywords": [],  # Optional keywords for summary generation
         "editorial_prompts": DEFAULT_EDITORIAL_PROMPTS,  # Prompts for editorial generation
         "max_content_length": MAX_CONTENT_LENGTH,  # Maximum characters to send to AI for context
